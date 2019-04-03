@@ -3,7 +3,7 @@ name = "blend2d"
 version = "0.1.0-alpha"
 authors = ["Lukas Wirth <lukastw97@gmail.com>"]
 edition = "2018"
-description = "Rust bindings to blend2d"
+description = "Rust bindings for blend2d"
 homepage = "https://github.com/Veykril/blend2d-rs"
 repository = "https://github.com/Veykril/blend2d-rs"
 license = "MIT/Apache-2.0"
@@ -14,4 +14,4 @@ readme = "README.md"
 ffi = { package = "blend2d-sys", version = "0.1.0", path = "blend2d-sys" }
 
 [[example]]
-name = "test"
+name = "path"

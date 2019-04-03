@@ -1,5 +1,12 @@
 # blend2d-rs
 
+This crate provides rust bindings to the 
+[blend2d](https://github.com/blend2d/blend2d) lib. This project is 
+currently WIP and very incomplete, so the API will most likely change a 
+few times until it somewhat stabilizes. Bear in mind that blend2d itself 
+is also still in mind, meaning it can cause breaking changes when the 
+library devs feel like it as well.
+
 ## License
 
 Licensed under either of

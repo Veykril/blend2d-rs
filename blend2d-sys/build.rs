@@ -3,10 +3,10 @@ use cmake::Config;
 use std::{env, path::PathBuf};
 
 fn main() {
-    //let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let dst = Config::new("blend2d")
-        //.env("APP_DIR", &format!("{}/blend2d", manifest_dir))
-        //.env("BLEND2D_DIR", &format!("{}/blend2d", manifest_dir))
+        .env("APP_DIR", &format!("{}/blend2d", manifest_dir))
+        .env("BLEND2D_DIR", &format!("{}/blend2d", manifest_dir))
         .define("BLEND2D_BUILD_STATIC:BOOL", "TRUE")
         .build();
     // fixme for release build
@@ -15,13 +15,16 @@ fn main() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=blend2d");
+    println!("cargo:rustc-link-lib=user32");
+    println!("cargo:rustc-link-lib=uuid");
+    println!("cargo:rustc-link-lib=shell32");
 
     let whitelist_regex = "[Bb][Ll].*";
     let bindings = bindgen::Builder::default()
         .header("blend2d/src/blend2d.h")
         .layout_tests(false)
         .generate_comments(false)
-        .default_enum_style(bindgen::EnumVariation::Rust)
+        .default_enum_style(bindgen::EnumVariation::ModuleConsts)
         .whitelist_function(whitelist_regex)
         .whitelist_type(whitelist_regex)
         .whitelist_var(whitelist_regex)
