@@ -1,0 +1,7 @@
+[submodule "blend2d-sys/blend2d"]
+	path = blend2d-sys/blend2d
+	url = https://github.com/blend2d/blend2d
+[submodule "blend2d-sys/asmjit"]
+	path = blend2d-sys/asmjit
+	url = https://github.com/asmjit/asmjit
+	branch = next-wip

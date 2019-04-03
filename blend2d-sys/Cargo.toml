@@ -1,0 +1,15 @@
+[package]
+name = "blend2d-sys"
+version = "0.1.0"
+authors = ["Lukas Wirth <lukastw97@gmail.com>"]
+edition = "2018"
+description = "Raw ffi bindings for Rust"
+homepage = "https://github.com/Veykril/blend2d-rs"
+repository = "https://github.com/Veykril/blend2d-rs"
+license = "MIT/Apache-2.0"
+categories = ["external-ffi-bindings"]
+build = "build.rs"
+
+[build-dependencies]
+cmake = "^0.1"
+bindgen = "^0.49.0"
