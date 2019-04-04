@@ -26,6 +26,6 @@ impl Path {
 }
 
 impl ImplType for Path {
-    type Type = ffi::BLPathCore;
-    const IDX: usize = ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize;
+    type CoreType = ffi::BLPathCore;
+    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize;
 }

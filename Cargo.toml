@@ -12,6 +12,7 @@ readme = "README.md"
 
 [dependencies]
 ffi = { package = "blend2d-sys", version = "0.1.0", path = "blend2d-sys" }
+bitflags = "1.0.4"
 
 [[example]]
 name = "path"

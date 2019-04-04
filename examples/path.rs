@@ -9,8 +9,7 @@ use blend2d::{
 fn main() {
     let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
     {
-        let mut ctx =
-            Context::new_from_image(&mut img).expect("Unable to attach rendering context");
+        let mut ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
         ctx.set_comp_op(CompOp::SrcCopy).unwrap();
         ctx.fill_all().unwrap();
 
@@ -24,6 +23,7 @@ fn main() {
         ctx.set_comp_op(CompOp::SrcOver).unwrap();
         ctx.set_fill_style_rgba32(0xFFFFFFFF).unwrap();
         ctx.fill_path(&path).unwrap();
+        ctx.end();
     }
     let codec = ImageCodec::by_name("BMP").unwrap();
     img.write_to_file("path_example.bmp", &codec).unwrap();

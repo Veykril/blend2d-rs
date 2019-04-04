@@ -1,3 +1,5 @@
+use bitflags::bitflags;
+
 use core::ptr;
 
 use ffi::BLContextCore;
@@ -9,112 +11,124 @@ use crate::{
     ImplType,
 };
 
-#[repr(i32)]
-pub enum CompOp {
-    // Source-over [default].
-    SrcOver = ffi::BLCompOp::BL_COMP_OP_SRC_OVER,
-    // Source-copy.
-    SrcCopy = ffi::BLCompOp::BL_COMP_OP_SRC_COPY,
-    // Source-in.
-    SrcIn = ffi::BLCompOp::BL_COMP_OP_SRC_IN,
-    // Source-out.
-    SrcOut = ffi::BLCompOp::BL_COMP_OP_SRC_OUT,
-    // Source-atop.
-    SrcAtop = ffi::BLCompOp::BL_COMP_OP_SRC_ATOP,
-    // Destination-over.
-    DstOver = ffi::BLCompOp::BL_COMP_OP_DST_OVER,
-    // Destination-copy [nop].
-    DstCopy = ffi::BLCompOp::BL_COMP_OP_DST_COPY,
-    // Destination-in.
-    DstIn = ffi::BLCompOp::BL_COMP_OP_DST_IN,
-    // Destination-out.
-    DstOut = ffi::BLCompOp::BL_COMP_OP_DST_OUT,
-    // Destination-atop.
-    DstAtop = ffi::BLCompOp::BL_COMP_OP_DST_ATOP,
-    // Xor.
-    Xor = ffi::BLCompOp::BL_COMP_OP_XOR,
-    // Clear.
-    Clear = ffi::BLCompOp::BL_COMP_OP_CLEAR,
-    // Plus.
-    Plus = ffi::BLCompOp::BL_COMP_OP_PLUS,
-    // Minus.
-    Minus = ffi::BLCompOp::BL_COMP_OP_MINUS,
-    // Multiply.
-    Multiply = ffi::BLCompOp::BL_COMP_OP_MULTIPLY,
-    // Screen.
-    Screen = ffi::BLCompOp::BL_COMP_OP_SCREEN,
-    // Overlay.
-    Overlay = ffi::BLCompOp::BL_COMP_OP_OVERLAY,
-    // Darken.
-    Darken = ffi::BLCompOp::BL_COMP_OP_DARKEN,
-    // Lighten.
-    Lighten = ffi::BLCompOp::BL_COMP_OP_LIGHTEN,
-    // Color dodge.
-    ColorDodge = ffi::BLCompOp::BL_COMP_OP_COLOR_DODGE,
-    // Color burn.
-    ColorBurn = ffi::BLCompOp::BL_COMP_OP_COLOR_BURN,
-    // Linear burn.
-    LinearBurn = ffi::BLCompOp::BL_COMP_OP_LINEAR_BURN,
-    // Linear light.
-    LinearLight = ffi::BLCompOp::BL_COMP_OP_LINEAR_LIGHT,
-    // Pin light.
-    PinLight = ffi::BLCompOp::BL_COMP_OP_PIN_LIGHT,
-    // Hard-light.
-    HardLight = ffi::BLCompOp::BL_COMP_OP_HARD_LIGHT,
-    // Soft-light.
-    SoftLight = ffi::BLCompOp::BL_COMP_OP_SOFT_LIGHT,
-    // Difference.
-    Difference = ffi::BLCompOp::BL_COMP_OP_DIFFERENCE,
-    // Exclusion.
-    Exclusion = ffi::BLCompOp::BL_COMP_OP_EXCLUSION,
+use ffi::BLContextType::*;
+bl_enum! {
+    pub enum ContextType {
+        None = BL_CONTEXT_TYPE_NONE,
+        Dummy = BL_CONTEXT_TYPE_DUMMY,
+        Raster = BL_CONTEXT_TYPE_RASTER,
+        RasterAsync = BL_CONTEXT_TYPE_RASTER_ASYNC,
+    }
+    Default => None
 }
 
-impl From<u32> for CompOp {
-    fn from(val: u32) -> CompOp {
-        match val as ffi::BLCompOp::Type {
-            ffi::BLCompOp::BL_COMP_OP_SRC_COPY => CompOp::SrcCopy,
-            ffi::BLCompOp::BL_COMP_OP_SRC_IN => CompOp::SrcIn,
-            ffi::BLCompOp::BL_COMP_OP_SRC_OUT => CompOp::SrcOut,
-            ffi::BLCompOp::BL_COMP_OP_SRC_ATOP => CompOp::SrcAtop,
-            ffi::BLCompOp::BL_COMP_OP_DST_OVER => CompOp::DstOver,
-            ffi::BLCompOp::BL_COMP_OP_DST_COPY => CompOp::DstCopy,
-            ffi::BLCompOp::BL_COMP_OP_DST_IN => CompOp::DstIn,
-            ffi::BLCompOp::BL_COMP_OP_DST_OUT => CompOp::DstOut,
-            ffi::BLCompOp::BL_COMP_OP_DST_ATOP => CompOp::DstAtop,
-            ffi::BLCompOp::BL_COMP_OP_XOR => CompOp::Xor,
-            ffi::BLCompOp::BL_COMP_OP_CLEAR => CompOp::Clear,
-            ffi::BLCompOp::BL_COMP_OP_PLUS => CompOp::Plus,
-            ffi::BLCompOp::BL_COMP_OP_MINUS => CompOp::Minus,
-            ffi::BLCompOp::BL_COMP_OP_MULTIPLY => CompOp::Multiply,
-            ffi::BLCompOp::BL_COMP_OP_SCREEN => CompOp::Screen,
-            ffi::BLCompOp::BL_COMP_OP_OVERLAY => CompOp::Overlay,
-            ffi::BLCompOp::BL_COMP_OP_DARKEN => CompOp::Darken,
-            ffi::BLCompOp::BL_COMP_OP_LIGHTEN => CompOp::Lighten,
-            ffi::BLCompOp::BL_COMP_OP_COLOR_DODGE => CompOp::ColorDodge,
-            ffi::BLCompOp::BL_COMP_OP_COLOR_BURN => CompOp::ColorBurn,
-            ffi::BLCompOp::BL_COMP_OP_LINEAR_BURN => CompOp::LinearBurn,
-            ffi::BLCompOp::BL_COMP_OP_LINEAR_LIGHT => CompOp::LinearLight,
-            ffi::BLCompOp::BL_COMP_OP_PIN_LIGHT => CompOp::PinLight,
-            ffi::BLCompOp::BL_COMP_OP_HARD_LIGHT => CompOp::HardLight,
-            ffi::BLCompOp::BL_COMP_OP_SOFT_LIGHT => CompOp::SoftLight,
-            ffi::BLCompOp::BL_COMP_OP_DIFFERENCE => CompOp::Difference,
-            ffi::BLCompOp::BL_COMP_OP_EXCLUSION => CompOp::Exclusion,
-            _ => CompOp::SrcOver,
-        }
+use ffi::BLContextHint::*;
+bl_enum! {
+    pub enum ContextHint {
+        RenderingQuality = BL_CONTEXT_HINT_RENDERING_QUALITY,
+        GradientQuality = BL_CONTEXT_HINT_GRADIENT_QUALITY,
+        PatternQuality = BL_CONTEXT_HINT_PATTERN_QUALITY,
+    }
+    Default => RenderingQuality
+}
+
+use ffi::BLContextFlushFlags;
+bitflags! {
+    pub struct ContextFlushFlags: u32 {
+        const FLUSH_SYNC = BLContextFlushFlags::BL_CONTEXT_FLUSH_SYNC as u32;
     }
 }
-impl From<CompOp> for u32 {
-    fn from(val: CompOp) -> u32 {
-        val as u32
+use ffi::BLContextCreateFlags;
+bitflags! {
+    pub struct ContextCreateFlags: u32 {
+        const ISOLATED_RUNTIME = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_ISOLATED_RUNTIME as u32;
+        const OVERRIDE_FEATURES = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_OVERRIDE_FEATURES as u32;
     }
 }
 
-impl Default for CompOp {
-    fn default() -> Self {
-        CompOp::SrcOver
+use ffi::BLClipOp::*;
+bl_enum! {
+    pub enum ClipOP {
+        Replace = BL_CLIP_OP_REPLACE,
+        Intersect = BL_CLIP_OP_INTERSECT,
     }
+    Default => Replace
 }
 
+use ffi::BLClipMode::*;
+bl_enum! {
+    pub enum ClipMode {
+        AlignedRect = BL_CLIP_MODE_ALIGNED_RECT,
+        UnalignedRect = BL_CLIP_MODE_UNALIGNED_RECT,
+        Mask = BL_CLIP_MODE_MASK,
+    }
+    Default => AlignedRect
+}
+
+use ffi::BLCompOp::*;
+bl_enum! {
+    pub enum CompOp {
+        SrcOver = BL_COMP_OP_SRC_OVER,
+        SrcCopy = BL_COMP_OP_SRC_COPY,
+        SrcIn = BL_COMP_OP_SRC_IN,
+        SrcOut = BL_COMP_OP_SRC_OUT,
+        SrcAtop = BL_COMP_OP_SRC_ATOP,
+        DstOver = BL_COMP_OP_DST_OVER,
+        DstCopy = BL_COMP_OP_DST_COPY,
+        DstIn = BL_COMP_OP_DST_IN,
+        DstOut = BL_COMP_OP_DST_OUT,
+        DstAtop = BL_COMP_OP_DST_ATOP,
+        Xor = BL_COMP_OP_XOR,
+        Clear = BL_COMP_OP_CLEAR,
+        Plus = BL_COMP_OP_PLUS,
+        Minus = BL_COMP_OP_MINUS,
+        Multiply = BL_COMP_OP_MULTIPLY,
+        Screen = BL_COMP_OP_SCREEN,
+        Overlay = BL_COMP_OP_OVERLAY,
+        Darken = BL_COMP_OP_DARKEN,
+        Lighten = BL_COMP_OP_LIGHTEN,
+        ColorDodge = BL_COMP_OP_COLOR_DODGE,
+        ColorBurn = BL_COMP_OP_COLOR_BURN,
+        LinearBurn = BL_COMP_OP_LINEAR_BURN,
+        LinearLight = BL_COMP_OP_LINEAR_LIGHT,
+        PinLight = BL_COMP_OP_PIN_LIGHT,
+        HardLight = BL_COMP_OP_HARD_LIGHT,
+        SoftLight = BL_COMP_OP_SOFT_LIGHT,
+        Difference = BL_COMP_OP_DIFFERENCE,
+        Exclusion = BL_COMP_OP_EXCLUSION,
+    }
+    Default => SrcOver
+}
+
+use ffi::BLGradientQuality::*;
+bl_enum! {
+    pub enum GradientQuality {
+        Nearest = BL_GRADIENT_QUALITY_NEAREST,
+    }
+    Default => Nearest
+}
+
+use ffi::BLPatternQuality::*;
+bl_enum! {
+    pub enum PatternQuality {
+        Nearest = BL_PATTERN_QUALITY_NEAREST,
+        Bilinear = BL_PATTERN_QUALITY_BILINEAR,
+    }
+    Default => Nearest
+}
+
+use ffi::BLRenderingQuality::*;
+bl_enum! {
+    pub enum RenderingQuality {
+        AntiAliasing = BL_RENDERING_QUALITY_ANTIALIAS,
+    }
+    Default => AntiAliasing
+}
+
+#[derive(PartialOrd, PartialEq)]
+pub struct ContextCookie(u128);
+
+#[repr(transparent)]
 pub struct Context {
     core: BLContextCore,
 }
@@ -128,20 +142,12 @@ impl Context {
         }
     }
 
-    pub fn new_from_image(target: &mut Image) -> Result<Context> {
-        unsafe {
-            let mut core = std::mem::uninitialized();
-
-            errcode_to_result(ffi::blContextInitAs(
-                &mut core,
-                &mut target.core,
-                ptr::null(),
-            ))
-            .map(|_| Context { core })
-        }
+    #[inline]
+    pub fn from_image(target: &mut Image) -> Result<Context> {
+        Self::from_image_with_options(target, None)
     }
 
-    pub fn new_from_image_with_options(
+    pub fn from_image_with_options(
         target: &mut Image,
         options: Option<ffi::BLContextCreateOptions>,
     ) -> Result<Context> {
@@ -155,6 +161,40 @@ impl Context {
             ))
             .map(move |_| Context { core })
         }
+    }
+
+    #[inline]
+    pub fn target_size(&self) -> (f64, f64) {
+        (|ffi::BLSize { w, h }| (w, h))(self.impl_().targetSize)
+    }
+
+    #[inline]
+    pub fn target_width(&self) -> f64 {
+        self.target_size().0
+    }
+
+    #[inline]
+    pub fn target_height(&self) -> f64 {
+        self.target_size().1
+    }
+
+    #[inline]
+    pub fn context_type(&self) -> ContextType {
+        self.impl_().contextType.into()
+    }
+
+    #[inline]
+    pub fn reset(&mut self) {
+        unsafe { ffi::blContextReset(&mut self.core) };
+    }
+
+    #[inline]
+    pub fn end(&mut self) {
+        unsafe { ffi::blContextEnd(&mut self.core) };
+    }
+
+    pub fn flush(&mut self, flags: ContextFlushFlags) {
+        unsafe { ffi::blContextFlush(&mut self.core, flags.bits()) };
     }
 
     pub fn set_comp_op(&mut self, comp_op: CompOp) -> Result<()> {
@@ -178,6 +218,16 @@ impl Context {
             ))
         }
     }
+
+    fn impl_(&self) -> &ffi::BLContextImpl {
+        unsafe { &*self.core.impl_ }
+    }
+}
+
+impl PartialEq for Context {
+    fn eq(&self, other: &Self) -> bool {
+        self.impl_() as *const _ == other.impl_() as *const _
+    }
 }
 
 impl Default for Context {
@@ -186,15 +236,29 @@ impl Default for Context {
     }
 }
 
+impl Clone for Context {
+    fn clone(&self) -> Self {
+        let mut core = ffi::BLContextCore {
+            impl_: ptr::null_mut(),
+        };
+        unsafe {
+            ffi::blVariantInitWeak(
+                &mut core as *mut _ as *mut _,
+                &self.core as *const _ as *const _,
+            )
+        };
+        Context { core }
+    }
+}
+
 impl ImplType for Context {
-    type Type = ffi::BLContextCore;
-    const IDX: usize = ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize;
+    type CoreType = ffi::BLContextCore;
+    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize;
 }
 
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
-            ffi::blContextEnd(&mut self.core);
             ffi::blContextReset(&mut self.core);
         }
     }

@@ -1,6 +1,9 @@
-use crate::{error::Result, ImplType};
-use core::{ops, slice};
-use std::{marker::PhantomData, ptr::null_mut};
+use crate::{
+    error::{errcode_to_result, Result},
+    ImplType,
+};
+use core::{ops, ptr, slice};
+use std::marker::PhantomData;
 
 #[repr(transparent)]
 pub struct Array<T: ArrayType> {
@@ -36,7 +39,7 @@ impl<T: ArrayType> Array<T> {
     }
 
     pub fn truncate(&mut self, n: usize) {
-        unsafe { ffi::blArrayResize(&mut self.core, n.min(self.len()), null_mut()) };
+        unsafe { ffi::blArrayResize(&mut self.core, n.min(self.len()), ptr::null_mut()) };
     }
 
     /*TODO resize
@@ -86,7 +89,7 @@ impl<T: ArrayType> AsRef<[T]> for Array<T> {
     }
 }
 
-impl<T: ArrayType> Deref for Array<T> {
+impl<T: ArrayType> ops::Deref for Array<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -121,7 +124,9 @@ impl<T: ArrayType> PartialEq for Array<T> {
 
 impl<T: ArrayType> Clone for Array<T> {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLArrayCore { impl_: null_mut() };
+        let mut core = ffi::BLArrayCore {
+            impl_: ptr::null_mut(),
+        };
         unsafe {
             ffi::blVariantInitWeak(
                 &mut core as *mut _ as *mut _,
@@ -142,8 +147,8 @@ impl<T: ArrayType> Drop for Array<T> {
 }
 
 impl<T: ArrayType> ImplType for Array<T> {
-    type Type = ffi::BLArrayCore;
-    const IDX: usize = T::IMPL_IDX;
+    type CoreType = ffi::BLArrayCore;
+    const IMPL_TYPE_ID: usize = T::IMPL_IDX;
 }
 
 pub trait ArrayType: Sized {
@@ -162,9 +167,7 @@ macro_rules! impl_array_type {
     }
 }
 
-use crate::error::errcode_to_result;
 use ffi::BLImplType::*;
-use std::ops::Deref;
 #[cfg(target_arch = "32")]
 impl_array_type!(impl *const T, *mut T, &T, &mut T = BL_IMPL_TYPE_ARRAY_U32);
 #[cfg(target_arch = "64")]

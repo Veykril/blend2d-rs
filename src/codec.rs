@@ -46,6 +46,6 @@ impl Drop for ImageCodec {
 }
 
 impl ImplType for ImageCodec {
-    type Type = ffi::BLImageCodecCore;
-    const IDX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize;
+    type CoreType = ffi::BLImageCodecCore;
+    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize;
 }
