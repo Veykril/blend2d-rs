@@ -1,6 +1,7 @@
 #[macro_use]
 mod macros;
 
+pub mod array;
 pub mod codec;
 pub mod context;
 pub mod error;
