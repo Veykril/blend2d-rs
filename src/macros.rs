@@ -14,6 +14,7 @@ macro_rules! vcall {
 macro_rules! bl_enum {
     (pub enum $name:ident { $( $variant:ident = $value:ident, )* } Default => $default:ident) => {
         #[repr(i32)]
+        #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
         pub enum $name {
             $(
                 $variant = $value,

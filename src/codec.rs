@@ -5,6 +5,7 @@ use crate::{
     ImplType,
 };
 
+#[repr(transparent)]
 pub struct ImageCodec {
     pub(in crate) core: ffi::BLImageCodecCore,
 }

@@ -6,8 +6,8 @@ use ffi::BLContextCore;
 
 use crate::{
     error::{errcode_to_result, Result},
+    geometry::Path,
     image::Image,
-    path::Path,
     ImplType,
 };
 
@@ -152,7 +152,9 @@ impl Context {
         options: Option<ffi::BLContextCreateOptions>,
     ) -> Result<Context> {
         unsafe {
-            let mut core = std::mem::uninitialized();
+            let mut core = ffi::BLContextCore {
+                impl_: ptr::null_mut(),
+            };
 
             errcode_to_result(ffi::blContextInitAs(
                 &mut core,
@@ -165,7 +167,8 @@ impl Context {
 
     #[inline]
     pub fn target_size(&self) -> (f64, f64) {
-        (|ffi::BLSize { w, h }| (w, h))(self.impl_().targetSize)
+        let ffi::BLSize { w, h } = self.impl_().targetSize;
+        (w, h)
     }
 
     #[inline]

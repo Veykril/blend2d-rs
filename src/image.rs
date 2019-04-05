@@ -9,6 +9,7 @@ use crate::{
     format::ImageFormat,
 };
 
+#[repr(transparent)]
 pub struct Image {
     pub(in crate) core: BLImageCore,
 }
