@@ -12,10 +12,10 @@ macro_rules! vcall {
 
 #[macro_export]
 macro_rules! bl_enum {
-    (pub enum $name:ident { $( $variant:ident = $value:ident, )* } Default => $default:ident) => {
+    ($vis:vis enum $name:ident { $( $variant:ident = $value:ident, )* } Default => $default:ident) => {
         #[repr(i32)]
         #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
-        pub enum $name {
+        $vis enum $name {
             $(
                 $variant = $value,
             )*
