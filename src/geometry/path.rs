@@ -8,10 +8,11 @@ use core::{
 };
 
 use crate::{
+    bl_impl::WrappedBlCore,
     bl_range,
     error::{errcode_to_result, Result},
     geometry::{Box, FillRule, Point, Rect},
-    ImplType, Matrix2D,
+    Matrix2D,
 };
 
 use ffi::BLPathCmd::*;
@@ -180,13 +181,15 @@ pub struct Path {
     pub(in crate) core: ffi::BLPathCore,
 }
 
+unsafe impl WrappedBlCore for Path {
+    type Core = ffi::BLPathCore;
+}
+
 impl Path {
     #[inline]
     pub fn new() -> Self {
         Path {
-            core: ffi::BLPathCore {
-                impl_: Self::none().impl_,
-            },
+            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize) },
         }
     }
 
@@ -237,11 +240,6 @@ impl Path {
 
     pub fn as_slice(&self) -> &[u8] {
         unsafe { slice::from_raw_parts(self.impl_().__bindgen_anon_1.view.commandData, self.len()) }
-    }
-
-    #[inline]
-    fn impl_(&self) -> &ffi::BLPathImpl {
-        unsafe { &*self.core.impl_ }
     }
 
     pub fn info_flags(&self) -> Result<PathFlags> {
@@ -795,11 +793,6 @@ impl Drop for Path {
     fn drop(&mut self) {
         self.reset();
     }
-}
-
-impl ImplType for Path {
-    type CoreType = ffi::BLPathCore;
-    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize;
 }
 
 impl Default for Path {

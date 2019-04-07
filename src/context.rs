@@ -5,11 +5,11 @@ use core::ptr;
 use ffi::BLContextCore;
 
 use crate::{
+    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
     geometry::Path,
     gradient::{Gradient, GradientType},
     image::Image,
-    ImplType,
 };
 
 use ffi::BLContextType::*;
@@ -134,12 +134,14 @@ pub struct Context {
     core: BLContextCore,
 }
 
+unsafe impl WrappedBlCore for Context {
+    type Core = ffi::BLContextCore;
+}
+
 impl Context {
     pub fn new() -> Self {
         Context {
-            core: ffi::BLContextCore {
-                impl_: Self::none().impl_,
-            },
+            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize) },
         }
     }
 
@@ -265,11 +267,6 @@ impl Clone for Context {
         };
         Context { core }
     }
-}
-
-impl ImplType for Context {
-    type CoreType = ffi::BLContextCore;
-    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize;
 }
 
 impl Drop for Context {

@@ -1,8 +1,8 @@
 use std::ffi::CString;
 
 use crate::{
+    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
-    ImplType,
 };
 
 #[repr(transparent)]
@@ -10,11 +10,15 @@ pub struct ImageCodec {
     pub(in crate) core: ffi::BLImageCodecCore,
 }
 
+unsafe impl WrappedBlCore for ImageCodec {
+    type Core = ffi::BLImageCore;
+}
+
 impl ImageCodec {
     pub fn new() -> Self {
         ImageCodec {
-            core: ffi::BLImageCodecCore {
-                impl_: Self::none().impl_,
+            core: unsafe {
+                *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize)
             },
         }
     }
@@ -44,9 +48,4 @@ impl Drop for ImageCodec {
     fn drop(&mut self) {
         unsafe { ffi::blImageCodecReset(&mut self.core) };
     }
-}
-
-impl ImplType for ImageCodec {
-    type CoreType = ffi::BLImageCodecCore;
-    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize;
 }

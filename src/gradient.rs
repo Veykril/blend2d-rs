@@ -3,8 +3,9 @@ use core::{marker::PhantomData, mem, ptr};
 use ffi::BLGradientValue::*;
 
 use crate::{
+    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
-    ExtendMode, ImplType, Matrix2D, Matrix2DType,
+    ExtendMode, Matrix2D, Matrix2DType,
 };
 
 mod private {
@@ -78,13 +79,15 @@ pub struct Gradient<T: GradientType> {
     _pd: PhantomData<*const T>,
 }
 
+unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
+    type Core = ffi::BLGradientCore;
+}
+
 impl<T: GradientType> Gradient<T> {
     #[inline]
     pub fn new() -> Self {
         Gradient {
-            core: ffi::BLGradientCore {
-                impl_: Self::none().impl_,
-            },
+            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize) },
             _pd: PhantomData,
         }
     }
@@ -307,11 +310,6 @@ impl Gradient<Conical> {
 
 impl<T: GradientType> Gradient<T> {
     #[inline]
-    fn impl_(&self) -> &ffi::BLGradientImpl {
-        unsafe { &*self.core.impl_ }
-    }
-
-    #[inline]
     pub fn reset(&mut self) {
         unsafe { ffi::blGradientReset(&mut self.core) };
     }
@@ -327,11 +325,6 @@ impl<T: GradientType> Drop for Gradient<T> {
     fn drop(&mut self) {
         self.reset();
     }
-}
-
-impl<T: GradientType> ImplType for Gradient<T> {
-    type CoreType = ffi::BLGradientCore;
-    const IMPL_TYPE_ID: usize = ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize;
 }
 
 impl<T: GradientType> Default for Gradient<T> {

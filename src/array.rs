@@ -1,9 +1,8 @@
 use crate::{
+    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
-    ImplType,
 };
-use core::{ops, ptr, slice};
-use std::marker::PhantomData;
+use core::{marker::PhantomData, ops, ptr, slice};
 
 #[repr(transparent)]
 pub struct Array<T: ArrayType> {
@@ -11,12 +10,14 @@ pub struct Array<T: ArrayType> {
     _pd: PhantomData<T>,
 }
 
+unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
+    type Core = ffi::BLArrayCore;
+}
+
 impl<T: ArrayType> Array<T> {
     pub fn new() -> Self {
         Array {
-            core: ffi::BLArrayCore {
-                impl_: Self::none().impl_,
-            },
+            core: unsafe { *crate::bl_impl::none(T::IMPL_IDX) },
             _pd: PhantomData,
         }
     }
@@ -70,11 +71,6 @@ impl<T: ArrayType> Array<T> {
 
     pub fn reset(&mut self) {
         unsafe { ffi::blArrayReset(&mut self.core) };
-    }
-
-    #[inline]
-    fn impl_(&self) -> &ffi::BLArrayImpl {
-        unsafe { &*self.core.impl_ }
     }
 
     #[inline]
@@ -144,11 +140,6 @@ impl<T: ArrayType> Drop for Array<T> {
     fn drop(&mut self) {
         self.reset()
     }
-}
-
-impl<T: ArrayType> ImplType for Array<T> {
-    type CoreType = ffi::BLArrayCore;
-    const IMPL_TYPE_ID: usize = T::IMPL_IDX;
 }
 
 pub trait ArrayType: Sized {

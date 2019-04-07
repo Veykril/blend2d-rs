@@ -4,6 +4,7 @@ use std::{ffi::CString, path::Path};
 use ffi::{self, BLImageCore};
 
 use crate::{
+    bl_impl::WrappedBlCore,
     codec::ImageCodec,
     error::{errcode_to_result, Result},
     format::ImageFormat,
@@ -12,6 +13,10 @@ use crate::{
 #[repr(transparent)]
 pub struct Image {
     pub(in crate) core: BLImageCore,
+}
+
+unsafe impl WrappedBlCore for Image {
+    type Core = ffi::BLImageCore;
 }
 
 impl Image {

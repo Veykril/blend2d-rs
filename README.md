@@ -4,8 +4,17 @@ This crate provides rust bindings to the
 [blend2d](https://github.com/blend2d/blend2d) lib. This project is 
 currently WIP and very incomplete, so the API will most likely change a 
 few times until it somewhat stabilizes. Bear in mind that blend2d itself 
-is also still in mind, meaning it can cause breaking changes when the 
-library devs feel like it as well.
+is also still in beta, meaning the api can change at any moment. This also 
+means that some functionality is still not correctly implemented
+
+
+This crate is highly experimental and not quite in a useable state yet, though examples already exist.
+
+## Setup
+
+This crate requires [CMake](https://cmake.org/) to be installed and available on `PATH`.
+
+Also make sure to initialize the submodules after cloning the repository(`git submodule update --init`).
 
 ## License
 
