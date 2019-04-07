@@ -7,6 +7,7 @@ use ffi::BLContextCore;
 use crate::{
     error::{errcode_to_result, Result},
     geometry::Path,
+    gradient::{Gradient, GradientType},
     image::Image,
     ImplType,
 };
@@ -206,6 +207,18 @@ impl Context {
 
     pub fn set_fill_style_rgba32(&mut self, color: u32) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba32(&mut self.core, color)) }
+    }
+
+    pub fn set_fill_style_gradient<T: GradientType>(
+        &mut self,
+        gradient: &Gradient<T>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetFillStyle(
+                &mut self.core,
+                gradient as *const _ as *const _,
+            ))
+        }
     }
 
     pub fn fill_all(&mut self) -> Result<()> {

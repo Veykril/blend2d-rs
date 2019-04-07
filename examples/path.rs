@@ -2,8 +2,8 @@ use blend2d::{
     codec::ImageCodec,
     context::{CompOp, Context},
     format::ImageFormat,
+    geometry::Path,
     image::Image,
-    path::Path,
 };
 
 fn main() {
