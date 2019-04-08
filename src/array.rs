@@ -174,11 +174,14 @@ impl_array_type! {
     impl u64 = BL_IMPL_TYPE_ARRAY_U64;
     impl f32 = BL_IMPL_TYPE_ARRAY_F32;
     impl f64 = BL_IMPL_TYPE_ARRAY_F64;
-
 }
 use crate::{codec::ImageCodec, context::Context, geometry::Path, image::Image};
 impl_array_type! {
     impl Path, Image, ImageCodec, Context = BL_IMPL_TYPE_ARRAY_VAR;
+}
+use crate::Tag;
+impl_array_type! {
+    impl Tag = BL_IMPL_TYPE_ARRAY_STRUCT_4;
 }
 /*
 //

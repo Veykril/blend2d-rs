@@ -2,8 +2,10 @@
 #[macro_use]
 mod macros;
 
+pub(in crate) mod bl_impl;
+pub(in crate) mod vtables;
+
 pub mod array;
-pub mod bl_impl;
 pub mod codec;
 pub mod context;
 pub mod error;
@@ -11,6 +13,9 @@ pub mod format;
 pub mod geometry;
 pub mod gradient;
 pub mod image;
+
+#[repr(transparent)]
+pub struct Tag(u32);
 
 use ffi::BLExtendMode::*;
 bl_enum! {

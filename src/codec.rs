@@ -11,7 +11,7 @@ pub struct ImageCodec {
 }
 
 unsafe impl WrappedBlCore for ImageCodec {
-    type Core = ffi::BLImageCore;
+    type Core = ffi::BLImageCodecCore;
 }
 
 impl ImageCodec {

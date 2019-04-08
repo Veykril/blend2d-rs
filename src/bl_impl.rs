@@ -1,3 +1,4 @@
+use crate::vtables::VTable;
 use bitflags::bitflags;
 
 bitflags! {
@@ -15,6 +16,16 @@ pub(in crate) unsafe fn none<T: Sized>(impl_type: usize) -> &'static T {
 }
 
 pub(in crate) unsafe trait BlImpl: Sized {
+    type VTable;
+
+    #[inline]
+    fn virt(&self) -> &Self::VTable
+    where
+        Self::VTable: VTable,
+    {
+        unsafe { &*(self.as_variant_impl().__bindgen_anon_1.virt as *const _ as *const _) }
+    }
+
     #[inline]
     fn ref_count(&self) -> usize {
         self.as_variant_impl().refCount
@@ -31,18 +42,48 @@ pub(in crate) unsafe trait BlImpl: Sized {
     }
 }
 
-unsafe impl BlImpl for ffi::BLArrayImpl {}
-unsafe impl BlImpl for ffi::BLContextImpl {}
-unsafe impl BlImpl for ffi::BLGradientImpl {}
-unsafe impl BlImpl for ffi::BLImageImpl {}
-unsafe impl BlImpl for ffi::BLImageCodecImpl {}
-unsafe impl BlImpl for ffi::BLImageDecoderImpl {}
-unsafe impl BlImpl for ffi::BLImageEncoderImpl {}
-unsafe impl BlImpl for ffi::BLPathImpl {}
-unsafe impl BlImpl for ffi::BLPatternImpl {}
-unsafe impl BlImpl for ffi::BLRegionImpl {}
-unsafe impl BlImpl for ffi::BLStringImpl {}
-unsafe impl BlImpl for ffi::BLVariantImpl {}
+unsafe impl BlImpl for ffi::BLArrayImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLContextImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLGradientImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLFontDataImpl {
+    type VTable = ffi::BLFontDataVirt;
+}
+unsafe impl BlImpl for ffi::BLFontLoaderImpl {
+    type VTable = ffi::BLFontLoaderVirt;
+}
+unsafe impl BlImpl for ffi::BLImageImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLImageCodecImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLImageDecoderImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLImageEncoderImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLPathImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLPatternImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLRegionImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLStringImpl {
+    type VTable = ();
+}
+unsafe impl BlImpl for ffi::BLVariantImpl {
+    type VTable = ();
+}
 
 pub(in crate) unsafe trait BlCore: Sized {
     type Impl: BlImpl;
@@ -71,6 +112,12 @@ unsafe impl BlCore for ffi::BLContextCore {
 }
 unsafe impl BlCore for ffi::BLGradientCore {
     type Impl = ffi::BLGradientImpl;
+}
+unsafe impl BlCore for ffi::BLFontDataCore {
+    type Impl = ffi::BLFontDataImpl;
+}
+unsafe impl BlCore for ffi::BLFontLoaderCore {
+    type Impl = ffi::BLFontLoaderImpl;
 }
 unsafe impl BlCore for ffi::BLImageCore {
     type Impl = ffi::BLImageImpl;
