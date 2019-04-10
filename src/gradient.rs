@@ -3,8 +3,8 @@ use core::{marker::PhantomData, mem, ptr};
 use ffi::BLGradientValue::*;
 
 use crate::{
-    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
+    variant::WrappedBlCore,
     ExtendMode, Matrix2D, Matrix2DType,
 };
 
@@ -69,6 +69,30 @@ pub struct ConicalGradientValues {
     pub angle: f64,
 }
 
+pub enum DynamicGradient {
+    Linear(LinearGradient),
+    Radial(RadialGradient),
+    Conical(ConicalGradient),
+}
+
+impl From<LinearGradient> for DynamicGradient {
+    fn from(g: LinearGradient) -> Self {
+        DynamicGradient::Linear(g)
+    }
+}
+
+impl From<ConicalGradient> for DynamicGradient {
+    fn from(g: ConicalGradient) -> Self {
+        DynamicGradient::Conical(g)
+    }
+}
+
+impl From<RadialGradient> for DynamicGradient {
+    fn from(g: RadialGradient) -> Self {
+        DynamicGradient::Radial(g)
+    }
+}
+
 pub type LinearGradient = Gradient<Linear>;
 pub type RadialGradient = Gradient<Radial>;
 pub type ConicalGradient = Gradient<Conical>;
@@ -87,7 +111,7 @@ impl<T: GradientType> Gradient<T> {
     #[inline]
     pub fn new() -> Self {
         Gradient {
-            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize) },
+            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize) },
             _pd: PhantomData,
         }
     }
@@ -143,7 +167,7 @@ impl<T: GradientType> Gradient<T> {
     }
 
     #[inline]
-    pub fn with_type<U: GradientType>(self) -> Gradient<U> {
+    pub unsafe fn with_type<U: GradientType>(self) -> Gradient<U> {
         Gradient {
             core: self.core,
             _pd: PhantomData,

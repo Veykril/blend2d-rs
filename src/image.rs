@@ -4,10 +4,10 @@ use std::{ffi::CString, path::Path};
 use ffi::{self, BLImageCore};
 
 use crate::{
-    bl_impl::WrappedBlCore,
     codec::ImageCodec,
     error::{errcode_to_result, Result},
     format::ImageFormat,
+    variant::WrappedBlCore,
 };
 
 #[repr(transparent)]

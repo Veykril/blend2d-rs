@@ -2,15 +2,18 @@ use bitflags::bitflags;
 
 use core::ptr;
 
-use ffi::BLContextCore;
-
 use crate::{
-    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
-    geometry::Path,
-    gradient::{Gradient, GradientType},
+    geometry::{
+        path::ApproximationOptions, FlattenMode, Path, Size, StrokeCap, StrokeCapPosition,
+        StrokeJoin,
+    },
+    gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
+    variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
+    StyleType,
 };
+use ffi::BLContextCore;
 
 use ffi::BLContextType::*;
 bl_enum! {
@@ -33,12 +36,22 @@ bl_enum! {
     Default => RenderingQuality
 }
 
+use ffi::BLContextOpType::*;
+bl_enum! {
+    pub enum ContextOpType {
+        Fill = BL_CONTEXT_OP_TYPE_FILL,
+        Stroke = BL_CONTEXT_OP_TYPE_STROKE,
+    }
+    Default => Fill
+}
+
 use ffi::BLContextFlushFlags;
 bitflags! {
     pub struct ContextFlushFlags: u32 {
         const FLUSH_SYNC = BLContextFlushFlags::BL_CONTEXT_FLUSH_SYNC as u32;
     }
 }
+
 use ffi::BLContextCreateFlags;
 bitflags! {
     pub struct ContextCreateFlags: u32 {
@@ -118,6 +131,7 @@ bl_enum! {
     Default => Nearest
 }
 
+use crate::{array::Array, geometry::path::StrokeOptions};
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -126,8 +140,16 @@ bl_enum! {
     Default => AntiAliasing
 }
 
-#[derive(PartialOrd, PartialEq)]
+#[repr(C)]
+#[derive(Default, Copy, Clone, PartialOrd, PartialEq)]
 pub struct ContextCookie(u128);
+
+#[repr(C)]
+pub struct ContextHints {
+    pub rendering_quality: u8,
+    pub gradient_quality: u8,
+    pub pattern_quality: u8,
+}
 
 #[repr(transparent)]
 pub struct Context {
@@ -141,7 +163,7 @@ unsafe impl WrappedBlCore for Context {
 impl Context {
     pub fn new() -> Self {
         Context {
-            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize) },
+            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize) },
         }
     }
 
@@ -150,7 +172,8 @@ impl Context {
         Self::from_image_with_options(target, None)
     }
 
-    pub fn from_image_with_options(
+    // FIXME figure out how ContextCreateOptions is used
+    fn from_image_with_options(
         target: &mut Image,
         options: Option<ffi::BLContextCreateOptions>,
     ) -> Result<Context> {
@@ -169,19 +192,19 @@ impl Context {
     }
 
     #[inline]
-    pub fn target_size(&self) -> (f64, f64) {
+    pub fn target_size(&self) -> Size {
         let ffi::BLSize { w, h } = self.impl_().targetSize;
-        (w, h)
+        Size { w, h }
     }
 
     #[inline]
     pub fn target_width(&self) -> f64 {
-        self.target_size().0
+        self.target_size().w
     }
 
     #[inline]
     pub fn target_height(&self) -> f64 {
-        self.target_size().1
+        self.target_size().h
     }
 
     #[inline]
@@ -190,55 +213,438 @@ impl Context {
     }
 
     #[inline]
-    pub fn reset(&mut self) {
-        unsafe { ffi::blContextReset(&mut self.core) };
+    pub fn begin(&mut self, image: &mut Image) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextBegin(
+                self.core_mut(),
+                image.core_mut(),
+                ptr::null(),
+            ))
+        }
     }
 
     #[inline]
     pub fn end(&mut self) {
-        unsafe { ffi::blContextEnd(&mut self.core) };
+        unsafe { ffi::blContextEnd(self.core_mut()) };
     }
 
+    #[inline]
     pub fn flush(&mut self, flags: ContextFlushFlags) {
-        unsafe { ffi::blContextFlush(&mut self.core, flags.bits()) };
+        unsafe { ffi::blContextFlush(self.core_mut(), flags.bits()) };
     }
 
+    #[inline]
+    pub fn saved_state_count(&self) -> usize {
+        self.state().savedStateCount
+    }
+
+    #[inline]
+    pub fn save(&mut self) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSave(self.core_mut(), ptr::null_mut())) }
+    }
+
+    #[inline]
+    pub fn save_cookie(&mut self) -> Result<ContextCookie> {
+        unsafe {
+            let mut cookie = ContextCookie::default();
+            errcode_to_result(ffi::blContextSave(
+                self.core_mut(),
+                &mut cookie as *mut _ as *mut _,
+            ))
+            .map(|_| cookie)
+        }
+    }
+
+    #[inline]
+    pub fn restore(&mut self) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextRestore(self.core_mut(), ptr::null_mut())) }
+    }
+
+    #[inline]
+    pub fn restore_cookie(&mut self, cookie: ContextCookie) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextRestore(
+                self.core_mut(),
+                &cookie as *const _ as *const _,
+            ))
+        }
+    }
+
+    pub fn with_pushed_context<F>(&mut self, f: F) -> Result<()>
+    where
+        F: FnOnce(&mut Self) -> Result<()>,
+    {
+        self.save()?;
+        f(self)?;
+        self.restore()
+    }
+
+    #[inline]
+    pub fn hints(&self) -> &ContextHints {
+        unsafe { &*(&self.state().__bindgen_anon_1.hints as *const _ as *const _) }
+    }
+
+    #[inline]
+    pub fn set_hint(&mut self, hint: ContextHint, value: u32) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetHint(self.core_mut(), hint.into(), value)) }
+    }
+
+    #[inline]
+    pub fn approximation_options(&self) -> &ApproximationOptions {
+        unsafe { &*(&self.state().approximationOptions as *const _ as *const _) }
+    }
+
+    #[inline]
+    pub fn flatten_mode(&self) -> FlattenMode {
+        self.approximation_options().flatten_mode()
+    }
+
+    #[inline]
+    pub fn set_flatten_mode(&mut self, mode: FlattenMode) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetFlattenMode(self.core_mut(), mode.into())) }
+    }
+
+    #[inline]
+    pub fn flatten_tolerance(&self) -> f64 {
+        self.approximation_options().flatten_tolerance
+    }
+
+    #[inline]
+    pub fn set_flatten_tolerance(&mut self, tolerance: f64) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetFlattenTolerance(
+                self.core_mut(),
+                tolerance,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn comp_op(&self) -> CompOp {
+        (self.state().compOp as u32).into()
+    }
+
+    #[inline]
     pub fn set_comp_op(&mut self, comp_op: CompOp) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blContextSetCompOp(&mut self.core, comp_op.into())) }
+        unsafe { errcode_to_result(ffi::blContextSetCompOp(self.core_mut(), comp_op.into())) }
     }
 
-    pub fn set_fill_style_rgba32(&mut self, color: u32) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba32(&mut self.core, color)) }
+    #[inline]
+    pub fn global_alpha(&self) -> f64 {
+        self.state().globalAlpha
+    }
+
+    #[inline]
+    pub fn set_global_alpha(&mut self, alpha: f64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetGlobalAlpha(self.core_mut(), alpha)) }
+    }
+
+    #[inline]
+    fn state(&self) -> &ffi::BLContextState {
+        unsafe { &*self.impl_().state }
+    }
+}
+
+// FIXME? make functions generic over a Stroke/FillStyle trait?
+impl Context {
+    #[inline]
+    pub fn fill_style_type(&self) -> StyleType {
+        unsafe { (self.state().__bindgen_anon_2.__bindgen_anon_1.fillStyleType as u32).into() }
+    }
+
+    #[inline]
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn set_fill_style(&mut self, core: &ffi::BLVariantCore) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetFillStyle(
+                self.core_mut(),
+                core as *const _ as *const _,
+            ))
+        }
     }
 
     pub fn set_fill_style_gradient<T: GradientType>(
         &mut self,
         gradient: &Gradient<T>,
     ) -> Result<()> {
+        self.set_fill_style(gradient.core().as_variant_core())
+    }
+
+    pub fn set_fill_style_image(&mut self, image: &Image) -> Result<()> {
+        self.set_fill_style(image.core().as_variant_core())
+    }
+
+    pub fn set_fill_style_rgba32(&mut self, color: u32) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba32(self.core_mut(), color)) }
+    }
+
+    pub fn set_fill_style_rgba64(&mut self, color: u64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba64(self.core_mut(), color)) }
+    }
+
+    #[inline]
+    pub fn get_fill_style_gradient(&self) -> Result<DynamicGradient> {
         unsafe {
-            errcode_to_result(ffi::blContextSetFillStyle(
-                &mut self.core,
-                gradient as *const _ as *const _,
+            let mut gradient = LinearGradient::new();
+            errcode_to_result(ffi::blContextGetFillStyle(
+                self.core(),
+                gradient.core_mut() as *mut _ as *mut _,
+            ))
+            .map(|_| match gradient.impl_().gradientType as u32 {
+                Linear::BL_TYPE => gradient.with_type::<Linear>().into(),
+                Radial::BL_TYPE => gradient.with_type::<Radial>().into(),
+                Conical::BL_TYPE => gradient.with_type::<Conical>().into(),
+                _ => unreachable!(),
+            })
+        }
+    }
+
+    pub fn get_fill_style_rgba32(&self) -> Result<u32> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result(ffi::blContextGetFillStyleRgba32(self.core(), &mut out)).map(|_| out)
+        }
+    }
+
+    pub fn get_fill_style_rgba64(&self) -> Result<u64> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result(ffi::blContextGetFillStyleRgba64(self.core(), &mut out)).map(|_| out)
+        }
+    }
+
+    #[inline]
+    pub fn stroke_width(&self) -> f64 {
+        self.state().strokeOptions.width
+    }
+
+    #[inline]
+    pub fn stroke_miter_limit(&self) -> f64 {
+        self.state().strokeOptions.miterLimit
+    }
+
+    #[inline]
+    pub fn stroke_dast_offset(&self) -> f64 {
+        self.state().strokeOptions.miterLimit
+    }
+
+    #[inline]
+    pub fn stroke_options(&self) -> &StrokeOptions {
+        //FIXME? Make a Ref/RefMut wrapper struct that doesnt call the destructor, instead of doing this nasty ref casting
+        unsafe { &*(&self.state().strokeOptions as *const _ as *const _) }
+    }
+
+    #[inline]
+    pub fn set_stroke_miter_limit(&mut self, limit: f64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeMiterLimit(self.core_mut(), limit)) }
+    }
+
+    #[inline]
+    pub fn set_stroke_width(&mut self, width: f64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeWidth(self.core_mut(), width)) }
+    }
+
+    #[inline]
+    pub fn set_stroke_join(&mut self, join: StrokeJoin) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeJoin(self.core_mut(), join.into())) }
+    }
+
+    #[inline]
+    pub fn set_stroke_cap(&mut self, pos: StrokeCapPosition, cap: StrokeCap) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetStrokeCap(
+                self.core_mut(),
+                pos.into(),
+                cap.into(),
             ))
         }
     }
 
+    #[inline]
+    pub fn set_stroke_start_cap(&mut self, cap: StrokeCap) -> Result<()> {
+        self.set_stroke_cap(StrokeCapPosition::Start, cap)
+    }
+
+    #[inline]
+    pub fn set_stroke_end_cap(&mut self, cap: StrokeCap) -> Result<()> {
+        self.set_stroke_cap(StrokeCapPosition::End, cap)
+    }
+
+    #[inline]
+    pub fn set_stroke_caps(&mut self, cap: u32) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeCaps(self.core_mut(), cap)) }
+    }
+
+    #[inline]
+    pub fn set_stroke_dash_offset(&mut self, offset: f64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeDashOffset(self.core_mut(), offset)) }
+    }
+
+    #[inline]
+    pub fn set_stroke_dash_array(&mut self, dash_array: &Array<f64>) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetStrokeDashArray(
+                self.core_mut(),
+                dash_array.core(),
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn set_stroke_options(&mut self, opts: &StrokeOptions) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeOptions(self.core_mut(), &opts.core)) }
+    }
+
+    #[inline]
+    pub fn stroke_alpha(&self) -> f64 {
+        unsafe { self.state().__bindgen_anon_3.__bindgen_anon_1.strokeAlpha }
+    }
+
+    #[inline]
+    pub fn set_stroke_alpha(&mut self, alpha: f64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeAlpha(self.core_mut(), alpha)) }
+    }
+
+    #[inline]
+    pub fn stroke_style_type(&self) -> StyleType {
+        unsafe {
+            (self
+                .state()
+                .__bindgen_anon_2
+                .__bindgen_anon_1
+                .strokeStyleType as u32)
+                .into()
+        }
+    }
+
+    #[inline]
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    fn set_stroke_style(&mut self, core: &ffi::BLVariantCore) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextSetStrokeStyle(
+                self.core_mut(),
+                core as *const _ as *const _,
+            ))
+        }
+    }
+
+    pub fn set_stroke_style_gradient<T: GradientType>(
+        &mut self,
+        gradient: &Gradient<T>,
+    ) -> Result<()> {
+        self.set_stroke_style(gradient.core().as_variant_core())
+    }
+
+    pub fn set_stroke_style_image(&mut self, image: &Image) -> Result<()> {
+        self.set_stroke_style(image.core().as_variant_core())
+    }
+
+    pub fn set_stroke_style_rgba32(&mut self, color: u32) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeStyleRgba32(self.core_mut(), color)) }
+    }
+
+    pub fn set_stroke_style_rgba64(&mut self, color: u64) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextSetStrokeStyleRgba64(self.core_mut(), color)) }
+    }
+
+    #[inline]
+    pub fn get_stroke_style_gradient(&self) -> Result<DynamicGradient> {
+        unsafe {
+            let mut gradient = LinearGradient::new();
+            errcode_to_result(ffi::blContextGetStrokeStyle(
+                self.core(),
+                gradient.core_mut() as *mut _ as *mut _,
+            ))
+            .map(|_| match gradient.impl_().gradientType as u32 {
+                Linear::BL_TYPE => gradient.with_type::<Linear>().into(),
+                Radial::BL_TYPE => gradient.with_type::<Radial>().into(),
+                Conical::BL_TYPE => gradient.with_type::<Conical>().into(),
+                _ => unreachable!(),
+            })
+        }
+    }
+
+    pub fn get_stroke_style_rgba32(&self) -> Result<u32> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result(ffi::blContextGetStrokeStyleRgba32(self.core(), &mut out))
+                .map(|_| out)
+        }
+    }
+
+    pub fn get_stroke_style_rgba64(&self) -> Result<u64> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result(ffi::blContextGetStrokeStyleRgba64(self.core(), &mut out))
+                .map(|_| out)
+        }
+    }
+
+    #[inline]
+    fn virt_op_style(&self) -> ffi::BLContextVirt__bindgen_ty_1__bindgen_ty_2 {
+        unsafe { self.impl_().virt().__bindgen_anon_1.__bindgen_anon_2 }
+    }
+
+    pub fn set_op_style_rgba32(&mut self, op: ContextOpType, val: u32) -> Result<()> {
+        unsafe {
+            errcode_to_result((self.virt_op_style().setOpStyleRgba32
+                [u32::from(op) as usize]
+                .unwrap())(self.impl_mut(), val))
+        }
+    }
+
+    pub fn set_op_style_rgba64(&mut self, op: ContextOpType, val: u64) -> Result<()> {
+        unsafe {
+            errcode_to_result((self.virt_op_style().setOpStyleRgba64
+                [u32::from(op) as usize]
+                .unwrap())(self.impl_mut(), val))
+        }
+    }
+
+    pub fn get_op_style_rgba32(&self, op: ContextOpType) -> Result<u32> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result((self.virt_op_style().getOpStyleRgba32
+                [u32::from(op) as usize]
+                .unwrap())(self.impl_mut(), &mut out))
+            .map(|_| out)
+        }
+    }
+
+    pub fn get_op_style_rgba64(&self, op: ContextOpType) -> Result<u64> {
+        unsafe {
+            let mut out = 0;
+            errcode_to_result((self.virt_op_style().getOpStyleRgba64[op as u32 as usize]
+                .unwrap())(self.impl_mut(), &mut out))
+            .map(|_| out)
+        }
+    }
+
+    pub fn op_alpha(&self, op: ContextOpType) -> f64 {
+        unsafe { self.state().__bindgen_anon_3.opAlpha[op as u32 as usize] }
+    }
+
+    pub fn set_op_alpha(&mut self, op: ContextOpType, alpha: f64) -> Result<()> {
+        unsafe {
+            errcode_to_result((self.virt_op_style().setOpAlpha[op as u32 as usize]
+                .unwrap())(self.impl_mut(), alpha))
+        }
+    }
+}
+
+impl Context {
     pub fn fill_all(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blContextFillAll(&mut self.core)) }
+        unsafe { errcode_to_result(ffi::blContextFillAll(self.core_mut())) }
     }
 
     pub fn fill_path(&mut self, path: &Path) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextFillGeometry(
-                &mut self.core,
+                self.core_mut(),
                 ffi::BLGeometryType::BL_GEOMETRY_TYPE_PATH as u32,
                 &path.core as *const _ as *const _,
             ))
         }
-    }
-
-    fn impl_(&self) -> &ffi::BLContextImpl {
-        unsafe { &*self.core.impl_ }
     }
 }
 
@@ -272,7 +678,7 @@ impl Clone for Context {
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
-            ffi::blContextReset(&mut self.core);
+            ffi::blContextReset(self.core_mut());
         }
     }
 }

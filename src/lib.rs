@@ -2,7 +2,7 @@
 #[macro_use]
 mod macros;
 
-pub(in crate) mod bl_impl;
+pub(in crate) mod variant;
 pub(in crate) mod vtables;
 
 pub mod array;
@@ -31,6 +31,17 @@ bl_enum! {
         ReflectXRepeatY = BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
     }
     Default => PadXPadY
+}
+
+use ffi::BLStyleType::*;
+bl_enum! {
+    pub enum StyleType {
+        None = BL_STYLE_TYPE_NONE,
+        Solid = BL_STYLE_TYPE_SOLID,
+        Pattern = BL_STYLE_TYPE_PATTERN,
+        Gradient = BL_STYLE_TYPE_GRADIENT,
+    }
+    Default => None
 }
 
 use ffi::BLMatrix2DType::*;

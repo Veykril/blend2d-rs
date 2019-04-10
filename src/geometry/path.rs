@@ -8,10 +8,10 @@ use core::{
 };
 
 use crate::{
-    bl_impl::WrappedBlCore,
     bl_range,
     error::{errcode_to_result, Result},
     geometry::{Box, FillRule, Point, Rect},
+    variant::WrappedBlCore,
     Matrix2D,
 };
 
@@ -65,6 +65,15 @@ bl_enum! {
         Round = BL_STROKE_JOIN_ROUND,
     }
     Default => MiterClip
+}
+
+use ffi::BLStrokeCapPosition::*;
+bl_enum! {
+    pub enum StrokeCapPosition {
+        Start = BL_STROKE_CAP_POSITION_START,
+        End = BL_STROKE_CAP_POSITION_END,
+    }
+    Default => Start
 }
 
 use ffi::BLStrokeCap::*;
@@ -142,6 +151,7 @@ impl Default for ApproximationOptions {
     }
 }
 
+#[repr(transparent)]
 pub struct StrokeOptions {
     pub(in crate) core: ffi::BLStrokeOptionsCore,
 }
@@ -189,7 +199,7 @@ impl Path {
     #[inline]
     pub fn new() -> Self {
         Path {
-            core: unsafe { *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize) },
+            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize) },
         }
     }
 

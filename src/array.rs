@@ -1,6 +1,6 @@
 use crate::{
-    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
+    variant::WrappedBlCore,
 };
 use core::{marker::PhantomData, ops, ptr, slice};
 
@@ -17,7 +17,7 @@ unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
 impl<T: ArrayType> Array<T> {
     pub fn new() -> Self {
         Array {
-            core: unsafe { *crate::bl_impl::none(T::IMPL_IDX) },
+            core: unsafe { *crate::variant::none(T::IMPL_IDX) },
             _pd: PhantomData,
         }
     }
@@ -176,6 +176,7 @@ impl_array_type! {
     impl f64 = BL_IMPL_TYPE_ARRAY_F64;
 }
 use crate::{codec::ImageCodec, context::Context, geometry::Path, image::Image};
+//where T is BLVariant
 impl_array_type! {
     impl Path, Image, ImageCodec, Context = BL_IMPL_TYPE_ARRAY_VAR;
 }

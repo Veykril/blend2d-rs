@@ -1,8 +1,8 @@
 use std::ffi::CString;
 
 use crate::{
-    bl_impl::WrappedBlCore,
     error::{errcode_to_result, Result},
+    variant::WrappedBlCore,
 };
 
 #[repr(transparent)]
@@ -18,7 +18,7 @@ impl ImageCodec {
     pub fn new() -> Self {
         ImageCodec {
             core: unsafe {
-                *crate::bl_impl::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize)
+                *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize)
             },
         }
     }
