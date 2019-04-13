@@ -1,4 +1,3 @@
-use crate::vtables::VTable;
 use bitflags::bitflags;
 
 bitflags! {
@@ -14,6 +13,15 @@ bitflags! {
 pub(in crate) unsafe fn none<T: Sized>(impl_type: usize) -> &'static T {
     &*(&ffi::blNone[impl_type] as *const _ as *const _)
 }
+
+pub trait VTable {}
+
+impl VTable for ffi::BLContextVirt {}
+impl VTable for ffi::BLFontDataVirt {}
+impl VTable for ffi::BLFontLoaderVirt {}
+impl VTable for ffi::BLImageCodecVirt {}
+impl VTable for ffi::BLImageDecoderVirt {}
+impl VTable for ffi::BLImageEncoderVirt {}
 
 pub unsafe trait BlVariantImpl: Sized {
     type VTable;
@@ -61,13 +69,13 @@ unsafe impl BlVariantImpl for ffi::BLImageImpl {
     type VTable = ();
 }
 unsafe impl BlVariantImpl for ffi::BLImageCodecImpl {
-    type VTable = ();
+    type VTable = ffi::BLImageCodecVirt;
 }
 unsafe impl BlVariantImpl for ffi::BLImageDecoderImpl {
-    type VTable = ();
+    type VTable = ffi::BLImageDecoderVirt;
 }
 unsafe impl BlVariantImpl for ffi::BLImageEncoderImpl {
-    type VTable = ();
+    type VTable = ffi::BLImageDecoderVirt;
 }
 unsafe impl BlVariantImpl for ffi::BLPathImpl {
     type VTable = ();

@@ -3,7 +3,6 @@
 mod macros;
 
 pub(in crate) mod variant;
-pub(in crate) mod vtables;
 
 pub mod array;
 pub mod codec;
