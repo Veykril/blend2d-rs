@@ -4,20 +4,36 @@ use std::{env, path::PathBuf};
 
 fn main() {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let target = env::var("TARGET").unwrap();
+    let (_arch, _vendor, sys, _abi) = {
+        let mut target_s = target.split('-');
+        (
+            target_s.next().unwrap(),
+            target_s.next().unwrap(),
+            target_s.next().unwrap(),
+            target_s.next().unwrap_or(""),
+        )
+    };
     let dst = Config::new("blend2d")
         .env("APP_DIR", &format!("{}/blend2d", manifest_dir))
         .env("BLEND2D_DIR", &format!("{}/blend2d", manifest_dir))
         .define("BLEND2D_BUILD_STATIC:BOOL", "TRUE")
         .build();
-    // fixme for release build
     println!(
-        "cargo:rustc-link-search=native={}/build/Debug",
-        dst.display()
+        "cargo:rustc-link-search=native={}/build/{}",
+        dst.display(),
+        env::var("PROFILE").unwrap()
     );
     println!("cargo:rustc-link-lib=static=blend2d");
-    println!("cargo:rustc-link-lib=user32");
-    println!("cargo:rustc-link-lib=uuid");
-    println!("cargo:rustc-link-lib=shell32");
+    match sys {
+        "windows" => {
+            println!("cargo:rustc-link-lib=user32");
+            println!("cargo:rustc-link-lib=uuid");
+            println!("cargo:rustc-link-lib=shell32");
+        },
+        "linux" => println!("cargo:rustc-link-lib=pthread"),
+        _ => (),
+    }
 
     let whitelist_regex = "[Bb][Ll].*";
     let bindings = bindgen::Builder::default()

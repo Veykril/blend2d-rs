@@ -1,14 +1,16 @@
-use std::ffi::{CStr, CString};
+use std::{
+    borrow::Cow,
+    ffi::{CStr, CString},
+};
+
+use ffi::BLImageCodecFeatures::*;
 
 use crate::{
+    array::Array,
     error::{errcode_to_result, Result},
     variant::WrappedBlCore,
 };
-use core::ptr;
-use std::borrow::Cow;
 
-use crate::array::Array;
-use ffi::BLImageCodecFeatures::*;
 bl_enum! {
     pub enum ImageCodecFeatures {
         Read       = BL_IMAGE_CODEC_FEATURE_READ,
@@ -25,7 +27,7 @@ bl_enum! {
 
 #[repr(transparent)]
 pub struct ImageCodec {
-    pub(in crate) core: ffi::BLImageCodecCore,
+    core: ffi::BLImageCodecCore,
 }
 
 unsafe impl WrappedBlCore for ImageCodec {
@@ -36,9 +38,7 @@ impl ImageCodec {
     #[inline]
     pub fn new() -> Self {
         ImageCodec {
-            core: unsafe {
-                *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize)
-            },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize),
         }
     }
 
@@ -56,6 +56,7 @@ impl ImageCodec {
         }
     }
 
+    #[inline]
     pub fn new_by_data(data: &[u8]) -> Result<Self> {
         unsafe {
             let mut this = Self::new();
@@ -70,6 +71,7 @@ impl ImageCodec {
         }
     }
 
+    #[inline]
     pub fn create_decoder(&mut self) -> Result<ImageDecoder> {
         unsafe {
             let mut decoder = ImageDecoder::new();
@@ -81,6 +83,7 @@ impl ImageCodec {
         }
     }
 
+    #[inline]
     pub fn create_encoder(&mut self) -> Result<ImageEncoder> {
         unsafe {
             let mut encoder = ImageEncoder::new();
@@ -92,6 +95,7 @@ impl ImageCodec {
         }
     }
 
+    #[inline]
     pub fn built_in_codecs() -> &'static Array<ImageCodec> {
         unsafe { &*(ffi::blImageCodecBuiltInCodecs() as *const _ as *const _) }
     }
@@ -127,12 +131,14 @@ impl ImageCodec {
 }
 
 impl Default for ImageCodec {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl PartialEq for ImageCodec {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
     }
@@ -140,16 +146,9 @@ impl PartialEq for ImageCodec {
 
 impl Clone for ImageCodec {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLImageCodecCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        ImageCodec { core }
+        ImageCodec {
+            core: self.init_weak(),
+        }
     }
 }
 
@@ -161,7 +160,7 @@ impl Drop for ImageCodec {
 
 #[repr(transparent)]
 pub struct ImageEncoder {
-    pub(in crate) core: ffi::BLImageEncoderCore,
+    core: ffi::BLImageEncoderCore,
 }
 
 unsafe impl WrappedBlCore for ImageEncoder {
@@ -172,24 +171,25 @@ impl ImageEncoder {
     #[inline]
     pub fn new() -> Self {
         ImageEncoder {
-            core: unsafe {
-                *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_ENCODER as usize)
-            },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_ENCODER as usize),
         }
     }
 
+    #[inline]
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageEncoderRestart(self.core_mut())) }
     }
 }
 
 impl Default for ImageEncoder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl PartialEq for ImageEncoder {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
     }
@@ -197,16 +197,9 @@ impl PartialEq for ImageEncoder {
 
 impl Clone for ImageEncoder {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLImageEncoderCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        ImageEncoder { core }
+        ImageEncoder {
+            core: self.init_weak(),
+        }
     }
 }
 
@@ -218,7 +211,7 @@ impl Drop for ImageEncoder {
 
 #[repr(transparent)]
 pub struct ImageDecoder {
-    pub(in crate) core: ffi::BLImageDecoderCore,
+    core: ffi::BLImageDecoderCore,
 }
 
 unsafe impl WrappedBlCore for ImageDecoder {
@@ -229,24 +222,25 @@ impl ImageDecoder {
     #[inline]
     pub fn new() -> Self {
         ImageDecoder {
-            core: unsafe {
-                *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_DECODER as usize)
-            },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_DECODER as usize),
         }
     }
 
+    #[inline]
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageDecoderRestart(self.core_mut())) }
     }
 }
 
 impl Default for ImageDecoder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl PartialEq for ImageDecoder {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
     }
@@ -254,16 +248,9 @@ impl PartialEq for ImageDecoder {
 
 impl Clone for ImageDecoder {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLImageDecoderCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        ImageDecoder { core }
+        ImageDecoder {
+            core: self.init_weak(),
+        }
     }
 }
 

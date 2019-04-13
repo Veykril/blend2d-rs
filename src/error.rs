@@ -4,6 +4,7 @@ use ffi::BLResultCode;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[inline]
 pub(in crate) fn errcode_to_result(code: u32) -> Result<()> {
     if code == 0 {
         Ok(())
@@ -163,7 +164,7 @@ impl Error {
             BLResultCode::BL_ERROR_FONT_CFF_INVALID_DATA => Error::FontCffInvalidData,
             BLResultCode::BL_ERROR_FONT_PROGRAM_TERMINATED => Error::FontProgramTerminated,
             BLResultCode::BL_ERROR_INVALID_GLYPH => Error::InvalidGlyph,
-            _ => unimplemented!("Custom fallback type"),
+            _ => unreachable!("Custom fallback type"),
         }
     }
 }

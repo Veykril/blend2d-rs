@@ -7,7 +7,7 @@ use blend2d::{
 };
 
 fn main() {
-    let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
+    let mut img = Image::new_with(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
     let mut ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
     ctx.set_comp_op(CompOp::SrcCopy).unwrap();
     ctx.fill_all().unwrap();
@@ -32,6 +32,6 @@ fn main() {
     ctx.set_comp_op(CompOp::SrcOver).unwrap();
     ctx.fill_all().unwrap();
     ctx.end();
-    let codec = ImageCodec::by_name("BMP").unwrap();
+    let codec = ImageCodec::new_by_name("BMP").unwrap();
     img.write_to_file("gradient_example.bmp", &codec).unwrap();
 }

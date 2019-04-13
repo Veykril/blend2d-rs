@@ -3,17 +3,18 @@ use bitflags::bitflags;
 use core::ptr;
 
 use crate::{
+    array::Array,
     error::{errcode_to_result, Result},
-    geometry::{
-        path::ApproximationOptions, FlattenMode, Path, Size, StrokeCap, StrokeCapPosition,
-        StrokeJoin,
-    },
+    geometry::Size,
     gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
+    path::{
+        ApproximationOptions, FlattenMode, Path, StrokeCap, StrokeCapPosition, StrokeJoin,
+        StrokeOptions,
+    },
     variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
     StyleType,
 };
-use ffi::BLContextCore;
 
 use ffi::BLContextType::*;
 bl_enum! {
@@ -131,7 +132,6 @@ bl_enum! {
     Default => Nearest
 }
 
-use crate::{array::Array, geometry::path::StrokeOptions};
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -153,7 +153,7 @@ pub struct ContextHints {
 
 #[repr(transparent)]
 pub struct Context {
-    core: BLContextCore,
+    core: ffi::BLContextCore,
 }
 
 unsafe impl WrappedBlCore for Context {
@@ -161,9 +161,10 @@ unsafe impl WrappedBlCore for Context {
 }
 
 impl Context {
+    #[inline]
     pub fn new() -> Self {
         Context {
-            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize) },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize),
         }
     }
 
@@ -184,7 +185,7 @@ impl Context {
 
             errcode_to_result(ffi::blContextInitAs(
                 &mut core,
-                &mut target.core,
+                target.core_mut(),
                 options.as_ref().map_or(ptr::null(), |ptr| ptr as *const _),
             ))
             .map(move |_| Context { core })
@@ -224,7 +225,7 @@ impl Context {
     }
 
     #[inline]
-    pub fn end(&mut self) {
+    pub fn end(mut self) {
         unsafe { ffi::blContextEnd(self.core_mut()) };
     }
 
@@ -270,6 +271,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn with_pushed_context<F>(&mut self, f: F) -> Result<()>
     where
         F: FnOnce(&mut Self) -> Result<()>,
@@ -363,6 +365,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn set_fill_style_gradient<T: GradientType>(
         &mut self,
         gradient: &Gradient<T>,
@@ -370,14 +373,17 @@ impl Context {
         self.set_fill_style(gradient.core().as_variant_core())
     }
 
+    #[inline]
     pub fn set_fill_style_image(&mut self, image: &Image) -> Result<()> {
         self.set_fill_style(image.core().as_variant_core())
     }
 
+    #[inline]
     pub fn set_fill_style_rgba32(&mut self, color: u32) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba32(self.core_mut(), color)) }
     }
 
+    #[inline]
     pub fn set_fill_style_rgba64(&mut self, color: u64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetFillStyleRgba64(self.core_mut(), color)) }
     }
@@ -399,6 +405,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_fill_style_rgba32(&self) -> Result<u32> {
         unsafe {
             let mut out = 0;
@@ -406,6 +413,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_fill_style_rgba64(&self) -> Result<u64> {
         unsafe {
             let mut out = 0;
@@ -528,6 +536,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn set_stroke_style_gradient<T: GradientType>(
         &mut self,
         gradient: &Gradient<T>,
@@ -535,14 +544,17 @@ impl Context {
         self.set_stroke_style(gradient.core().as_variant_core())
     }
 
+    #[inline]
     pub fn set_stroke_style_image(&mut self, image: &Image) -> Result<()> {
         self.set_stroke_style(image.core().as_variant_core())
     }
 
+    #[inline]
     pub fn set_stroke_style_rgba32(&mut self, color: u32) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetStrokeStyleRgba32(self.core_mut(), color)) }
     }
 
+    #[inline]
     pub fn set_stroke_style_rgba64(&mut self, color: u64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetStrokeStyleRgba64(self.core_mut(), color)) }
     }
@@ -564,6 +576,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_stroke_style_rgba32(&self) -> Result<u32> {
         unsafe {
             let mut out = 0;
@@ -572,6 +585,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_stroke_style_rgba64(&self) -> Result<u64> {
         unsafe {
             let mut out = 0;
@@ -585,6 +599,7 @@ impl Context {
         unsafe { self.impl_().virt().__bindgen_anon_1.__bindgen_anon_2 }
     }
 
+    #[inline]
     pub fn set_op_style_rgba32(&mut self, op: ContextOpType, val: u32) -> Result<()> {
         unsafe {
             errcode_to_result((self.virt_op_style().setOpStyleRgba32
@@ -593,6 +608,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn set_op_style_rgba64(&mut self, op: ContextOpType, val: u64) -> Result<()> {
         unsafe {
             errcode_to_result((self.virt_op_style().setOpStyleRgba64
@@ -601,6 +617,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_op_style_rgba32(&self, op: ContextOpType) -> Result<u32> {
         unsafe {
             let mut out = 0;
@@ -611,6 +628,7 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn get_op_style_rgba64(&self, op: ContextOpType) -> Result<u64> {
         unsafe {
             let mut out = 0;
@@ -620,10 +638,12 @@ impl Context {
         }
     }
 
+    #[inline]
     pub fn op_alpha(&self, op: ContextOpType) -> f64 {
         unsafe { self.state().__bindgen_anon_3.opAlpha[op as u32 as usize] }
     }
 
+    #[inline]
     pub fn set_op_alpha(&mut self, op: ContextOpType, alpha: f64) -> Result<()> {
         unsafe {
             errcode_to_result((self.virt_op_style().setOpAlpha[op as u32 as usize]
@@ -633,28 +653,32 @@ impl Context {
 }
 
 impl Context {
+    #[inline]
     pub fn fill_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextFillAll(self.core_mut())) }
     }
 
+    #[inline]
     pub fn fill_path(&mut self, path: &Path) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextFillGeometry(
                 self.core_mut(),
                 ffi::BLGeometryType::BL_GEOMETRY_TYPE_PATH as u32,
-                &path.core as *const _ as *const _,
+                path.core() as *const _ as *const _,
             ))
         }
     }
 }
 
 impl PartialEq for Context {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
     }
 }
 
 impl Default for Context {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -662,23 +686,14 @@ impl Default for Context {
 
 impl Clone for Context {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLContextCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        Context { core }
+        Context {
+            core: self.init_weak(),
+        }
     }
 }
 
 impl Drop for Context {
     fn drop(&mut self) {
-        unsafe {
-            ffi::blContextReset(self.core_mut());
-        }
+        unsafe { ffi::blContextReset(&mut self.core) };
     }
 }

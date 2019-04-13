@@ -1,6 +1,3 @@
-pub mod path;
-pub use self::path::*;
-
 use ffi::BLGeometryDirection::*;
 bl_enum! {
     pub enum GeometryDirection {

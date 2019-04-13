@@ -12,6 +12,7 @@ pub mod format;
 pub mod geometry;
 pub mod gradient;
 pub mod image;
+pub mod path;
 
 #[repr(transparent)]
 pub struct Tag(u32);
@@ -41,19 +42,6 @@ bl_enum! {
         Gradient = BL_STYLE_TYPE_GRADIENT,
     }
     Default => None
-}
-
-use ffi::BLMatrix2DType::*;
-bl_enum! {
-    pub enum Matrix2DType {
-        Identity = BL_MATRIX2D_TYPE_IDENTITY,
-        Translate = BL_MATRIX2D_TYPE_TRANSLATE,
-        Scale = BL_MATRIX2D_TYPE_SCALE,
-        Swap = BL_MATRIX2D_TYPE_SWAP,
-        Affine = BL_MATRIX2D_TYPE_AFFINE,
-        Invalid = BL_MATRIX2D_TYPE_INVALID,
-    }
-    Default => Identity
 }
 
 // Row-Major

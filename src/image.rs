@@ -45,7 +45,7 @@ bl_enum! {
 
 #[repr(transparent)]
 pub struct Image {
-    pub(in crate) core: BLImageCore,
+    core: BLImageCore,
 }
 
 unsafe impl WrappedBlCore for Image {
@@ -55,16 +55,20 @@ unsafe impl WrappedBlCore for Image {
 impl Image {
     pub fn new() -> Self {
         Image {
-            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize) },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize),
         }
     }
 
     pub fn new_with(width: i32, height: i32, format: ImageFormat) -> Result<Self> {
         unsafe {
-            let mut core = std::mem::uninitialized();
-
-            errcode_to_result(ffi::blImageInitAs(&mut core, width, height, format.into()))
-                .map(|_| Image { core })
+            let mut this = Self::new();
+            errcode_to_result(ffi::blImageInitAs(
+                this.core_mut(),
+                width,
+                height,
+                format.into(),
+            ))
+            .map(|_| this)
         }
     }
 
@@ -117,7 +121,7 @@ impl Image {
 
     pub fn data(&self) -> Result<ImageData> {
         unsafe {
-            let mut data = std::mem::uninitialized();
+            let mut data = std::mem::zeroed();
             errcode_to_result(ffi::blImageGetData(self.core(), &mut data)).map(|_| {
                 let ffi::BLSizeI { w, h } = data.size;
                 ImageData {
@@ -142,7 +146,7 @@ impl Image {
             errcode_to_result(ffi::blImageReadFromFile(
                 self.core_mut(),
                 path.as_ptr(),
-                &codecs.core,
+                codecs.core(),
             ))
         }
     }
@@ -154,7 +158,7 @@ impl Image {
             errcode_to_result(ffi::blImageWriteToFile(
                 self.core(),
                 path.as_ptr(),
-                &codec.core,
+                codec.core(),
             ))
         }
     }
@@ -174,16 +178,9 @@ impl Default for Image {
 
 impl Clone for Image {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLImageCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        Image { core }
+        Image {
+            core: self.init_weak(),
+        }
     }
 }
 

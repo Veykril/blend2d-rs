@@ -1,13 +1,14 @@
+use core::{fmt, marker::PhantomData, ops, ptr, slice};
+
 use crate::{
     bl_range,
     error::{errcode_to_result, Result},
     variant::WrappedBlCore,
 };
-use core::{fmt, marker::PhantomData, ops, ptr, slice};
 
 #[repr(transparent)]
 pub struct Array<T: ArrayType> {
-    pub(in crate) core: ffi::BLArrayCore,
+    core: ffi::BLArrayCore,
     _pd: PhantomData<T>,
 }
 
@@ -18,17 +19,19 @@ unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
 impl<T: ArrayType> Array<T> {
     pub fn new() -> Self {
         Array {
-            core: unsafe { *crate::variant::none(T::IMPL_IDX) },
+            core: *Self::none(T::IMPL_IDX),
             _pd: PhantomData,
         }
     }
 
+    #[inline]
     pub fn clear(&mut self) {
-        unsafe { ffi::blArrayClear(&mut self.core) };
+        unsafe { ffi::blArrayClear(self.core_mut()) };
     }
 
+    #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { ffi::blArrayShrink(&mut self.core) };
+        unsafe { ffi::blArrayShrink(self.core_mut()) };
     }
 
     #[inline]
@@ -36,52 +39,58 @@ impl<T: ArrayType> Array<T> {
         self.try_reserve(n).unwrap();
     }
 
+    #[inline]
     pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blArrayReserve(&mut self.core, n)) }
+        unsafe { errcode_to_result(ffi::blArrayReserve(self.core_mut(), n)) }
     }
 
+    #[inline]
     pub fn truncate(&mut self, n: usize) {
-        unsafe { ffi::blArrayResize(&mut self.core, n.min(self.len()), ptr::null()) };
+        unsafe { ffi::blArrayResize(self.core_mut(), n.min(self.len()), ptr::null()) };
     }
 
+    #[inline]
     pub fn resize(&mut self, fill: &[T]) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayResize(
-                &mut self.core,
+                self.core_mut(),
                 fill.len(),
-                fill.as_ptr() as *const _ as *const _,
+                fill.as_ptr() as *const _,
             ))
         }
     }
 
+    #[inline]
     pub fn remove(&mut self, index: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blArrayRemoveIndex(&mut self.core, index)) }
+        unsafe { errcode_to_result(ffi::blArrayRemoveIndex(self.core_mut(), index)) }
     }
 
+    #[inline]
     pub fn remove_range<R: ops::RangeBounds<usize>>(&mut self, range: R) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blArrayRemoveRange(&mut self.core, &bl_range(range))) }
+        unsafe { errcode_to_result(ffi::blArrayRemoveRange(self.core_mut(), &bl_range(range))) }
     }
 
+    #[inline]
     pub fn as_slice(&self) -> &[T] {
         self
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         unsafe { self.impl_().__bindgen_anon_1.__bindgen_anon_1.size as usize }
     }
 
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.impl_().capacity as usize
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub fn reset(&mut self) {
-        unsafe { ffi::blArrayReset(&mut self.core) };
-    }
-
+    #[inline]
     pub fn extend_from_slice(&mut self, data: &[T]) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayAppendView(
@@ -92,6 +101,7 @@ impl<T: ArrayType> Array<T> {
         }
     }
 
+    #[inline]
     pub fn insert_from_slice(&mut self, index: usize, data: &[T]) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayInsertView(
@@ -103,6 +113,7 @@ impl<T: ArrayType> Array<T> {
         }
     }
 
+    #[inline]
     pub fn replace_from_slice<R: ops::RangeBounds<usize>>(
         &mut self,
         range: R,
@@ -125,12 +136,14 @@ impl<T: ArrayType> Array<T> {
 }
 
 impl<T: ArrayType> AsRef<[T]> for Array<T> {
+    #[inline]
     fn as_ref(&self) -> &[T] {
         self
     }
 }
 
 impl<T: ArrayType> Borrow<[T]> for Array<T> {
+    #[inline]
     fn borrow(&self) -> &[T] {
         self
     }
@@ -139,6 +152,7 @@ impl<T: ArrayType> Borrow<[T]> for Array<T> {
 impl<T: ArrayType> ops::Deref for Array<T> {
     type Target = [T];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { slice::from_raw_parts(self.data_ptr(), self.len()) }
     }
@@ -158,30 +172,23 @@ where
 }
 
 impl<T: ArrayType> Default for Array<T> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl<T: ArrayType> PartialEq for Array<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        unsafe { ffi::blArrayEquals(&self.core, &other.core) }
+        unsafe { ffi::blArrayEquals(self.core(), other.core()) }
     }
 }
 
 impl<T: ArrayType> Clone for Array<T> {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLArrayCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
         Array {
-            core,
+            core: self.init_weak(),
             _pd: PhantomData,
         }
     }
@@ -195,7 +202,7 @@ impl<T: ArrayType> fmt::Debug for Array<T> {
 
 impl<T: ArrayType> Drop for Array<T> {
     fn drop(&mut self) {
-        self.reset()
+        unsafe { ffi::blArrayReset(&mut self.core) };
     }
 }
 
@@ -203,6 +210,7 @@ impl<T> Array<T>
 where
     T: ArrayType + WrappedBlCore,
 {
+    #[inline]
     pub fn push(&mut self, item: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayAppendItem(
@@ -211,6 +219,7 @@ where
             ))
         }
     }
+    #[inline]
     pub fn insert(&mut self, index: usize, item: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayInsertItem(
@@ -220,7 +229,8 @@ where
             ))
         }
     }
-    pub fn repalce(&mut self, index: usize, item: &T) -> Result<()> {
+    #[inline]
+    pub fn replace(&mut self, index: usize, item: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayReplaceItem(
                 self.core_mut(),
@@ -238,6 +248,7 @@ macro_rules! impl_array_val_ops {
         $(
             $(
                 impl Array<$ty> {
+                    #[inline]
                     pub fn push(&mut self, item: $ty) -> Result<()> {
                         unsafe {
                             errcode_to_result(ffi::$append(
@@ -247,6 +258,7 @@ macro_rules! impl_array_val_ops {
                         }
                     }
 
+                    #[inline]
                     pub fn insert(&mut self, index: usize, item: $ty) -> Result<()> {
                         unsafe {
                             errcode_to_result(ffi::$insert(
@@ -257,6 +269,7 @@ macro_rules! impl_array_val_ops {
                         }
                     }
 
+                    #[inline]
                     pub fn replace(&mut self, index: usize, item: $ty) -> Result<()> {
                         unsafe {
                             errcode_to_result(ffi::$replace(
@@ -287,6 +300,7 @@ impl_array_val_ops!(blArrayAppendU32, blArrayInsertU32, blArrayInsertU32 for isi
 impl_array_val_ops!(blArrayAppendU64, blArrayInsertU64, blArrayInsertU64 for isize, usize);
 
 pub trait ArrayType: Sized {
+    #[doc(hidden)]
     const IMPL_IDX: usize;
 }
 
@@ -339,7 +353,7 @@ impl_array_type! {
     impl f32 = BL_IMPL_TYPE_ARRAY_F32;
     impl f64 = BL_IMPL_TYPE_ARRAY_F64;
 }
-use crate::{codec::ImageCodec, context::Context, geometry::Path, image::Image};
+use crate::{codec::ImageCodec, context::Context, image::Image, path::Path};
 /* E0119, clashes with `impl<T> ArrayType for &T {[...]`
 Specialization please (╯°□°）╯︵ ┻━┻
 impl<T: WrappedBlCore> ArrayType for T {

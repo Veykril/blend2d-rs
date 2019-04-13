@@ -188,7 +188,7 @@ impl Drop for StrokeOptions {
 
 #[repr(transparent)]
 pub struct Path {
-    pub(in crate) core: ffi::BLPathCore,
+    core: ffi::BLPathCore,
 }
 
 unsafe impl WrappedBlCore for Path {
@@ -199,7 +199,7 @@ impl Path {
     #[inline]
     pub fn new() -> Self {
         Path {
-            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize) },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize),
         }
     }
 
@@ -211,12 +211,12 @@ impl Path {
 
     #[inline]
     pub fn clear(&mut self) {
-        unsafe { ffi::blPathClear(&mut self.core) };
+        unsafe { ffi::blPathClear(self.core_mut()) };
     }
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { ffi::blPathShrink(&mut self.core) };
+        unsafe { ffi::blPathShrink(self.core_mut()) };
     }
 
     #[inline]
@@ -225,12 +225,7 @@ impl Path {
     }
 
     pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathReserve(&mut self.core, n)) }
-    }
-
-    #[inline]
-    pub fn reset(&mut self) {
-        unsafe { ffi::blPathReset(&mut self.core) };
+        unsafe { errcode_to_result(ffi::blPathReserve(self.core_mut(), n)) }
     }
 
     #[inline]
@@ -336,7 +331,7 @@ impl Path {
     pub fn set_vertex_at(&mut self, index: usize, cmd: PathCommand, x: f64, y: f64) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathSetVertexAt(
-                &mut self.core,
+                self.core_mut(),
                 index,
                 cmd as u32,
                 x,
@@ -354,7 +349,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathSetVertexAt(
-                &mut self.core,
+                self.core_mut(),
                 index,
                 cmd as u32,
                 point.x,
@@ -365,29 +360,29 @@ impl Path {
 
     #[inline]
     pub fn move_to(&mut self, x: f64, y: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathMoveTo(&mut self.core, x, y)) }
+        unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), x, y)) }
     }
 
     #[inline]
     pub fn move_to_point(&mut self, point: Point) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathMoveTo(&mut self.core, point.x, point.y)) }
+        unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), point.x, point.y)) }
     }
 
     #[inline]
     pub fn line_to(&mut self, x: f64, y: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathLineTo(&mut self.core, x, y)) }
+        unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), x, y)) }
     }
 
     #[inline]
     pub fn line_to_point(&mut self, point: Point) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathLineTo(&mut self.core, point.x, point.y)) }
+        unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), point.x, point.y)) }
     }
 
     #[inline]
     pub fn poly_to(&mut self, poly: &[Point]) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathPolyTo(
-                &mut self.core,
+                self.core_mut(),
                 poly.as_ptr() as *const _,
                 poly.len(),
             ))
@@ -396,24 +391,24 @@ impl Path {
 
     #[inline]
     pub fn quad_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathQuadTo(&mut self.core, x1, y1, x2, y2)) }
+        unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
     #[inline]
     pub fn quad_to_points(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathQuadTo(&mut self.core, x1, y1, x2, y2)) }
+        unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
     #[inline]
     pub fn cubic_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathCubicTo(&mut self.core, x1, y1, x2, y2, x3, y3)) }
+        unsafe { errcode_to_result(ffi::blPathCubicTo(self.core_mut(), x1, y1, x2, y2, x3, y3)) }
     }
 
     #[inline]
     pub fn cubic_to_points(&mut self, p1: Point, p2: Point, p3: Point) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathCubicTo(
-                &mut self.core,
+                self.core_mut(),
                 p1.x,
                 p1.y,
                 p2.x,
@@ -426,24 +421,24 @@ impl Path {
 
     #[inline]
     pub fn smooth_quad_to(&mut self, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(&mut self.core, x2, y2)) }
+        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), x2, y2)) }
     }
 
     #[inline]
     pub fn smooth_quad_to_point(&mut self, p2: Point) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(&mut self.core, p2.x, p2.y)) }
+        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), p2.x, p2.y)) }
     }
 
     #[inline]
     pub fn smooth_cubic_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothCubicTo(&mut self.core, x2, y2, x3, y3)) }
+        unsafe { errcode_to_result(ffi::blPathSmoothCubicTo(self.core_mut(), x2, y2, x3, y3)) }
     }
 
     #[inline]
     pub fn smooth_cubic_to_points(&mut self, p2: Point, p3: Point) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathSmoothCubicTo(
-                &mut self.core,
+                self.core_mut(),
                 p2.x,
                 p2.y,
                 p3.x,
@@ -466,7 +461,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathArcTo(
-                &mut self.core,
+                self.core_mut(),
                 cx,
                 cy,
                 rx,
@@ -490,7 +485,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathArcTo(
-                &mut self.core,
+                self.core_mut(),
                 cp.x,
                 cp.y,
                 rp.x,
@@ -504,14 +499,14 @@ impl Path {
 
     #[inline]
     pub fn arc_quadrant_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathArcQuadrantTo(&mut self.core, x1, y1, x2, y2)) }
+        unsafe { errcode_to_result(ffi::blPathArcQuadrantTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
     #[inline]
     pub fn arc_quadrant_to_points(&mut self, p1: Point, p2: Point) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathArcQuadrantTo(
-                &mut self.core,
+                self.core_mut(),
                 p1.x,
                 p1.y,
                 p2.x,
@@ -534,7 +529,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathEllipticArcTo(
-                &mut self.core,
+                self.core_mut(),
                 rx,
                 ry,
                 x_axis_rotation,
@@ -557,7 +552,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathEllipticArcTo(
-                &mut self.core,
+                self.core_mut(),
                 rp.x,
                 rp.y,
                 x_axis_rotation,
@@ -571,14 +566,20 @@ impl Path {
 
     #[inline]
     pub fn close(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathClose(&mut self.core)) }
+        unsafe { errcode_to_result(ffi::blPathClose(self.core_mut())) }
     }
 }
 
 impl Path {
     #[inline]
     pub fn add_path(&mut self, other: &Path) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathAddPath(&mut self.core, &other.core, ptr::null())) }
+        unsafe {
+            errcode_to_result(ffi::blPathAddPath(
+                self.core_mut(),
+                &other.core,
+                ptr::null(),
+            ))
+        }
     }
 
     pub fn add_path_range<R: ops::RangeBounds<usize>>(
@@ -588,7 +589,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 &bl_range(range),
             ))
@@ -599,7 +600,7 @@ impl Path {
     pub fn add_translated_path(&mut self, other: &Path, p: &Point) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddTranslatedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 ptr::null(),
                 &p as *const _ as *const _,
@@ -615,7 +616,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddTranslatedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 &bl_range(range),
                 &p as *const _ as *const _,
@@ -627,7 +628,7 @@ impl Path {
     pub fn add_transformed_path(&mut self, other: &Path, m: &Matrix2D) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddTransformedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 ptr::null(),
                 &m as *const _ as *const _,
@@ -643,7 +644,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddTransformedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 &bl_range(range),
                 &m as *const _ as *const _,
@@ -655,7 +656,7 @@ impl Path {
     pub fn add_reversed_path(&mut self, other: &Path, mode: PathReverseMode) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddReversedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 ptr::null(),
                 mode.into(),
@@ -671,7 +672,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddReversedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 &bl_range(range),
                 mode.into(),
@@ -688,7 +689,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddStrokedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 ptr::null(),
                 options as *const _ as *const _,
@@ -706,7 +707,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathAddStrokedPath(
-                &mut self.core,
+                self.core_mut(),
                 &other.core,
                 &bl_range(range),
                 options as *const _ as *const _,
@@ -720,7 +721,7 @@ impl Path {
     pub fn translate(&mut self, p: Point) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTranslate(
-                &mut self.core,
+                self.core_mut(),
                 ptr::null(),
                 &p as *const _ as *const _,
             ))
@@ -734,7 +735,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTranslate(
-                &mut self.core,
+                self.core_mut(),
                 &bl_range(range),
                 &p as *const _ as *const _,
             ))
@@ -744,7 +745,7 @@ impl Path {
     pub fn transform(&mut self, m: Matrix2D) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTransform(
-                &mut self.core,
+                self.core_mut(),
                 ptr::null(),
                 &m as *const _ as *const _,
             ))
@@ -758,7 +759,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTransform(
-                &mut self.core,
+                self.core_mut(),
                 &bl_range(range),
                 &m as *const _ as *const _,
             ))
@@ -768,7 +769,7 @@ impl Path {
     pub fn fit_to(&mut self, rect: Rect, flags: PathFitFlags) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathFitTo(
-                &mut self.core,
+                self.core_mut(),
                 ptr::null(),
                 &rect as *const _ as *const _,
                 flags.bits(),
@@ -784,7 +785,7 @@ impl Path {
     ) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathFitTo(
-                &mut self.core,
+                self.core_mut(),
                 &bl_range(range),
                 &rect as *const _ as *const _,
                 flags.bits(),
@@ -795,13 +796,13 @@ impl Path {
 
 impl PartialEq for Path {
     fn eq(&self, other: &Self) -> bool {
-        self.core.impl_ as *const _ == other.core.impl_ as *const _
+        self.impl_() as *const _ == other.impl_() as *const _
     }
 }
 
 impl Drop for Path {
     fn drop(&mut self) {
-        self.reset();
+        unsafe { ffi::blPathReset(&mut self.core) };
     }
 }
 
@@ -813,15 +814,8 @@ impl Default for Path {
 
 impl Clone for Path {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLPathCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
-        Path { core }
+        Path {
+            core: self.init_weak(),
+        }
     }
 }

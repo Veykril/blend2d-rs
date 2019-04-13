@@ -5,7 +5,7 @@ use ffi::BLGradientValue::*;
 use crate::{
     error::{errcode_to_result, Result},
     variant::WrappedBlCore,
-    ExtendMode, Matrix2D, Matrix2DType,
+    ExtendMode, Matrix2D,
 };
 
 mod private {
@@ -16,23 +16,31 @@ mod private {
 }
 
 pub trait GradientType: private::Sealed {
+    #[doc(hidden)]
     type ValuesType;
+    #[doc(hidden)]
     const BL_TYPE: u32;
 }
 
 pub enum Linear {}
 impl GradientType for Linear {
+    #[doc(hidden)]
     type ValuesType = LinearGradientValues;
+    #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_LINEAR as u32;
 }
 pub enum Radial {}
 impl GradientType for Radial {
+    #[doc(hidden)]
     type ValuesType = RadialGradientValues;
+    #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_RADIAL as u32;
 }
 pub enum Conical {}
 impl GradientType for Conical {
+    #[doc(hidden)]
     type ValuesType = ConicalGradientValues;
+    #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_CONICAL as u32;
 }
 
@@ -99,7 +107,7 @@ pub type ConicalGradient = Gradient<Conical>;
 
 #[repr(transparent)]
 pub struct Gradient<T: GradientType> {
-    pub(in crate) core: ffi::BLGradientCore,
+    core: ffi::BLGradientCore,
     _pd: PhantomData<*const T>,
 }
 
@@ -111,7 +119,7 @@ impl<T: GradientType> Gradient<T> {
     #[inline]
     pub fn new() -> Self {
         Gradient {
-            core: unsafe { *crate::variant::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize) },
+            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize),
             _pd: PhantomData,
         }
     }
@@ -151,7 +159,7 @@ impl<T: GradientType> Gradient<T> {
     ) -> Gradient<U> {
         unsafe {
             ffi::blGradientCreate(
-                &mut self.core,
+                self.core_mut(),
                 U::BL_TYPE,
                 values as *const _ as *const _,
                 extend_mode as u32,
@@ -167,7 +175,7 @@ impl<T: GradientType> Gradient<T> {
     }
 
     #[inline]
-    pub unsafe fn with_type<U: GradientType>(self) -> Gradient<U> {
+    pub(in crate) unsafe fn with_type<U: GradientType>(self) -> Gradient<U> {
         Gradient {
             core: self.core,
             _pd: PhantomData,
@@ -181,7 +189,7 @@ impl<T: GradientType> Gradient<T> {
 
     #[inline]
     pub fn set_extend_mode(&mut self, mode: ExtendMode) {
-        unsafe { ffi::blGradientSetExtendMode(&mut self.core, mode as u32) };
+        unsafe { ffi::blGradientSetExtendMode(self.core_mut(), mode as u32) };
     }
 
     #[inline]
@@ -192,7 +200,7 @@ impl<T: GradientType> Gradient<T> {
     #[inline]
     pub fn set_value(&mut self, index: usize, value: f64) {
         assert!(index < ffi::BLGradientValue::BL_GRADIENT_VALUE_COUNT as usize);
-        unsafe { ffi::blGradientSetValue(&mut self.core, index, value) };
+        unsafe { ffi::blGradientSetValue(self.core_mut(), index, value) };
     }
 
     #[inline]
@@ -204,7 +212,7 @@ impl<T: GradientType> Gradient<T> {
     pub fn set_values(&mut self, values: &T::ValuesType) {
         unsafe {
             ffi::blGradientSetValues(
-                &mut self.core,
+                self.core_mut(),
                 0,
                 values as *const _ as *const _,
                 mem::size_of::<T::ValuesType>() / mem::size_of::<f64>(),
@@ -214,7 +222,7 @@ impl<T: GradientType> Gradient<T> {
 
     #[inline]
     pub fn set_values_from_slice(&mut self, index: usize, values: &[f64]) {
-        unsafe { ffi::blGradientSetValues(&mut self.core, index, values.as_ptr(), values.len()) };
+        unsafe { ffi::blGradientSetValues(self.core_mut(), index, values.as_ptr(), values.len()) };
     }
 
     #[inline]
@@ -239,14 +247,10 @@ impl<T: GradientType> Gradient<T> {
 
     #[inline]
     pub fn has_matrix(&self) -> bool {
-        self.matrix_type() == Matrix2DType::Identity
+        self.impl_().matrixType as i32 != ffi::BLMatrix2DType::BL_MATRIX2D_TYPE_IDENTITY
     }
 
     #[inline]
-    pub fn matrix_type(&self) -> Matrix2DType {
-        (self.impl_().matrixType as u32).into()
-    }
-
     pub fn matrix(&self) -> Option<&Matrix2D> {
         if self.has_matrix() {
             unsafe { Some(&*(&self.impl_().matrix as *const _ as *const _)) }
@@ -257,12 +261,14 @@ impl<T: GradientType> Gradient<T> {
 }
 
 impl<T: GradientType> Gradient<T> {
+    #[inline]
     pub fn add_stop32(&mut self, offset: f64, rgba: u32) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientAddStopRgba32(&mut self.core, offset, rgba)) }
+        unsafe { errcode_to_result(ffi::blGradientAddStopRgba32(self.core_mut(), offset, rgba)) }
     }
 
+    #[inline]
     pub fn add_stop64(&mut self, offset: f64, rgba: u64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientAddStopRgba64(&mut self.core, offset, rgba)) }
+        unsafe { errcode_to_result(ffi::blGradientAddStopRgba64(self.core_mut(), offset, rgba)) }
     }
 }
 
@@ -332,26 +338,21 @@ impl Gradient<Conical> {
     }
 }
 
-impl<T: GradientType> Gradient<T> {
-    #[inline]
-    pub fn reset(&mut self) {
-        unsafe { ffi::blGradientReset(&mut self.core) };
-    }
-}
-
 impl<T: GradientType> PartialEq for Gradient<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.core.impl_ as *const _ == other.core.impl_ as *const _
+        self.impl_() as *const _ == other.impl_() as *const _
     }
 }
 
 impl<T: GradientType> Drop for Gradient<T> {
     fn drop(&mut self) {
-        self.reset();
+        unsafe { ffi::blGradientReset(&mut self.core) };
     }
 }
 
 impl<T: GradientType> Default for Gradient<T> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -359,17 +360,8 @@ impl<T: GradientType> Default for Gradient<T> {
 
 impl<T: GradientType> Clone for Gradient<T> {
     fn clone(&self) -> Self {
-        let mut core = ffi::BLGradientCore {
-            impl_: ptr::null_mut(),
-        };
-        unsafe {
-            ffi::blVariantInitWeak(
-                &mut core as *mut _ as *mut _,
-                &self.core as *const _ as *const _,
-            )
-        };
         Gradient {
-            core,
+            core: self.init_weak(),
             _pd: PhantomData,
         }
     }

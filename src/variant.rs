@@ -1,5 +1,53 @@
 use bitflags::bitflags;
 
+use ffi::BLImplType::*;
+bl_enum! {
+    pub enum ImplType {
+        Null                 = BL_IMPL_TYPE_NULL,
+        BitArray             = BL_IMPL_TYPE_BIT_ARRAY,
+        String               = BL_IMPL_TYPE_STRING,
+        ArrayVar             = BL_IMPL_TYPE_ARRAY_VAR,
+        ArrayI8              = BL_IMPL_TYPE_ARRAY_I8,
+        ArrayU8              = BL_IMPL_TYPE_ARRAY_U8,
+        ArrayI16             = BL_IMPL_TYPE_ARRAY_I16,
+        ArrayU16             = BL_IMPL_TYPE_ARRAY_U16,
+        ArrayI32             = BL_IMPL_TYPE_ARRAY_I32,
+        ArrayU32             = BL_IMPL_TYPE_ARRAY_U32,
+        ArrayI64             = BL_IMPL_TYPE_ARRAY_I64,
+        ArrayU64             = BL_IMPL_TYPE_ARRAY_U64,
+        ArrayF32             = BL_IMPL_TYPE_ARRAY_F32,
+        ArrayF64             = BL_IMPL_TYPE_ARRAY_F64,
+        ArrayStruct1         = BL_IMPL_TYPE_ARRAY_STRUCT_1,
+        ArrayStruct2         = BL_IMPL_TYPE_ARRAY_STRUCT_2,
+        ArrayStruct3         = BL_IMPL_TYPE_ARRAY_STRUCT_3,
+        ArrayStruct4         = BL_IMPL_TYPE_ARRAY_STRUCT_4,
+        ArrayStruct6         = BL_IMPL_TYPE_ARRAY_STRUCT_6,
+        ArrayStruct8         = BL_IMPL_TYPE_ARRAY_STRUCT_8,
+        ArrayStruct10        = BL_IMPL_TYPE_ARRAY_STRUCT_10,
+        ArrayStruct12        = BL_IMPL_TYPE_ARRAY_STRUCT_12,
+        ArrayStruct16        = BL_IMPL_TYPE_ARRAY_STRUCT_16,
+        ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
+        ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
+        ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
+        Path2d               = BL_IMPL_TYPE_PATH2D,
+        Region               = BL_IMPL_TYPE_REGION,
+        Image                = BL_IMPL_TYPE_IMAGE,
+        ImageCodec           = BL_IMPL_TYPE_IMAGE_CODEC,
+        ImageDecoder         = BL_IMPL_TYPE_IMAGE_DECODER,
+        ImageEncoder         = BL_IMPL_TYPE_IMAGE_ENCODER,
+        Gradient             = BL_IMPL_TYPE_GRADIENT,
+        Pattern              = BL_IMPL_TYPE_PATTERN,
+        Context              = BL_IMPL_TYPE_CONTEXT,
+        Font                 = BL_IMPL_TYPE_FONT,
+        FontFace             = BL_IMPL_TYPE_FONT_FACE,
+        FontData             = BL_IMPL_TYPE_FONT_DATA,
+        FontLoader           = BL_IMPL_TYPE_FONT_LOADER,
+        FontFeatureOptions   = BL_IMPL_TYPE_FONT_FEATURE_OPTIONS,
+        FontVariationOptions = BL_IMPL_TYPE_FONT_VARIATION_OPTIONS,
+    }
+    Default => Null
+}
+
 bitflags! {
     pub struct ImplTraits: u8 {
         const NULL = ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
@@ -7,11 +55,6 @@ bitflags! {
         const EXTERNAL = ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
         const FOREIGN = ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
     }
-}
-
-#[inline]
-pub(in crate) unsafe fn none<T: Sized>(impl_type: usize) -> &'static T {
-    &*(&ffi::blNone[impl_type] as *const _ as *const _)
 }
 
 pub trait VTable {}
@@ -37,6 +80,11 @@ pub unsafe trait BlVariantImpl: Sized {
     #[inline]
     fn ref_count(&self) -> usize {
         self.as_variant_impl().refCount
+    }
+
+    #[inline]
+    fn impl_type(&self) -> ImplType {
+        (self.as_variant_impl().implType as u32).into()
     }
 
     #[inline]
@@ -111,6 +159,11 @@ pub unsafe trait BlVariantCore: Sized {
     fn impl_mut(&self) -> &mut Self::Impl {
         unsafe { &mut *(self.as_variant_core().impl_ as *mut _) }
     }
+
+    #[inline]
+    fn init_weak(&self, other: &mut Self) {
+        unsafe { ffi::blVariantInitWeak(other as *mut _ as *mut _, &self as *const _ as *const _) };
+    }
 }
 
 unsafe impl BlVariantCore for ffi::BLArrayCore {
@@ -157,7 +210,7 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
 }
 
 /// Implementing type must be #[repr(transparent)] and its only field may be a struct that contains
-/// a pointer to a BlxxxxImpl
+/// a pointer to a BlxxxxImpl, otherwise the [`core`] and [`core_mut`] methods have to be implemented manually
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
 
@@ -180,5 +233,22 @@ pub unsafe trait WrappedBlCore: Sized {
     #[allow(clippy::mut_from_ref)]
     fn impl_mut(&self) -> &mut <Self::Core as BlVariantCore>::Impl {
         self.core().impl_mut()
+    }
+
+    #[inline]
+    fn is_none(&self) -> bool {
+        self.impl_().impl_traits().contains(ImplTraits::NULL)
+    }
+
+    #[inline]
+    fn none(impl_type: usize) -> &'static Self::Core {
+        unsafe { &*(&ffi::blNone[impl_type] as *const _ as *const _) }
+    }
+
+    #[inline]
+    fn init_weak(&self) -> Self::Core {
+        let mut other = unsafe { core::mem::zeroed() };
+        self.core().init_weak(&mut other);
+        other
     }
 }
