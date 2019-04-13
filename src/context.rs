@@ -132,6 +132,7 @@ bl_enum! {
     Default => Nearest
 }
 
+use crate::geometry::RoundRect;
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -225,8 +226,8 @@ impl Context {
     }
 
     #[inline]
-    pub fn end(mut self) {
-        unsafe { ffi::blContextEnd(self.core_mut()) };
+    pub fn end(mut self) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextEnd(self.core_mut())) }
     }
 
     #[inline]
@@ -665,6 +666,17 @@ impl Context {
                 self.core_mut(),
                 ffi::BLGeometryType::BL_GEOMETRY_TYPE_PATH as u32,
                 path.core() as *const _ as *const _,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn fill_round_rect(&mut self, rect: &RoundRect) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextFillGeometry(
+                self.core_mut(),
+                ffi::BLGeometryType::BL_GEOMETRY_TYPE_ROUND_RECT as u32,
+                rect as *const _ as *const _,
             ))
         }
     }

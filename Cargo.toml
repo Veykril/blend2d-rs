@@ -16,3 +16,6 @@ bitflags = "1.0.4"
 
 [[example]]
 name = "path"
+
+[[example]]
+name = "gradient"

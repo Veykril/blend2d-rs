@@ -124,44 +124,58 @@ pub struct Rect {
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Line {
-    pub p0: Point,
-    pub p1: Point,
+    pub x0: f64,
+    pub y0: f64,
+    pub x1: f64,
+    pub y1: f64,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Triangle {
-    pub p0: Point,
-    pub p1: Point,
-    pub p2: Point,
+    pub x0: f64,
+    pub y0: f64,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
-pub struct BoundRect {
-    pub rect: Rect,
-    pub radius: Point,
+pub struct RoundRect {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub rx: f64,
+    pub ry: f64,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Circle {
-    pub center: Point,
+    pub cx: f64,
+    pub cy: f64,
     pub radius: f64,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Ellipse {
-    pub center: Point,
-    pub radius: Point,
+    pub cx: f64,
+    pub cy: f64,
+    pub rx: f64,
+    pub ry: f64,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Arc {
-    pub center: Point,
-    pub radius: Point,
+    pub cx: f64,
+    pub cy: f64,
+    pub rx: f64,
+    pub ry: f64,
     pub start: f64,
     pub sweep: f64,
 }
