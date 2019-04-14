@@ -1,4 +1,5 @@
 #![allow(clippy::cast_lossless)]
+
 #[macro_use]
 mod macros;
 
@@ -13,9 +14,22 @@ pub mod geometry;
 pub mod gradient;
 pub mod image;
 pub mod path;
+pub mod region;
 
 #[repr(transparent)]
 pub struct Tag(u32);
+
+use ffi::BLBooleanOp::*;
+bl_enum! {
+    pub enum BooleanOp {
+        Copy = BL_BOOLEAN_OP_COPY,
+        And  = BL_BOOLEAN_OP_AND,
+        Or   = BL_BOOLEAN_OP_OR,
+        Xor  = BL_BOOLEAN_OP_XOR,
+        Sub  = BL_BOOLEAN_OP_SUB,
+    }
+    Default => Copy
+}
 
 use ffi::BLExtendMode::*;
 bl_enum! {

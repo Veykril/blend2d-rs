@@ -1,19 +1,18 @@
 use bitflags::bitflags;
 
-use core::{convert::AsRef, ptr};
+use core::ptr;
 
 use crate::{
     array::Array,
     error::{errcode_to_result, Result},
     geometry::{
-        Arc, BoxD, Chord, Circle, Ellipse, Geometry, Pie, Point, Rect, RectD, RoundRect, SizeD,
-        Triangle,
+        Arc, BoxD, Chord, Circle, Ellipse, GeoViewArray, Geometry, Pie, Point, Rect, RectD,
+        RoundRect, SizeD, Triangle,
     },
     gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
     path::{
-        ApproximationOptions, FlattenMode, Path, StrokeCap, StrokeCapPosition, StrokeJoin,
-        StrokeOptions,
+        ApproximationOptions, FlattenMode, StrokeCap, StrokeCapPosition, StrokeJoin, StrokeOptions,
     },
     variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
     StyleType,
@@ -135,7 +134,6 @@ bl_enum! {
     Default => Nearest
 }
 
-use crate::geometry::GeoViewArray;
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {

@@ -16,6 +16,7 @@ mod private {
     impl Sealed for RoundRect {}
     impl Sealed for Triangle {}
     impl Sealed for crate::path::Path {}
+    impl Sealed for crate::region::Region {}
     impl<'a, P: Sealed> Sealed for &'a [P] {}
 }
 
@@ -25,6 +26,10 @@ pub trait Geometry: private::Sealed {
 
 impl Geometry for crate::path::Path {
     const GEO_TYPE: u32 = GeometryType::Path as u32;
+}
+
+impl Geometry for crate::region::Region {
+    const GEO_TYPE: u32 = GeometryType::Region as u32;
 }
 
 impl<'a> Geometry for &'a [PointI] {
