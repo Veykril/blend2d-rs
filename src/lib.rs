@@ -14,6 +14,7 @@ pub mod format;
 pub mod geometry;
 pub mod gradient;
 pub mod image;
+pub mod matrix;
 pub mod path;
 pub mod pattern;
 pub mod region;
@@ -59,10 +60,6 @@ bl_enum! {
     }
     Default => None
 }
-
-// Row-Major
-#[derive(Default, Copy, Clone)]
-pub struct Matrix2D(pub [f64; ffi::BLMatrix2DValue::BL_MATRIX2D_VALUE_COUNT as usize]);
 
 use core::ops;
 pub(in crate) fn bl_range<R: ops::RangeBounds<usize>>(range: R) -> ffi::BLRange {

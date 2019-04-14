@@ -11,9 +11,11 @@ use crate::{
     },
     gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
+    matrix::{Matrix2DOp, MatrixTransform},
     path::{
         ApproximationOptions, FlattenMode, StrokeCap, StrokeCapPosition, StrokeJoin, StrokeOptions,
     },
+    pattern::Pattern,
     variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
     StyleType,
 };
@@ -134,7 +136,6 @@ bl_enum! {
     Default => Nearest
 }
 
-use crate::pattern::Pattern;
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -792,6 +793,20 @@ impl Context {
         P: GeoViewArray,
     {
         self.fill_geometry(&slice.as_ref())
+    }
+}
+
+impl MatrixTransform for Context {
+    #[inline]
+    #[doc(hidden)]
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+        unsafe {
+            errcode_to_result((self.impl_().virt().matrixOp.unwrap())(
+                self.impl_mut(),
+                op as u32,
+                data.as_ptr() as *const _,
+            ))
+        }
     }
 }
 

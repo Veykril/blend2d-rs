@@ -59,9 +59,22 @@ impl GeoViewArray for RectD {}
 impl GeoViewArray for RectI {}
 
 // trait for overloading
-pub trait Point: private::Sealed {}
-impl Point for PointI {}
-impl Point for PointD {}
+pub trait Point: private::Sealed + Copy {
+    #[doc(hidden)]
+    fn into_f64(self) -> [f64; 2];
+}
+impl Point for PointI {
+    #[doc(hidden)]
+    fn into_f64(self) -> [f64; 2] {
+        [self.x as f64, self.y as f64]
+    }
+}
+impl Point for PointD {
+    #[doc(hidden)]
+    fn into_f64(self) -> [f64; 2] {
+        [self.x, self.y]
+    }
+}
 
 type ClipToRectFn<T> =
     unsafe extern "C" fn(*mut ffi::BLContextCore, rect: *const T) -> ffi::BLResult;

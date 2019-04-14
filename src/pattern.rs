@@ -4,8 +4,9 @@ use crate::{
     error::{errcode_to_result, Result},
     geometry::RectI,
     image::Image,
+    matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
     variant::WrappedBlCore,
-    ExtendMode, Matrix2D,
+    ExtendMode,
 };
 
 #[repr(transparent)]
@@ -144,6 +145,20 @@ impl Pattern {
             unsafe { Some(&*(&self.impl_().matrix as *const _ as *const _)) }
         } else {
             None
+        }
+    }
+}
+
+impl MatrixTransform for Pattern {
+    #[inline]
+    #[doc(hidden)]
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blPatternApplyMatrixOp(
+                self.core_mut(),
+                op as u32,
+                data.as_ptr() as *const _,
+            ))
         }
     }
 }

@@ -11,8 +11,8 @@ use crate::{
     bl_range,
     error::{errcode_to_result, Result},
     geometry::{BoxD, FillRule, PointD, RectD},
+    matrix::Matrix2D,
     variant::WrappedBlCore,
-    Matrix2D,
 };
 
 use ffi::BLPathCmd::*;

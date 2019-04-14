@@ -4,8 +4,9 @@ use ffi::BLGradientValue::*;
 
 use crate::{
     error::{errcode_to_result, Result},
+    matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
     variant::WrappedBlCore,
-    ExtendMode, Matrix2D,
+    ExtendMode,
 };
 
 mod private {
@@ -335,6 +336,20 @@ impl Gradient<Conical> {
     #[inline]
     pub fn set_angle(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_CONICAL_ANGLE as usize, val)
+    }
+}
+
+impl<T: GradientType> MatrixTransform for Gradient<T> {
+    #[inline]
+    #[doc(hidden)]
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blGradientApplyMatrixOp(
+                self.core_mut(),
+                op as u32,
+                data.as_ptr() as *const _,
+            ))
+        }
     }
 }
 
