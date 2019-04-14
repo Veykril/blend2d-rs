@@ -19,3 +19,6 @@ name = "path"
 
 [[example]]
 name = "gradient"
+
+[[example]]
+name = "pattern"

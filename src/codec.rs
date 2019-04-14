@@ -134,9 +134,9 @@ impl ImageCodec {
 impl fmt::Debug for ImageCodec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ImageCodec")
-            .field("name", self.name())
-            .field("vendor", self.vendor())
-            .field("mime_type", self.mime_type())
+            .field("name", &self.name())
+            .field("vendor", &self.vendor())
+            .field("mime_type", &self.mime_type())
             .finish()
     }
 }

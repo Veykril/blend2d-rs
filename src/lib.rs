@@ -15,6 +15,7 @@ pub mod geometry;
 pub mod gradient;
 pub mod image;
 pub mod path;
+pub mod pattern;
 pub mod region;
 
 #[repr(transparent)]
@@ -45,7 +46,7 @@ bl_enum! {
         ReflectXPadY = BL_EXTEND_MODE_REFLECT_X_PAD_Y,
         ReflectXRepeatY = BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
     }
-    Default => PadXPadY
+    Default => RepeatXRepeatY
 }
 
 use ffi::BLStyleType::*;

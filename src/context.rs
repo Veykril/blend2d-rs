@@ -134,6 +134,7 @@ bl_enum! {
     Default => Nearest
 }
 
+use crate::pattern::Pattern;
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -373,6 +374,11 @@ impl Context {
         gradient: &Gradient<T>,
     ) -> Result<()> {
         self.set_fill_style(gradient.core().as_variant_core())
+    }
+
+    #[inline]
+    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern) -> Result<()> {
+        self.set_fill_style(pattern.core().as_variant_core())
     }
 
     #[inline]
