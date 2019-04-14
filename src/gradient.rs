@@ -1,4 +1,4 @@
-use core::{marker::PhantomData, mem, ptr};
+use core::{fmt, marker::PhantomData, mem, ptr};
 
 use ffi::BLGradientValue::*;
 

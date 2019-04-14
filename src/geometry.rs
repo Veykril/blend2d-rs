@@ -71,19 +71,19 @@ type ClearRectFn<T> =
 pub trait Rect: private::Sealed {
     type FfiType;
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType>;
-    const CLEAR_RECT: ClipToRectFn<Self::FfiType>;
+    const CLEAR_RECT: ClearRectFn<Self::FfiType>;
 }
 
 impl Rect for RectI {
     type FfiType = ffi::BLRectI;
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectI;
-    const CLEAR_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClearRectI;
+    const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectI;
 }
 
 impl Rect for RectD {
     type FfiType = ffi::BLRect;
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectD;
-    const CLEAR_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClearRectD;
+    const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectD;
 }
 
 use ffi::BLGeometryDirection::*;

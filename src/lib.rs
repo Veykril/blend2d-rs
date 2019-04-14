@@ -1,3 +1,4 @@
+#![deny(rust_2018_idioms)]
 #![allow(clippy::cast_lossless)]
 
 #[macro_use]

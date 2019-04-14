@@ -195,7 +195,7 @@ impl<T: ArrayType> Clone for Array<T> {
 }
 
 impl<T: ArrayType> fmt::Debug for Array<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &*self)
     }
 }

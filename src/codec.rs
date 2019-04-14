@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{
     borrow::Cow,
     ffi::{CStr, CString},
@@ -101,17 +102,17 @@ impl ImageCodec {
     }
 
     #[inline]
-    pub fn name(&self) -> Cow<str> {
+    pub fn name(&self) -> Cow<'_, str> {
         unsafe { CStr::from_ptr(self.impl_().name).to_string_lossy() }
     }
 
     #[inline]
-    pub fn vendor(&self) -> Cow<str> {
+    pub fn vendor(&self) -> Cow<'_, str> {
         unsafe { CStr::from_ptr(self.impl_().vendor).to_string_lossy() }
     }
 
     #[inline]
-    pub fn mime_type(&self) -> Cow<str> {
+    pub fn mime_type(&self) -> Cow<'_, str> {
         unsafe { CStr::from_ptr(self.impl_().mimeType).to_string_lossy() }
     }
 
@@ -127,6 +128,16 @@ impl ImageCodec {
     #[inline]
     pub fn features(&self) -> ImageCodecFeatures {
         (self.impl_().features as u32).into()
+    }
+}
+
+impl fmt::Debug for ImageCodec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ImageCodec")
+            .field("name", self.name())
+            .field("vendor", self.vendor())
+            .field("mime_type", self.mime_type())
+            .finish()
     }
 }
 

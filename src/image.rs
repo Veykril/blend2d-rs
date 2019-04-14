@@ -119,7 +119,7 @@ impl Image {
         }
     }
 
-    pub fn data(&self) -> Result<ImageData> {
+    pub fn data(&self) -> Result<ImageData<'_>> {
         unsafe {
             let mut data = std::mem::zeroed();
             errcode_to_result(ffi::blImageGetData(self.core(), &mut data)).map(|_| {
