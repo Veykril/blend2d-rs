@@ -1,4 +1,4 @@
-use core::{fmt, marker::PhantomData, ops, ptr, slice};
+use core::{borrow::Borrow, fmt, marker::PhantomData, ops, ptr, slice};
 
 use crate::{
     bl_range,
@@ -362,8 +362,11 @@ so we have to unfortunately go with a manual macro implementation */
 impl_array_type! {
     impl Path, Image, ImageCodec, Context = BL_IMPL_TYPE_ARRAY_VAR;
 }
-use crate::Tag;
-use std::borrow::Borrow;
+use crate::{geometry::*, Tag};
 impl_array_type! {
     impl Tag = BL_IMPL_TYPE_ARRAY_STRUCT_4;
+    impl PointD, PointI, SizeD, SizeI = BL_IMPL_TYPE_ARRAY_STRUCT_8;
+    impl Circle = BL_IMPL_TYPE_ARRAY_STRUCT_12;
+    impl BoxD, BoxI, Ellipse, Line, RectD, RectI = BL_IMPL_TYPE_ARRAY_STRUCT_16;
+    impl Arc, Chord, Pie, RoundRect, Triangle = BL_IMPL_TYPE_ARRAY_STRUCT_24;
 }

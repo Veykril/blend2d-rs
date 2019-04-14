@@ -710,7 +710,7 @@ impl Context {
 /// Fill Operations
 impl Context {
     #[inline]
-    pub fn fill_geometry<T: Geometry>(&mut self, geo: &T) -> Result<()> {
+    pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextFillGeometry(
                 self.core_mut(),
@@ -778,21 +778,21 @@ impl Context {
     #[inline]
     pub fn fill_polygon<R, P>(&mut self, poly: R) -> Result<()>
     where
-        for<'a> &'a [P]: Geometry,
+        [P]: Geometry,
         R: AsRef<[P]>,
         P: Point,
     {
-        self.fill_geometry(&poly.as_ref())
+        self.fill_geometry(poly.as_ref())
     }
 
     #[inline]
     pub fn fill_slice<R, P>(&mut self, slice: R) -> Result<()>
     where
-        for<'a> &'a [P]: Geometry,
+        [P]: Geometry,
         R: AsRef<[P]>,
         P: GeoViewArray,
     {
-        self.fill_geometry(&slice.as_ref())
+        self.fill_geometry(slice.as_ref())
     }
 }
 

@@ -1,5 +1,7 @@
 mod private {
     use super::*;
+    use crate::array::ArrayType;
+
     pub trait Sealed {}
     impl Sealed for Arc {}
     impl Sealed for BoxD {}
@@ -17,7 +19,8 @@ mod private {
     impl Sealed for Triangle {}
     impl Sealed for crate::path::Path {}
     impl Sealed for crate::region::Region {}
-    impl<'a, P: Sealed> Sealed for &'a [P] {}
+    impl<P: Sealed> Sealed for [P] {}
+    impl<T: ArrayType> Sealed for Array<T> where [T]: Sealed {}
 }
 
 pub trait Geometry: private::Sealed {
@@ -32,23 +35,34 @@ impl Geometry for crate::region::Region {
     const GEO_TYPE: u32 = GeometryType::Region as u32;
 }
 
-impl<'a> Geometry for &'a [PointI] {
+// TODO: Should [Point] really implement Geometry? Given that it could be either a Polygon or a
+// Polyline it might be better to make it explicit.
+impl Geometry for [PointI] {
     const GEO_TYPE: u32 = GeometryType::PolygonI as u32;
 }
-impl<'a> Geometry for &'a [PointD] {
+impl Geometry for [PointD] {
     const GEO_TYPE: u32 = GeometryType::PolygonD as u32;
 }
-impl<'a> Geometry for &'a [BoxD] {
+impl Geometry for [BoxD] {
     const GEO_TYPE: u32 = GeometryType::ArrayViewBoxD as u32;
 }
-impl<'a> Geometry for &'a [BoxI] {
+impl Geometry for [BoxI] {
     const GEO_TYPE: u32 = GeometryType::ArrayViewBoxI as u32;
 }
-impl<'a> Geometry for &'a [RectI] {
+impl Geometry for [RectI] {
     const GEO_TYPE: u32 = GeometryType::ArrayViewRectI as u32;
 }
-impl<'a> Geometry for &'a [RectD] {
+impl Geometry for [RectD] {
     const GEO_TYPE: u32 = GeometryType::ArrayViewRectD as u32;
+}
+
+use crate::array::{Array, ArrayType};
+impl<T> Geometry for Array<T>
+where
+    [T]: Geometry,
+    T: ArrayType,
+{
+    const GEO_TYPE: u32 = <[T]>::GEO_TYPE;
 }
 
 // trait for overloading
@@ -61,15 +75,21 @@ impl GeoViewArray for RectI {}
 // trait for overloading
 pub trait Point: private::Sealed + Copy {
     #[doc(hidden)]
+    const POLYLINE_TYPE: u32;
+    #[doc(hidden)]
     fn into_f64(self) -> [f64; 2];
 }
 impl Point for PointI {
+    #[doc(hidden)]
+    const POLYLINE_TYPE: u32 = GeometryType::PolyLineI as u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2] {
         [self.x as f64, self.y as f64]
     }
 }
 impl Point for PointD {
+    #[doc(hidden)]
+    const POLYLINE_TYPE: u32 = GeometryType::PolyLineD as u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2] {
         [self.x, self.y]
@@ -82,20 +102,29 @@ type ClearRectFn<T> =
     unsafe extern "C" fn(*mut ffi::BLContextCore, rect: *const T) -> ffi::BLResult;
 // trait for overloading
 pub trait Rect: private::Sealed {
+    #[doc(hidden)]
     type FfiType;
+    #[doc(hidden)]
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType>;
+    #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType>;
 }
 
 impl Rect for RectI {
+    #[doc(hidden)]
     type FfiType = ffi::BLRectI;
+    #[doc(hidden)]
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectI;
+    #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectI;
 }
 
 impl Rect for RectD {
+    #[doc(hidden)]
     type FfiType = ffi::BLRect;
+    #[doc(hidden)]
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectD;
+    #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectD;
 }
 
