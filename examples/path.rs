@@ -25,7 +25,7 @@ fn main() {
 
         ctx.set_comp_op(CompOp::SrcOver)?;
         ctx.set_fill_style_rgba32(0xFFFFFFFF)?;
-        ctx.fill_path(&path)?;
+        ctx.fill_geometry(&path)?;
 
         // Detach the rendering context from `img`.
         ctx.end()

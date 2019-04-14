@@ -1,11 +1,14 @@
 use bitflags::bitflags;
 
-use core::ptr;
+use core::{convert::AsRef, ptr};
 
 use crate::{
     array::Array,
     error::{errcode_to_result, Result},
-    geometry::Size,
+    geometry::{
+        Arc, BoxD, Chord, Circle, Ellipse, Geometry, Pie, Point, Rect, RectD, RoundRect, SizeD,
+        Triangle,
+    },
     gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
     path::{
@@ -132,7 +135,7 @@ bl_enum! {
     Default => Nearest
 }
 
-use crate::geometry::RoundRect;
+use crate::geometry::GeoViewArray;
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -194,9 +197,9 @@ impl Context {
     }
 
     #[inline]
-    pub fn target_size(&self) -> Size {
+    pub fn target_size(&self) -> SizeD {
         let ffi::BLSize { w, h } = self.impl_().targetSize;
-        Size { w, h }
+        SizeD { w, h }
     }
 
     #[inline]
@@ -653,32 +656,138 @@ impl Context {
     }
 }
 
+/// Clip Operations
 impl Context {
+    #[inline]
+    pub fn restore_clipping(&mut self) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextRestoreClipping(self.core_mut())) }
+    }
+
+    #[inline]
+    pub fn clip_to_rect<R: Rect>(&mut self, rect: &R) -> Result<()> {
+        unsafe {
+            errcode_to_result((R::CLIP_TO_RECT)(
+                self.core_mut(),
+                rect as *const _ as *const _,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn clip_to(&mut self, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
+        self.clip_to_rect(&RectD { x, y, w, h })
+    }
+}
+
+/// Clear Operations
+impl Context {
+    #[inline]
+    pub fn clear_all(&mut self) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blContextClearAll(self.core_mut())) }
+    }
+
+    #[inline]
+    pub fn clear_rect<R: Rect>(&mut self, rect: &R) -> Result<()> {
+        unsafe {
+            errcode_to_result((R::CLEAR_RECT)(
+                self.core_mut(),
+                rect as *const _ as *const _,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn clear(&mut self, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
+        self.clear_rect(&RectD { x, y, w, h })
+    }
+}
+
+/// Fill Operations
+impl Context {
+    #[inline]
+    pub fn fill_geometry<T: Geometry>(&mut self, geo: &T) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextFillGeometry(
+                self.core_mut(),
+                T::GEO_TYPE,
+                geo as *const _ as *const _,
+            ))
+        }
+    }
+
     #[inline]
     pub fn fill_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextFillAll(self.core_mut())) }
     }
 
     #[inline]
-    pub fn fill_path(&mut self, path: &Path) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blContextFillGeometry(
-                self.core_mut(),
-                ffi::BLGeometryType::BL_GEOMETRY_TYPE_PATH as u32,
-                path.core() as *const _ as *const _,
-            ))
-        }
+    pub fn fill_box(&mut self, x0: f64, y0: f64, x1: f64, y1: f64) -> Result<()> {
+        self.fill_geometry(&BoxD { x0, y0, x1, y1 })
     }
 
     #[inline]
-    pub fn fill_round_rect(&mut self, rect: &RoundRect) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blContextFillGeometry(
-                self.core_mut(),
-                ffi::BLGeometryType::BL_GEOMETRY_TYPE_ROUND_RECT as u32,
-                rect as *const _ as *const _,
-            ))
-        }
+    pub fn fill_rect(&mut self, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
+        self.fill_geometry(&RectD { x, y, w, h })
+    }
+
+    #[inline]
+    pub fn fill_circle(&mut self, cx: f64, cy: f64, r: f64) -> Result<()> {
+        self.fill_geometry(&Circle { cx, cy, radius: r })
+    }
+
+    #[inline]
+    pub fn fill_ellipse(&mut self, cx: f64, cy: f64, rx: f64, ry: f64) -> Result<()> {
+        self.fill_geometry(&Ellipse { cx, cy, rx, ry })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn fill_round_rect(&mut self, x: f64, y: f64, w: f64, h: f64, rx: f64, ry: f64) -> Result<()> {
+        self.fill_geometry(&RoundRect { x, y, w, h, rx, ry })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn fill_arc(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.fill_geometry(&Arc { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn fill_chord(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.fill_geometry(&Chord { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn fill_pie(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.fill_geometry(&Pie { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn fill_triangle(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
+        self.fill_geometry(&Triangle { x0, y0, x1, y1, x2, y2 })
+    }
+
+    #[inline]
+    pub fn fill_polygon<R, P>(&mut self, poly: R) -> Result<()>
+    where
+        for<'a> &'a [P]: Geometry,
+        R: AsRef<[P]>,
+        P: Point,
+    {
+        self.fill_geometry(&poly.as_ref())
+    }
+
+    #[inline]
+    pub fn fill_slice<R, P>(&mut self, slice: R) -> Result<()>
+    where
+        for<'a> &'a [P]: Geometry,
+        R: AsRef<[P]>,
+        P: GeoViewArray,
+    {
+        self.fill_geometry(&slice.as_ref())
     }
 }
 

@@ -38,14 +38,7 @@ fn main() {
         ctx.set_fill_style_gradient(&linear)?;
 
         ctx.set_comp_op(CompOp::SrcOver)?;
-        ctx.fill_round_rect(&RoundRect {
-            x: 40.0,
-            y: 40.0,
-            w: 400.0,
-            h: 400.0,
-            rx: 45.5,
-            ry: 45.5,
-        })?;
+        ctx.fill_round_rect(40.0, 40.0, 400.0, 400.0, 45.5, 45.5)?;
         //ctx.fill_all()?;
         ctx.end()
     };
