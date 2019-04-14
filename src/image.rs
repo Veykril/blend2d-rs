@@ -178,9 +178,9 @@ impl Default for Image {
 
 impl Clone for Image {
     fn clone(&self) -> Self {
-        Image {
-            core: self.init_weak(),
-        }
+        let mut new = Self::new();
+        unsafe { ffi::blImageAssignDeep(new.core_mut(), self.core()) };
+        new
     }
 }
 

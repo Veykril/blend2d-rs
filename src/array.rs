@@ -187,10 +187,9 @@ impl<T: ArrayType> PartialEq for Array<T> {
 
 impl<T: ArrayType> Clone for Array<T> {
     fn clone(&self) -> Self {
-        Array {
-            core: self.init_weak(),
-            _pd: PhantomData,
-        }
+        let mut new = Self::new();
+        unsafe { ffi::blArrayAssignDeep(new.core_mut(), self.core()) };
+        new
     }
 }
 

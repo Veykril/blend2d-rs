@@ -155,14 +155,6 @@ impl PartialEq for ImageCodec {
     }
 }
 
-impl Clone for ImageCodec {
-    fn clone(&self) -> Self {
-        ImageCodec {
-            core: self.init_weak(),
-        }
-    }
-}
-
 impl Drop for ImageCodec {
     fn drop(&mut self) {
         unsafe { ffi::blImageCodecReset(&mut self.core) };
@@ -206,14 +198,6 @@ impl PartialEq for ImageEncoder {
     }
 }
 
-impl Clone for ImageEncoder {
-    fn clone(&self) -> Self {
-        ImageEncoder {
-            core: self.init_weak(),
-        }
-    }
-}
-
 impl Drop for ImageEncoder {
     fn drop(&mut self) {
         unsafe { ffi::blImageEncoderReset(&mut self.core) };
@@ -254,14 +238,6 @@ impl PartialEq for ImageDecoder {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
-    }
-}
-
-impl Clone for ImageDecoder {
-    fn clone(&self) -> Self {
-        ImageDecoder {
-            core: self.init_weak(),
-        }
     }
 }
 

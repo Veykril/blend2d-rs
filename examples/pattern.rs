@@ -2,8 +2,6 @@ use blend2d::{
     codec::ImageCodec,
     context::{CompOp, Context},
     format::ImageFormat,
-    geometry::RoundRect,
-    gradient::{LinearGradient, LinearGradientValues},
     image::Image,
     pattern::Pattern,
 };
@@ -24,7 +22,7 @@ fn main() {
 
         ctx.set_comp_op(CompOp::SrcOver)?;
         // Draw a solid background.
-        ctx.set_fill_style_rgba32(0xFFFFFFFF);
+        ctx.set_fill_style_rgba32(0xFFFFFFFF)?;
         ctx.fill_round_rect(40.0, 40.0, 400.0, 400.0, 45.5, 45.5)?;
         // Draw the pattern.
         ctx.set_fill_style_pattern(&pattern)?;

@@ -814,8 +814,8 @@ impl Default for Path {
 
 impl Clone for Path {
     fn clone(&self) -> Self {
-        Path {
-            core: self.init_weak(),
-        }
+        let mut new = Self::new();
+        unsafe { ffi::blPathAssignDeep(new.core_mut(), self.core()) };
+        new
     }
 }

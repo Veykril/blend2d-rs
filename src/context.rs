@@ -809,14 +809,6 @@ impl Default for Context {
     }
 }
 
-impl Clone for Context {
-    fn clone(&self) -> Self {
-        Context {
-            core: self.init_weak(),
-        }
-    }
-}
-
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe { ffi::blContextReset(&mut self.core) };

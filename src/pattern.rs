@@ -164,9 +164,9 @@ impl PartialEq for Pattern {
 
 impl Clone for Pattern {
     fn clone(&self) -> Self {
-        Pattern {
-            core: self.init_weak(),
-        }
+        let mut new = Self::new();
+        unsafe { ffi::blPatternAssignDeep(new.core_mut(), self.core()) };
+        new
     }
 }
 

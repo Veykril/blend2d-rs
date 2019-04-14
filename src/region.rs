@@ -227,9 +227,9 @@ impl PartialEq for Region {
 
 impl Clone for Region {
     fn clone(&self) -> Self {
-        Region {
-            core: self.init_weak(),
-        }
+        let mut new = Self::new();
+        unsafe { ffi::blRegionAssignDeep(new.core_mut(), self.core()) };
+        new
     }
 }
 

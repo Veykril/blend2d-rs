@@ -1,4 +1,4 @@
-use core::{fmt, marker::PhantomData, mem, ptr};
+use core::{marker::PhantomData, mem, ptr};
 
 use ffi::BLGradientValue::*;
 
@@ -355,14 +355,5 @@ impl<T: GradientType> Default for Gradient<T> {
     #[inline]
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl<T: GradientType> Clone for Gradient<T> {
-    fn clone(&self) -> Self {
-        Gradient {
-            core: self.init_weak(),
-            _pd: PhantomData,
-        }
     }
 }
