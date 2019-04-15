@@ -1,6 +1,6 @@
 [package]
 name = "blend2d"
-version = "0.1.0-alpha"
+version = "0.1.0"
 authors = ["Lukas Wirth <lukastw97@gmail.com>"]
 edition = "2018"
 description = "Rust bindings for blend2d"
@@ -9,6 +9,7 @@ repository = "https://github.com/Veykril/blend2d-rs"
 license = "MIT/Apache-2.0"
 categories = ["api-bindings"]
 readme = "README.md"
+exclude = ["examples"]
 
 [dependencies]
 ffi = { package = "blend2d-sys", version = "0.1.1", path = "blend2d-sys" }
@@ -22,3 +23,12 @@ name = "gradient"
 
 [[example]]
 name = "pattern"
+
+[[example]]
+name = "stroking"
+
+[[example]]
+name = "composition"
+
+[[example]]
+name = "transformation"
