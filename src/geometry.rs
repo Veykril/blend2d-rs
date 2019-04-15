@@ -72,34 +72,56 @@ impl GeoViewArray for BoxI {}
 impl GeoViewArray for RectD {}
 impl GeoViewArray for RectI {}
 
+type BlitImageFn<T> = unsafe extern "C" fn(
+    *mut ffi::BLContextCore,
+    *const T,
+    *const ffi::BLImageCore,
+    *const ffi::BLRectI,
+) -> ffi::BLResult;
 // trait for overloading
 pub trait Point: private::Sealed + Copy {
+    #[doc(hidden)]
+    type FfiType;
     #[doc(hidden)]
     const POLYLINE_TYPE: u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2];
+    #[doc(hidden)]
+    const BLIT_IMAGE: BlitImageFn<Self::FfiType>;
 }
 impl Point for PointI {
+    #[doc(hidden)]
+    type FfiType = ffi::BLPointI;
     #[doc(hidden)]
     const POLYLINE_TYPE: u32 = GeometryType::PolyLineI as u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2] {
         [self.x as f64, self.y as f64]
     }
+    #[doc(hidden)]
+    const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageI;
 }
 impl Point for PointD {
+    #[doc(hidden)]
+    type FfiType = ffi::BLPoint;
     #[doc(hidden)]
     const POLYLINE_TYPE: u32 = GeometryType::PolyLineD as u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2] {
         [self.x, self.y]
     }
+    #[doc(hidden)]
+    const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageD;
 }
 
-type ClipToRectFn<T> =
-    unsafe extern "C" fn(*mut ffi::BLContextCore, rect: *const T) -> ffi::BLResult;
-type ClearRectFn<T> =
-    unsafe extern "C" fn(*mut ffi::BLContextCore, rect: *const T) -> ffi::BLResult;
+type BlitScaledImageFn<T> = unsafe extern "C" fn(
+    *mut ffi::BLContextCore,
+    *const T,
+    *const ffi::BLImageCore,
+    *const ffi::BLRectI,
+) -> ffi::BLResult;
+type ClipToRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
+type ClearRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
 // trait for overloading
 pub trait Rect: private::Sealed {
     #[doc(hidden)]
@@ -108,6 +130,8 @@ pub trait Rect: private::Sealed {
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType>;
     #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType>;
+    #[doc(hidden)]
+    const BLIT_SCALED_IMAGE: BlitImageFn<Self::FfiType>;
 }
 
 impl Rect for RectI {
@@ -117,6 +141,8 @@ impl Rect for RectI {
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectI;
     #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectI;
+    #[doc(hidden)]
+    const BLIT_SCALED_IMAGE: BlitScaledImageFn<Self::FfiType> = ffi::blContextBlitScaledImageI;
 }
 
 impl Rect for RectD {
@@ -126,6 +152,8 @@ impl Rect for RectD {
     const CLIP_TO_RECT: ClipToRectFn<Self::FfiType> = ffi::blContextClipToRectD;
     #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectD;
+    #[doc(hidden)]
+    const BLIT_SCALED_IMAGE: BlitScaledImageFn<Self::FfiType> = ffi::blContextBlitScaledImageD;
 }
 
 use ffi::BLGeometryDirection::*;
@@ -140,7 +168,7 @@ bl_enum! {
 
 use ffi::BLGeometryType::*;
 bl_enum! {
-    enum GeometryType {
+    pub(in crate) enum GeometryType {
         None           = BL_GEOMETRY_TYPE_NONE,
         BoxI           = BL_GEOMETRY_TYPE_BOXI,
         BoxD           = BL_GEOMETRY_TYPE_BOXD,

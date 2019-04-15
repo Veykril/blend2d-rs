@@ -4,18 +4,18 @@ use blend2d::{
     format::ImageFormat,
     gradient::{LinearGradient, LinearGradientValues},
     image::Image,
+    matrix::MatrixTransform,
+    path::{Path, StrokeCap},
+    pattern::Pattern,
 };
 
 fn main() {
     let mut img = Image::new_with(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
-
-    // Attach a rendering context into `img`.
     let ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
     let render = |mut ctx: Context| {
         ctx.set_comp_op(CompOp::SrcCopy)?;
         ctx.fill_all()?;
 
-        // Coordinates can be specified now or changed later.
         let mut linear = LinearGradient::new_with(
             &LinearGradientValues {
                 x0: 0.0,
@@ -27,22 +27,25 @@ fn main() {
             &[],
             None,
         );
-
-        // Color stops can be added in any order.
         linear.add_stop32(0.0, 0xFFFFFFFF)?;
-        linear.add_stop32(0.5, 0xFF5FAFDF)?;
-        linear.add_stop32(1.0, 0xFF2F5FDF)?;
+        linear.add_stop32(1.0, 0xFF1F7FFF)?;
 
-        // `setFillStyle()` can be used for both colors and styles.
-        ctx.set_fill_style_gradient(&linear)?;
+        let mut path = Path::new();
+        path.move_to(119.0, 49.0)?;
+        path.cubic_to(259.0, 29.0, 99.0, 279.0, 275.0, 267.0)?;
+        path.cubic_to(537.0, 245.0, 300.0, -170.0, 274.0, 430.0)?;
 
         ctx.set_comp_op(CompOp::SrcOver)?;
-        ctx.fill_round_rect(40.0, 40.0, 400.0, 400.0, 45.5, 45.5)?;
+        ctx.set_stroke_style_gradient(&linear)?;
+        ctx.set_stroke_width(15.0)?;
+        ctx.set_stroke_start_cap(StrokeCap::Round)?;
+        ctx.set_stroke_end_cap(StrokeCap::Butt)?;
+        ctx.stroke_path(&path)?;
         ctx.end()
     };
     render(ctx).expect("Rendering to context failed");
 
     let codec = ImageCodec::new_by_name("BMP").unwrap();
-    img.write_to_file("bl-getting-started-2.bmp", &codec)
+    img.write_to_file("bl-getting-started-6.bmp", &codec)
         .expect("Writing to file failed");
 }

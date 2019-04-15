@@ -136,6 +136,10 @@ bl_enum! {
     Default => Nearest
 }
 
+use crate::{
+    geometry::{Line, RectI},
+    path::Path,
+};
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -705,6 +709,40 @@ impl Context {
     pub fn clear(&mut self, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
         self.clear_rect(&RectD { x, y, w, h })
     }
+
+    #[inline]
+    pub fn blit_image<P: Point>(
+        &mut self,
+        dst: &P,
+        src: &Image,
+        src_area: Option<&RectI>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(P::BLIT_IMAGE(
+                self.core_mut(),
+                dst as *const _ as *const _,
+                src.core(),
+                src_area.map_or(ptr::null(), |r| r as *const _ as *const _),
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn blit_scaled_image<R: Rect>(
+        &mut self,
+        dst: &R,
+        src: &Image,
+        src_area: Option<&RectI>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(R::BLIT_SCALED_IMAGE(
+                self.core_mut(),
+                dst as *const _ as *const _,
+                src.core(),
+                src_area.map_or(ptr::null(), |r| r as *const _ as *const _),
+            ))
+        }
+    }
 }
 
 /// Fill Operations
@@ -776,6 +814,11 @@ impl Context {
     }
 
     #[inline]
+    pub fn fill_path(&mut self, p: &Path) -> Result<()> {
+        self.fill_geometry(p)
+    }
+
+    #[inline]
     pub fn fill_polygon<R, P>(&mut self, poly: R) -> Result<()>
     where
         [P]: Geometry,
@@ -793,6 +836,116 @@ impl Context {
         P: GeoViewArray,
     {
         self.fill_geometry(slice.as_ref())
+    }
+}
+
+/// Stroke Operations
+impl Context {
+    #[inline]
+    pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blContextStrokeGeometry(
+                self.core_mut(),
+                T::GEO_TYPE,
+                geo as *const _ as *const _,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn stroke_box(&mut self, x0: f64, y0: f64, x1: f64, y1: f64) -> Result<()> {
+        self.stroke_geometry(&BoxD { x0, y0, x1, y1 })
+    }
+
+    #[inline]
+    pub fn stroke_rect(&mut self, x: f64, y: f64, w: f64, h: f64) -> Result<()> {
+        self.stroke_geometry(&RectD { x, y, w, h })
+    }
+
+    #[inline]
+    pub fn stroke_line(&mut self, x0: f64, y0: f64, x1: f64, y1: f64) -> Result<()> {
+        self.stroke_geometry(&Line { x0, y0, x1, y1 })
+    }
+
+    #[inline]
+    pub fn stroke_circle(&mut self, cx: f64, cy: f64, r: f64) -> Result<()> {
+        self.stroke_geometry(&Circle { cx, cy, radius: r })
+    }
+
+    #[inline]
+    pub fn stroke_ellipse(&mut self, cx: f64, cy: f64, rx: f64, ry: f64) -> Result<()> {
+        self.stroke_geometry(&Ellipse { cx, cy, rx, ry })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn stroke_round_rect(&mut self, x: f64, y: f64, w: f64, h: f64, rx: f64, ry: f64) -> Result<()> {
+        self.stroke_geometry(&RoundRect { x, y, w, h, rx, ry })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn stroke_arc(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.stroke_geometry(&Arc { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn stroke_chord(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.stroke_geometry(&Chord { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn stroke_pie(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64) -> Result<()> {
+        self.stroke_geometry(&Pie { cx, cy, rx, ry, start, sweep })
+    }
+
+    #[inline]
+    #[rustfmt::skip]
+    pub fn stroke_triangle(&mut self, x0: f64, y0: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
+        self.stroke_geometry(&Triangle { x0, y0, x1, y1, x2, y2 })
+    }
+
+    #[inline]
+    pub fn stroke_path(&mut self, p: &Path) -> Result<()> {
+        self.stroke_geometry(p)
+    }
+
+    #[inline]
+    pub fn stroke_polygon<R, P>(&mut self, poly: R) -> Result<()>
+    where
+        [P]: Geometry,
+        R: AsRef<[P]>,
+        P: Point,
+    {
+        self.fill_geometry(poly.as_ref())
+    }
+
+    #[inline]
+    pub fn stroke_polyline<R, P>(&mut self, poly: R) -> Result<()>
+    where
+        [P]: Geometry,
+        R: AsRef<[P]>,
+        P: Point,
+    {
+        unsafe {
+            errcode_to_result(ffi::blContextStrokeGeometry(
+                self.core_mut(),
+                P::POLYLINE_TYPE,
+                poly.as_ref().as_ptr() as *const _,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn stroke_slice<R, P>(&mut self, slice: R) -> Result<()>
+    where
+        [P]: Geometry,
+        R: AsRef<[P]>,
+        P: GeoViewArray,
+    {
+        self.stroke_geometry(slice.as_ref())
     }
 }
 

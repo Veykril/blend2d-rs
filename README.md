@@ -16,6 +16,10 @@ This crate requires [CMake](https://cmake.org/) to be installed and available on
 
 Also make sure to initialize the submodules after cloning the repository(`git submodule update --init`).
 
+## Examples
+
+You can find the examples [here](./examples).
+
 ## License
 
 Licensed under either of
