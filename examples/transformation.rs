@@ -8,18 +8,17 @@ use blend2d::{
 };
 
 fn main() {
-    let mut img = Image::new_with(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
-    let ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
+    let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
+    let ctx = Context::new(&mut img).expect("Unable to attach rendering context");
     let render = |mut ctx: Context| {
         ctx.set_comp_op(CompOp::SrcCopy)?;
         ctx.fill_all()?;
 
         // Read an image from file.
-        let mut texture = Image::new();
-        texture.read_from_file("examples/ferris.png", ImageCodec::built_in_codecs())?;
+        let texture = Image::from_path("examples/ferris.png", ImageCodec::built_in_codecs())?;
 
         // Create a pattern and use it to fill a rounded-rect.
-        let pattern = Pattern::new_with(&texture, None, Default::default(), None);
+        let pattern = Pattern::new(&texture, None, Default::default(), None);
 
         ctx.rotate_around(core::f64::consts::FRAC_PI_4, 240.0, 240.0)?;
 
@@ -34,7 +33,7 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codec = ImageCodec::new_by_name("BMP").unwrap();
+    let codec = ImageCodec::find_by_name(ImageCodec::built_in_codecs(), "BMP").unwrap();
     img.write_to_file("bl-getting-started-4.bmp", &codec)
         .expect("Writing to file failed");
 }

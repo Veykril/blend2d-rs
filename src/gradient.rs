@@ -114,18 +114,11 @@ pub struct Gradient<T: GradientType> {
 
 unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
     type Core = ffi::BLGradientCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize;
 }
 
 impl<T: GradientType> Gradient<T> {
-    #[inline]
-    pub fn new() -> Self {
-        Gradient {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize),
-            _pd: PhantomData,
-        }
-    }
-
-    pub fn new_with(
+    pub fn new(
         values: &T::ValuesType,
         extend_mode: ExtendMode,
         stops: &[GradientStop],
@@ -151,7 +144,8 @@ impl<T: GradientType> Gradient<T> {
         }
     }
 
-    pub fn create<U: GradientType>(
+    /// Turns this `Gradient<T>` into a `Gradient<U>`
+    pub fn into_new<U: GradientType>(
         mut self,
         values: &U::ValuesType,
         extend_mode: ExtendMode,
@@ -275,6 +269,16 @@ impl<T: GradientType> Gradient<T> {
 
 impl Gradient<Linear> {
     #[inline]
+    pub fn new_linear(
+        values: &LinearGradientValues,
+        extend_mode: ExtendMode,
+        stops: &[GradientStop],
+        m: Option<&Matrix2D>,
+    ) -> Self {
+        Self::new(values, extend_mode, stops, m)
+    }
+
+    #[inline]
     pub fn x1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_X1 as usize)
     }
@@ -296,6 +300,16 @@ impl Gradient<Linear> {
 }
 
 impl Gradient<Radial> {
+    #[inline]
+    pub fn new_radial(
+        values: &RadialGradientValues,
+        extend_mode: ExtendMode,
+        stops: &[GradientStop],
+        m: Option<&Matrix2D>,
+    ) -> Self {
+        Self::new(values, extend_mode, stops, m)
+    }
+
     #[inline]
     pub fn x1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_X1 as usize)
@@ -329,6 +343,16 @@ impl Gradient<Radial> {
 
 impl Gradient<Conical> {
     #[inline]
+    pub fn new_conical(
+        values: &ConicalGradientValues,
+        extend_mode: ExtendMode,
+        stops: &[GradientStop],
+        m: Option<&Matrix2D>,
+    ) -> Self {
+        Self::new(values, extend_mode, stops, m)
+    }
+
+    #[inline]
     pub fn angle(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_CONICAL_ANGLE as usize)
     }
@@ -356,19 +380,12 @@ impl<T: GradientType> MatrixTransform for Gradient<T> {
 impl<T: GradientType> PartialEq for Gradient<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.impl_() as *const _ == other.impl_() as *const _
+        unsafe { ffi::blGradientEquals(self.core(), other.core()) }
     }
 }
 
 impl<T: GradientType> Drop for Gradient<T> {
     fn drop(&mut self) {
         unsafe { ffi::blGradientReset(&mut self.core) };
-    }
-}
-
-impl<T: GradientType> Default for Gradient<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }

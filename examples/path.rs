@@ -7,10 +7,10 @@ use blend2d::{
 };
 
 fn main() {
-    let mut img = Image::new_with(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
+    let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
 
     // Attach a rendering context into `img`.
-    let ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
+    let ctx = Context::new(&mut img).expect("Unable to attach rendering context");
     // The closure here just acts as a `try` block to catch possible errors
     let render = |mut ctx: Context| {
         // Clear the image.
@@ -33,7 +33,7 @@ fn main() {
     render(ctx).expect("Rendering to context failed");
 
     // Let's use some built-in codecs provided by Blend2D.
-    let codec = ImageCodec::new_by_name("BMP").unwrap();
+    let codec = ImageCodec::find_by_name(ImageCodec::built_in_codecs(), "BMP").unwrap();
     img.write_to_file("bl-getting-started-1.bmp", &codec)
         .expect("Writing to file failed");
 }

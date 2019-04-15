@@ -1,16 +1,3 @@
-macro_rules! vcall {
-    ($ctx:expr=>$func:ident( $( $arg:expr ),* )) => {
-        unsafe {
-            if let Some(func) = (*(*$ctx.impl_).virt).$func {
-                crate::error::errcode_to_result(func($ctx.impl_, $( $arg ),*))
-            } else {
-                Ok(())
-            }
-        }
-    }
-}
-
-#[macro_export]
 macro_rules! bl_enum {
     ($vis:vis enum $name:ident { $( $variant:ident = $value:ident, )* } Default => $default:ident) => {
         #[repr(i32)]

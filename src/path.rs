@@ -193,13 +193,14 @@ pub struct Path {
 
 unsafe impl WrappedBlCore for Path {
     type Core = ffi::BLPathCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize;
 }
 
 impl Path {
     #[inline]
     pub fn new() -> Self {
         Path {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize),
+            core: *Self::none(),
         }
     }
 

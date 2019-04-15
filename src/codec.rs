@@ -33,24 +33,19 @@ pub struct ImageCodec {
 
 unsafe impl WrappedBlCore for ImageCodec {
     type Core = ffi::BLImageCodecCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize;
 }
 
 impl ImageCodec {
-    #[inline]
-    pub fn new() -> Self {
-        ImageCodec {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize),
-        }
-    }
-
-    pub fn new_by_name(name: &str) -> Result<Self> {
+    pub fn find_by_name(codecs: &Array<ImageCodec>, name: &str) -> Result<Self> {
         unsafe {
-            let mut this = Self::new();
+            let mut this = ImageCodec {
+                core: *Self::none(),
+            };
             let name = CString::new(name).expect("Failed to create CString");
-            let codecs = ffi::blImageCodecBuiltInCodecs();
             errcode_to_result(ffi::blImageCodecFindByName(
                 this.core_mut(),
-                codecs,
+                codecs.core(),
                 name.as_ptr(),
             ))
             .map(|_| this)
@@ -58,13 +53,14 @@ impl ImageCodec {
     }
 
     #[inline]
-    pub fn new_by_data(data: &[u8]) -> Result<Self> {
+    pub fn find_by_data(codecs: &Array<ImageCodec>, data: &[u8]) -> Result<Self> {
         unsafe {
-            let mut this = Self::new();
-            let codecs = ffi::blImageCodecBuiltInCodecs();
+            let mut this = ImageCodec {
+                core: *Self::none(),
+            };
             errcode_to_result(ffi::blImageCodecFindByData(
                 this.core_mut(),
-                codecs,
+                codecs.core(),
                 data.as_ptr() as *const _,
                 data.len(),
             ))
@@ -75,7 +71,9 @@ impl ImageCodec {
     #[inline]
     pub fn create_decoder(&mut self) -> Result<ImageDecoder> {
         unsafe {
-            let mut decoder = ImageDecoder::new();
+            let mut decoder = ImageDecoder {
+                core: *ImageDecoder::none(),
+            };
             errcode_to_result(ffi::blImageCodecCreateDecoder(
                 self.core_mut(),
                 decoder.core_mut(),
@@ -87,12 +85,25 @@ impl ImageCodec {
     #[inline]
     pub fn create_encoder(&mut self) -> Result<ImageEncoder> {
         unsafe {
-            let mut encoder = ImageEncoder::new();
+            let mut encoder = ImageEncoder {
+                core: *ImageEncoder::none(),
+            };
             errcode_to_result(ffi::blImageCodecCreateEncoder(
                 self.core_mut(),
                 encoder.core_mut(),
             ))
             .map(|_| encoder)
+        }
+    }
+
+    #[inline]
+    pub fn inspect_data<R: AsRef<[u8]>>(&self, data: R) -> u32 {
+        unsafe {
+            ffi::blImageCodecInspectData(
+                self.core(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
+            )
         }
     }
 
@@ -141,13 +152,6 @@ impl fmt::Debug for ImageCodec {
     }
 }
 
-impl Default for ImageCodec {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl PartialEq for ImageCodec {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -168,26 +172,13 @@ pub struct ImageEncoder {
 
 unsafe impl WrappedBlCore for ImageEncoder {
     type Core = ffi::BLImageEncoderCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_ENCODER as usize;
 }
 
 impl ImageEncoder {
     #[inline]
-    pub fn new() -> Self {
-        ImageEncoder {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_ENCODER as usize),
-        }
-    }
-
-    #[inline]
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageEncoderRestart(self.core_mut())) }
-    }
-}
-
-impl Default for ImageEncoder {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -211,26 +202,13 @@ pub struct ImageDecoder {
 
 unsafe impl WrappedBlCore for ImageDecoder {
     type Core = ffi::BLImageDecoderCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_DECODER as usize;
 }
 
 impl ImageDecoder {
     #[inline]
-    pub fn new() -> Self {
-        ImageDecoder {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE_DECODER as usize),
-        }
-    }
-
-    #[inline]
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageDecoderRestart(self.core_mut())) }
-    }
-}
-
-impl Default for ImageDecoder {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }
 

@@ -213,6 +213,7 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
 /// a pointer to a BlxxxxImpl, otherwise the [`core`] and [`core_mut`] methods have to be implemented manually
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
+    const IMPL_TYPE_INDEX: usize;
 
     #[inline]
     fn core(&self) -> &Self::Core {
@@ -241,8 +242,8 @@ pub unsafe trait WrappedBlCore: Sized {
     }
 
     #[inline]
-    fn none(impl_type: usize) -> &'static Self::Core {
-        unsafe { &*(&ffi::blNone[impl_type] as *const _ as *const _) }
+    fn none() -> &'static Self::Core {
+        unsafe { &*(&ffi::blNone[Self::IMPL_TYPE_INDEX] as *const _ as *const _) }
     }
 
     #[inline]

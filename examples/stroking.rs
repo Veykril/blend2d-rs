@@ -4,26 +4,25 @@ use blend2d::{
     format::ImageFormat,
     gradient::{LinearGradient, LinearGradientValues},
     image::Image,
-    matrix::MatrixTransform,
     path::{Path, StrokeCap},
-    pattern::Pattern,
+    ExtendMode,
 };
 
 fn main() {
-    let mut img = Image::new_with(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
-    let ctx = Context::from_image(&mut img).expect("Unable to attach rendering context");
+    let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
+    let ctx = Context::new(&mut img).expect("Unable to attach rendering context");
     let render = |mut ctx: Context| {
         ctx.set_comp_op(CompOp::SrcCopy)?;
         ctx.fill_all()?;
 
-        let mut linear = LinearGradient::new_with(
+        let mut linear = LinearGradient::new(
             &LinearGradientValues {
                 x0: 0.0,
                 y0: 0.0,
                 x1: 0.0,
                 y1: 480.0,
             },
-            Default::default(),
+            ExtendMode::PadXPadY,
             &[],
             None,
         );
@@ -45,7 +44,7 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codec = ImageCodec::new_by_name("BMP").unwrap();
+    let codec = ImageCodec::find_by_name(ImageCodec::built_in_codecs(), "BMP").unwrap();
     img.write_to_file("bl-getting-started-6.bmp", &codec)
         .expect("Writing to file failed");
 }

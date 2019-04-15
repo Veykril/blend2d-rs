@@ -1,4 +1,4 @@
-use core::{ptr, slice};
+use core::slice;
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -50,23 +50,54 @@ pub struct Image {
 
 unsafe impl WrappedBlCore for Image {
     type Core = ffi::BLImageCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize;
 }
 
 impl Image {
-    pub fn new() -> Self {
-        Image {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize),
-        }
-    }
-
-    pub fn new_with(width: i32, height: i32, format: ImageFormat) -> Result<Self> {
+    pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Self> {
         unsafe {
-            let mut this = Self::new();
+            let mut this = Image {
+                core: *Self::none(),
+            };
             errcode_to_result(ffi::blImageInitAs(
                 this.core_mut(),
                 width,
                 height,
                 format.into(),
+            ))
+            .map(|_| this)
+        }
+    }
+
+    pub fn from_data<R: AsRef<[u8]>>(
+        width: i32,
+        height: i32,
+        format: ImageFormat,
+        data: &R,
+        codecs: &Array<ImageCodec>,
+    ) -> Result<()> {
+        let mut this = Self::new(width, height, format)?;
+        unsafe {
+            errcode_to_result(ffi::blImageReadFromData(
+                this.core_mut(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
+                codecs.core(),
+            ))
+        }
+    }
+
+    pub fn from_path<P: AsRef<Path>>(path: P, codecs: &Array<ImageCodec>) -> Result<Self> {
+        unsafe {
+            let mut this = Image {
+                core: *Self::none(),
+            };
+            let path =
+                CString::new(path.as_ref().to_string_lossy().as_bytes()).expect("Invalid Path");
+            errcode_to_result(ffi::blImageReadFromFile(
+                this.core_mut(),
+                path.as_ptr(),
+                codecs.core(),
             ))
             .map(|_| this)
         }
@@ -85,40 +116,6 @@ impl Image {
         self.size().h
     }
 
-    pub fn create(&mut self, width: i32, height: i32, format: ImageFormat) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blImageCreate(
-                self.core_mut(),
-                width,
-                height,
-                format.into(),
-            ))
-        }
-    }
-
-    // FIXME lifetime of data must outlive the image
-    fn create_from_data(
-        &mut self,
-        width: i32,
-        height: i32,
-        format: ImageFormat,
-        data: &mut [u8],
-        stride: isize,
-    ) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blImageCreateFromData(
-                self.core_mut(),
-                width,
-                height,
-                format.into(),
-                data.as_mut_ptr() as *mut _,
-                stride,
-                None,
-                ptr::null_mut(),
-            ))
-        }
-    }
-
     pub fn data(&self) -> Result<ImageData<'_>> {
         unsafe {
             let mut data = std::mem::zeroed();
@@ -132,22 +129,6 @@ impl Image {
                     flags: data.flags,
                 }
             })
-        }
-    }
-
-    pub fn read_from_file<P: AsRef<Path>>(
-        &mut self,
-        path: P,
-        codecs: &Array<ImageCodec>,
-    ) -> Result<()> {
-        unsafe {
-            let path =
-                CString::new(path.as_ref().to_string_lossy().as_bytes()).expect("Invalid Path");
-            errcode_to_result(ffi::blImageReadFromFile(
-                self.core_mut(),
-                path.as_ptr(),
-                codecs.core(),
-            ))
         }
     }
 
@@ -166,19 +147,15 @@ impl Image {
 
 impl PartialEq for Image {
     fn eq(&self, other: &Self) -> bool {
-        self.impl_() as *const _ == other.impl_() as *const _
-    }
-}
-
-impl Default for Image {
-    fn default() -> Self {
-        Self::new()
+        unsafe { ffi::blImageEquals(self.core(), other.core()) }
     }
 }
 
 impl Clone for Image {
     fn clone(&self) -> Self {
-        let mut new = Self::new();
+        let mut new = Image {
+            core: *Self::none(),
+        };
         unsafe { ffi::blImageAssignDeep(new.core_mut(), self.core()) };
         new
     }

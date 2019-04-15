@@ -16,24 +16,20 @@ pub struct Pattern {
 
 unsafe impl WrappedBlCore for Pattern {
     type Core = ffi::BLPatternCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_PATTERN as usize;
 }
 
 impl Pattern {
     #[inline]
-    pub fn new() -> Self {
-        Pattern {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_PATTERN as usize),
-        }
-    }
-
-    #[inline]
-    pub fn new_with(
+    pub fn new(
         image: &Image,
         area: Option<&RectI>,
         extend_mode: ExtendMode,
         matrix: Option<&Matrix2D>,
     ) -> Self {
-        let mut this = Self::new();
+        let mut this = Pattern {
+            core: *Self::none(),
+        };
         unsafe {
             ffi::blPatternInitAs(
                 this.core_mut(),
@@ -44,25 +40,6 @@ impl Pattern {
             );
         }
         this
-    }
-
-    #[inline]
-    pub fn create(
-        &mut self,
-        image: &Image,
-        area: Option<&RectI>,
-        extend_mode: ExtendMode,
-        matrix: Option<&Matrix2D>,
-    ) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blPatternCreate(
-                self.core_mut(),
-                image.core(),
-                area.map_or(ptr::null(), |a| a as *const _ as *const _),
-                extend_mode.into(),
-                matrix.map_or(ptr::null(), |a| a as *const _ as *const _),
-            ))
-        }
     }
 
     #[inline]
@@ -94,7 +71,13 @@ impl Pattern {
 
     #[inline]
     pub fn reset_image(&mut self) -> Result<()> {
-        self.set_image(&Image::new())
+        unsafe {
+            errcode_to_result(ffi::blPatternSetImage(
+                self.core_mut(),
+                Image::none(),
+                ptr::null(),
+            ))
+        }
     }
 
     #[inline]
@@ -163,13 +146,6 @@ impl MatrixTransform for Pattern {
     }
 }
 
-impl Default for Pattern {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl PartialEq for Pattern {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -179,7 +155,9 @@ impl PartialEq for Pattern {
 
 impl Clone for Pattern {
     fn clone(&self) -> Self {
-        let mut new = Self::new();
+        let mut new = Pattern {
+            core: *Self::none(),
+        };
         unsafe { ffi::blPatternAssignDeep(new.core_mut(), self.core()) };
         new
     }

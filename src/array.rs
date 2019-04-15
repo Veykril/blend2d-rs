@@ -14,12 +14,13 @@ pub struct Array<T: ArrayType> {
 
 unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
     type Core = ffi::BLArrayCore;
+    const IMPL_TYPE_INDEX: usize = T::IMPL_IDX;
 }
 
 impl<T: ArrayType> Array<T> {
     pub fn new() -> Self {
         Array {
-            core: *Self::none(T::IMPL_IDX),
+            core: *Self::none(),
             _pd: PhantomData,
         }
     }

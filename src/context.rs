@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::ptr;
+use core::{mem, ptr};
 
 use crate::{
     array::Array,
@@ -166,37 +166,30 @@ pub struct Context {
 
 unsafe impl WrappedBlCore for Context {
     type Core = ffi::BLContextCore;
+    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize;
 }
 
 impl Context {
     #[inline]
-    pub fn new() -> Self {
-        Context {
-            core: *Self::none(ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize),
-        }
-    }
-
-    #[inline]
-    pub fn from_image(target: &mut Image) -> Result<Context> {
-        Self::from_image_with_options(target, None)
+    pub fn new(target: &mut Image) -> Result<Context> {
+        Self::new_with_options(target, None)
     }
 
     // FIXME figure out how ContextCreateOptions is used
-    fn from_image_with_options(
+    fn new_with_options(
         target: &mut Image,
         options: Option<ffi::BLContextCreateOptions>,
     ) -> Result<Context> {
         unsafe {
-            let mut core = ffi::BLContextCore {
-                impl_: ptr::null_mut(),
+            let mut this = Context {
+                core: *Self::none(),
             };
-
             errcode_to_result(ffi::blContextInitAs(
-                &mut core,
+                this.core_mut(),
                 target.core_mut(),
                 options.as_ref().map_or(ptr::null(), |ptr| ptr as *const _),
             ))
-            .map(move |_| Context { core })
+            .map(move |_| this)
         }
     }
 
@@ -404,7 +397,7 @@ impl Context {
     #[inline]
     pub fn get_fill_style_gradient(&self) -> Result<DynamicGradient> {
         unsafe {
-            let mut gradient = LinearGradient::new();
+            let mut gradient: LinearGradient = mem::zeroed();
             errcode_to_result(ffi::blContextGetFillStyle(
                 self.core(),
                 gradient.core_mut() as *mut _ as *mut _,
@@ -575,7 +568,7 @@ impl Context {
     #[inline]
     pub fn get_stroke_style_gradient(&self) -> Result<DynamicGradient> {
         unsafe {
-            let mut gradient = LinearGradient::new();
+            let mut gradient: LinearGradient = mem::zeroed();
             errcode_to_result(ffi::blContextGetStrokeStyle(
                 self.core(),
                 gradient.core_mut() as *mut _ as *mut _,
@@ -967,13 +960,6 @@ impl PartialEq for Context {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_() as *const _ == other.impl_() as *const _
-    }
-}
-
-impl Default for Context {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
     }
 }
 
