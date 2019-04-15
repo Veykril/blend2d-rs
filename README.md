@@ -1,14 +1,23 @@
 # blend2d-rs
 
 This crate provides rust bindings to the 
-[blend2d](https://github.com/blend2d/blend2d) lib. This project is 
-currently WIP and very incomplete, so the API will most likely change a 
-few times until it somewhat stabilizes. Bear in mind that blend2d itself 
-is also still in beta, meaning the api can change at any moment. This also 
-means that some functionality is still not correctly implemented
+[blend2d](https://github.com/blend2d/blend2d) lib. 
 
+- This project is currently WIP and therefor incomplete, due to this the crate
+will most likely go through breaking changes until a proper api has been
+figured out. Bear in mind that blend2d itself is also still in beta,
+meaning changes in their api will most likely be reflected in this crate
+as well in one way or another. This also means that some functionality
+is currently not correctly(or at all) implemented, for example, filling
+a context with an image will currently return an `InvalidValue` error.
 
-This crate is highly experimental and not quite in a useable state yet, though examples already exist.
+- Almost nothing is documented at this point so if confusion arises it
+might help to check out the C++ 
+[docs](https://blend2d.com/api/index.html). 
+This will hopefully change in the near future.
+
+- Not everything has been tested, so bugs might occur.
+
 
 ## Setup
 

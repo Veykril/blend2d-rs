@@ -85,13 +85,18 @@ impl Region {
     }
 
     #[inline]
-    pub fn reserve(&mut self, n: usize) -> Result<()> {
+    pub fn reserve(&mut self, n: usize) {
+        self.try_reserve(n).unwrap()
+    }
+
+    #[inline]
+    pub fn try_reserve(&mut self, n: usize) -> Result<()> {
         unsafe { errcode_to_result(ffi::blRegionReserve(self.core_mut(), n)) }
     }
 
     #[inline]
-    pub fn shrink(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blRegionShrink(self.core_mut())) }
+    pub fn shrink_to_fit(&mut self) {
+        unsafe { errcode_to_result(ffi::blRegionShrink(self.core_mut())).unwrap() }
     }
 
     #[inline]

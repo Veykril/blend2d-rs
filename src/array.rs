@@ -32,7 +32,7 @@ impl<T: ArrayType> Array<T> {
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { ffi::blArrayShrink(self.core_mut()) };
+        unsafe { errcode_to_result(ffi::blArrayShrink(self.core_mut())).unwrap() };
     }
 
     #[inline]
@@ -47,17 +47,25 @@ impl<T: ArrayType> Array<T> {
 
     #[inline]
     pub fn truncate(&mut self, n: usize) {
-        unsafe { ffi::blArrayResize(self.core_mut(), n.min(self.len()), ptr::null()) };
+        unsafe {
+            errcode_to_result(ffi::blArrayResize(
+                self.core_mut(),
+                n.min(self.len()),
+                ptr::null(),
+            ))
+            .unwrap()
+        };
     }
 
     #[inline]
-    pub fn resize(&mut self, fill: &[T]) -> Result<()> {
+    pub fn resize(&mut self, fill: &[T]) {
         unsafe {
             errcode_to_result(ffi::blArrayResize(
                 self.core_mut(),
                 fill.len(),
                 fill.as_ptr() as *const _,
             ))
+            .unwrap()
         }
     }
 
@@ -211,32 +219,37 @@ where
     T: ArrayType + WrappedBlCore,
 {
     #[inline]
-    pub fn push(&mut self, item: &T) -> Result<()> {
+    pub fn push(&mut self, item: &T) {
         unsafe {
             errcode_to_result(ffi::blArrayAppendItem(
                 self.core_mut(),
                 item.core() as *const _ as *const _,
             ))
+            .unwrap()
         }
     }
     #[inline]
-    pub fn insert(&mut self, index: usize, item: &T) -> Result<()> {
+    pub fn insert(&mut self, index: usize, item: &T) {
         unsafe {
             errcode_to_result(ffi::blArrayInsertItem(
                 self.core_mut(),
                 index,
                 item.core() as *const _ as *const _,
             ))
+            .unwrap()
         }
     }
     #[inline]
-    pub fn replace(&mut self, index: usize, item: &T) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blArrayReplaceItem(
-                self.core_mut(),
-                index,
-                item.core() as *const _ as *const _,
-            ))
+    pub fn replace(&mut self, index: usize, item: &T) {
+        if index < self.len() {
+            unsafe {
+                errcode_to_result(ffi::blArrayReplaceItem(
+                    self.core_mut(),
+                    index,
+                    item.core() as *const _ as *const _,
+                ))
+                .unwrap()
+            }
         }
     }
 }
@@ -249,34 +262,36 @@ macro_rules! impl_array_val_ops {
             $(
                 impl Array<$ty> {
                     #[inline]
-                    pub fn push(&mut self, item: $ty) -> Result<()> {
+                    pub fn push(&mut self, item: $ty) {
                         unsafe {
                             errcode_to_result(ffi::$append(
                                 self.core_mut(),
                                 item as _,
-                            ))
+                            )).unwrap()
                         }
                     }
 
                     #[inline]
-                    pub fn insert(&mut self, index: usize, item: $ty) -> Result<()> {
+                    pub fn insert(&mut self, index: usize, item: $ty) {
                         unsafe {
                             errcode_to_result(ffi::$insert(
                                 self.core_mut(),
                                 index,
                                 item as _,
-                            ))
+                            )).unwrap()
                         }
                     }
 
                     #[inline]
-                    pub fn replace(&mut self, index: usize, item: $ty) -> Result<()> {
-                        unsafe {
-                            errcode_to_result(ffi::$replace(
-                                self.core_mut(),
-                                index,
-                                item as _,
-                            ))
+                    pub fn replace(&mut self, index: usize, item: $ty) {
+                        if index < self.len() {
+                            unsafe {
+                                errcode_to_result(ffi::$replace(
+                                    self.core_mut(),
+                                    index,
+                                    item as _,
+                                )).unwrap()
+                            }
                         }
                     }
                 }
@@ -353,7 +368,15 @@ impl_array_type! {
     impl f32 = BL_IMPL_TYPE_ARRAY_F32;
     impl f64 = BL_IMPL_TYPE_ARRAY_F64;
 }
-use crate::{codec::ImageCodec, context::Context, image::Image, path::Path};
+use crate::{
+    codec::{ImageCodec, ImageDecoder, ImageEncoder},
+    context::Context,
+    gradient::{Gradient, GradientType},
+    image::Image,
+    path::Path,
+    pattern::Pattern,
+    region::Region,
+};
 /* E0119, clashes with `impl<T> ArrayType for &T {[...]`
 Specialization please (╯°□°）╯︵ ┻━┻
 impl<T: WrappedBlCore> ArrayType for T {
@@ -361,7 +384,10 @@ impl<T: WrappedBlCore> ArrayType for T {
 }
 so we have to unfortunately go with a manual macro implementation */
 impl_array_type! {
-    impl Path, Image, ImageCodec, Context = BL_IMPL_TYPE_ARRAY_VAR;
+    impl Context, Image, ImageCodec, ImageDecoder, ImageEncoder, Path, Pattern, Region = BL_IMPL_TYPE_ARRAY_VAR;
+}
+impl<G: GradientType> ArrayType for Gradient<G> {
+    const IMPL_IDX: usize = BL_IMPL_TYPE_ARRAY_VAR as usize;
 }
 use crate::{geometry::*, Tag};
 impl_array_type! {

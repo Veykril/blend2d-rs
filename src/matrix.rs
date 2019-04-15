@@ -4,8 +4,8 @@ use crate::{
 };
 use ffi::BLMatrix2DOp::*;
 
-#[doc(hidden)]
 bl_enum! {
+    #[doc(hidden)]
     pub enum Matrix2DOp {
         Reset = BL_MATRIX2D_OP_RESET,
         Assign = BL_MATRIX2D_OP_ASSIGN,
@@ -166,12 +166,13 @@ impl Matrix2D {
 }
 
 impl MatrixTransform for Matrix2D {
+    #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blMatrix2DApplyOp(
                 self as *mut _ as *mut _,
-                op.into(),
+                op as u32,
                 data.as_ptr() as *const _,
             ))
         }

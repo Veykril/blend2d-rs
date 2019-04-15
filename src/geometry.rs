@@ -24,6 +24,7 @@ mod private {
 }
 
 pub trait Geometry: private::Sealed {
+    #[doc(hidden)]
     const GEO_TYPE: u32;
 }
 

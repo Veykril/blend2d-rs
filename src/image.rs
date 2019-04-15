@@ -126,7 +126,7 @@ impl Image {
                     stride: data.stride,
                     size: (w, h),
                     format: data.format.into(),
-                    flags: data.flags,
+                    flags: ImageInfoFlags::from_bits_truncate(data.flags),
                 }
             })
         }
@@ -169,9 +169,9 @@ impl Drop for Image {
 
 #[derive(Debug)]
 pub struct ImageData<'a> {
-    data: &'a [u8],
-    stride: isize,
-    size: (i32, i32),
-    format: ImageFormat,
-    flags: u32,
+    pub data: &'a [u8],
+    pub stride: isize,
+    pub size: (i32, i32),
+    pub format: ImageFormat,
+    pub flags: ImageInfoFlags,
 }

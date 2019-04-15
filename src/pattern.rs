@@ -114,9 +114,7 @@ impl Pattern {
     pub fn reset_extend_mode(&mut self) -> Result<()> {
         self.set_extend_mode(Default::default())
     }
-}
 
-impl Pattern {
     #[inline]
     pub fn has_matrix(&self) -> bool {
         self.impl_().matrixType as i32 != ffi::BLMatrix2DType::BL_MATRIX2D_TYPE_IDENTITY

@@ -217,7 +217,7 @@ impl Path {
 
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { ffi::blPathShrink(self.core_mut()) };
+        unsafe { errcode_to_result(ffi::blPathShrink(self.core_mut())).unwrap() };
     }
 
     #[inline]

@@ -17,7 +17,6 @@ mod private {
 }
 
 pub trait GradientType: private::Sealed {
-    #[doc(hidden)]
     type ValuesType;
     #[doc(hidden)]
     const BL_TYPE: u32;
@@ -25,21 +24,18 @@ pub trait GradientType: private::Sealed {
 
 pub enum Linear {}
 impl GradientType for Linear {
-    #[doc(hidden)]
     type ValuesType = LinearGradientValues;
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_LINEAR as u32;
 }
 pub enum Radial {}
 impl GradientType for Radial {
-    #[doc(hidden)]
     type ValuesType = RadialGradientValues;
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_RADIAL as u32;
 }
 pub enum Conical {}
 impl GradientType for Conical {
-    #[doc(hidden)]
     type ValuesType = ConicalGradientValues;
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_CONICAL as u32;

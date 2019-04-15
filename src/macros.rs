@@ -1,5 +1,12 @@
 macro_rules! bl_enum {
-    ($vis:vis enum $name:ident { $( $variant:ident = $value:ident, )* } Default => $default:ident) => {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $name:ident {
+            $( $variant:ident = $value:ident, )*
+        }
+        Default => $default:ident
+    ) => {
+        $(#[$meta])*
         #[repr(i32)]
         #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
         $vis enum $name {
