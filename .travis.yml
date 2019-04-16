@@ -1,14 +1,30 @@
 language: rust
+dist: xenial
 os:
-  - linux
-  - osx
   - windows
+  - osx
 rust:
   - stable
   - nightly
 matrix:
   include:
-    - name: "rustfmt"
+    - name: "Rust: Stable"
+      os: linux
+      rust: stable
+      addons:
+        apt:
+          sources: [ubuntu-toolchain-r-test]
+          packages: [g++-4.9]
+      env: BUILD_MATRIX="CC=gcc-4.9 && CXX=g++-4.9"
+    - name: "Rust: Nightly"
+      os: linux
+      rust: stable
+      addons:
+        apt:
+          sources: [ubuntu-toolchain-r-test]
+          packages: [g++-4.9]
+      env: BUILD_MATRIX="CC=gcc-4.9 && CXX=g++-4.9"
+    - name: "rustfmt: Nightly"
       rust: nightly
       before_script:
         - rustup component add rustfmt
