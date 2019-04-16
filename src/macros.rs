@@ -11,7 +11,7 @@ macro_rules! bl_enum {
         #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
         $vis enum $name {
             $(
-                $variant = $value,
+                $variant = $value as i32,
             )*
         }
         impl From<u32> for $name {
