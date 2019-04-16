@@ -1,5 +1,4 @@
 language: rust
-dist: xenial
 rust:
   - stable
   - nightly
@@ -7,6 +6,7 @@ matrix:
   include:
     - name: "Rust: Stable"
       os: linux
+      dist: xenial
       rust: stable
       addons:
         apt:
@@ -15,6 +15,7 @@ matrix:
       env: BUILD_MATRIX="CC=gcc-4.9 && CXX=g++-4.9"
     - name: "Rust: Nightly"
       os: linux
+      dist: xenial
       rust: nightly
       addons:
         apt:

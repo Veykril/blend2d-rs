@@ -10,7 +10,7 @@ include("${BLEND2D_DIR}/CMakeLists.txt")
 
 list(REMOVE_ITEM BLEND2D_LIBS "blend2d")
 
-target_include_directories(blend2d BEFORE PRIVATE ${BLEND2D_INCLUDE_DIR})
-target_compile_options(blend2d PRIVATE ${BLEND2D_CFLAGS})
+target_include_directories(blend2d BEFORE PUBLIC ${BLEND2D_INCLUDE_DIR})
+target_compile_options(blend2d PUBLIC ${BLEND2D_CFLAGS})
 target_link_libraries(blend2d ${BLEND2D_LIBS})
 install(TARGETS blend2d ARCHIVE DESTINATION lib)
