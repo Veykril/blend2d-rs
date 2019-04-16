@@ -8,7 +8,6 @@ set(BLEND2D_DIR "${CMAKE_CURRENT_LIST_DIR}/blend2d"
 set(BLEND2D_BUILD_STATIC TRUE)
 include("${BLEND2D_DIR}/CMakeLists.txt")
 
-set(LIBS TRUE)
 list(REMOVE_ITEM BLEND2D_LIBS "blend2d")
 
 target_include_directories(blend2d BEFORE PRIVATE ${BLEND2D_INCLUDE_DIR})
