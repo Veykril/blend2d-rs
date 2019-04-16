@@ -1,7 +1,4 @@
 language: rust
-rust:
-  - stable
-  - nightly
 matrix:
   include:
     - name: "Rust: Stable"
@@ -22,22 +19,13 @@ matrix:
           sources: [ubuntu-toolchain-r-test]
           packages: [g++-4.9]
       env: BUILD_MATRIX="CC=gcc-4.9 && CXX=g++-4.9"
-    - name: "OSX Stable"
+    - name: "OSX: Stable"
       rust: stable
       os: osx
       osx_image: xcode9.4
       env: BUILD_MATRIX="BUILD_TYPE=Debug"
-    - name: "OSX Nightly"
-      rust: nightly
-      os: osx
-      osx_image: xcode9.4
-      env: BUILD_MATRIX="BUILD_TYPE=Debug"
-    - name: "Windows Stable"
+    - name: "Windows: Stable"
       rust: stable
-      os: windows
-      env: BUILD_MATRIX="BUILD_TYPE=Debug" BUILD_TOOLCHAIN="Visual Studio 15 2017 Win64"
-    - name: "Windows Nightly"
-      rust: nightly
       os: windows
       env: BUILD_MATRIX="BUILD_TYPE=Debug" BUILD_TOOLCHAIN="Visual Studio 15 2017 Win64"
     - name: "rustfmt: Nightly"
