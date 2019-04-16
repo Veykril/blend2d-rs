@@ -209,8 +209,9 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
     type Impl = ffi::BLVariantImpl;
 }
 
-/// Implementing type must be #[repr(transparent)] and its only field may be a struct that contains
-/// a pointer to a BlxxxxImpl, otherwise the [`core`] and [`core_mut`] methods have to be implemented manually
+/// Implementing type must be #[repr(transparent)] and its only field may be a
+/// struct that contains a pointer to a BlxxxxImpl, otherwise the [`core`] and
+/// [`core_mut`] methods have to be implemented manually
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;

@@ -117,7 +117,7 @@ impl Pattern {
 
     #[inline]
     pub fn has_matrix(&self) -> bool {
-        self.impl_().matrixType as i32 != ffi::BLMatrix2DType::BL_MATRIX2D_TYPE_IDENTITY
+        self.impl_().matrixType as i32 != ffi::BLMatrix2DType::BL_MATRIX2D_TYPE_IDENTITY as i32
     }
 
     #[inline]

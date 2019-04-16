@@ -444,7 +444,8 @@ impl Context {
 
     #[inline]
     pub fn stroke_options(&self) -> &StrokeOptions {
-        //FIXME? Make a Ref/RefMut wrapper struct that doesnt call the destructor, instead of doing this nasty ref casting
+        //FIXME? Make a Ref/RefMut wrapper struct that doesnt call the destructor,
+        // instead of doing this nasty ref casting
         unsafe { &*(&self.state().strokeOptions as *const _ as *const _) }
     }
 

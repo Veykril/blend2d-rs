@@ -7,16 +7,16 @@ macro_rules! bl_enum {
         Default => $default:ident
     ) => {
         $(#[$meta])*
-        #[repr(i32)]
+        #[repr(u32)]
         #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
         $vis enum $name {
             $(
-                $variant = $value as i32,
+                $variant = $value as u32,
             )*
         }
         impl From<u32> for $name {
             fn from(val: u32) -> Self {
-                match val as i32 {
+                match val as ffi::BLResultCode::Type {
                     $(
                         $value => $name::$variant,
                     )*
