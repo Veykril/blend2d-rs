@@ -1,0 +1,23 @@
+language: rust
+os:
+  - linux
+  - osx
+  - windows
+rust:
+  - stable
+  - nightly
+matrix:
+  include:
+    - name: "rustfmt"
+      rust: nightly
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --all -- --check
+  fast_finish: true
+cache: cargo
+branches:
+  only:
+    - master
+    - staging
+    - trying
