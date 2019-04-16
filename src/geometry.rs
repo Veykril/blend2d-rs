@@ -36,8 +36,8 @@ impl Geometry for crate::region::Region {
     const GEO_TYPE: u32 = GeometryType::Region as u32;
 }
 
-// TODO: Should [Point] really implement Geometry? Given that it could be either a Polygon or a
-// Polyline it might be better to make it explicit.
+// TODO: Should [Point] really implement Geometry? Given that it could be either
+// a Polygon or a Polyline it might be better to make it explicit.
 impl Geometry for [PointI] {
     const GEO_TYPE: u32 = GeometryType::PolygonI as u32;
 }
