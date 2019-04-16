@@ -1,7 +1,11 @@
 # blend2d-rs
 
+[![Build Status](https://travis-ci.com/Veykril/blend2d-rs.svg?branch=master)](https://travis-ci.com/Veykril/blend2d-rs)
+[![Crates.io](https://img.shields.io/crates/v/blend2d.svg)](https://crates.io/crates/blend2d)
+[![Docs.rs](https://docs.rs/blend2d/badge.svg)](https://docs.rs/blend2d)
+
 This crate provides rust bindings to the 
-[blend2d](https://github.com/blend2d/blend2d) lib. 
+[blend2d](https://github.com/blend2d/blend2d) lib.
 
 - This project is currently WIP and therefor incomplete, due to this the crate
 will most likely go through breaking changes until a proper api has been
