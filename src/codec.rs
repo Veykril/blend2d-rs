@@ -53,7 +53,7 @@ impl ImageCodec {
     }
 
     #[inline]
-    pub fn find_by_data(codecs: &Array<ImageCodec>, data: &[u8]) -> Result<Self> {
+    pub fn find_by_data<R: AsRef<[u8]>>(codecs: &Array<ImageCodec>, data: R) -> Result<Self> {
         unsafe {
             let mut this = ImageCodec {
                 core: *Self::none(),
@@ -61,8 +61,8 @@ impl ImageCodec {
             errcode_to_result(ffi::blImageCodecFindByData(
                 this.core_mut(),
                 codecs.core(),
-                data.as_ptr() as *const _,
-                data.len(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
             ))
             .map(|_| this)
         }
@@ -180,6 +180,11 @@ impl ImageEncoder {
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageEncoderRestart(self.core_mut())) }
     }
+
+    #[inline]
+    pub fn last_result(&self) -> Result<()> {
+        errcode_to_result(self.impl_().lastResult)
+    }
 }
 
 impl PartialEq for ImageEncoder {
@@ -209,6 +214,11 @@ impl ImageDecoder {
     #[inline]
     pub fn restart(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blImageDecoderRestart(self.core_mut())) }
+    }
+
+    #[inline]
+    pub fn last_result(&self) -> Result<()> {
+        errcode_to_result(self.impl_().lastResult)
     }
 }
 

@@ -254,6 +254,18 @@ where
     }
 }
 
+impl Array<ImageCodec> {
+    #[inline]
+    pub fn find_codec_by_name(&self, name: &str) -> Result<ImageCodec> {
+        ImageCodec::find_by_name(self, name)
+    }
+
+    #[inline]
+    pub fn find_codec_by_data<R: AsRef<[u8]>>(&self, data: R) -> Result<ImageCodec> {
+        ImageCodec::find_by_data(self, data)
+    }
+}
+
 // Macro-zone ahead, you have been warned
 
 macro_rules! impl_array_val_ops {

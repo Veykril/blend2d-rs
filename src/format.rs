@@ -3,12 +3,11 @@ use bitflags::bitflags;
 use ffi::BLFormat::*;
 bl_enum! {
     pub enum ImageFormat {
-        None   = BL_FORMAT_NONE,
         PRgb32 = BL_FORMAT_PRGB32,
         XRgb32 = BL_FORMAT_XRGB32,
         A8     = BL_FORMAT_A8,
     }
-    Default => None
+    Default => PRgb32
 }
 
 use ffi::BLFormatFlags;
