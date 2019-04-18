@@ -47,7 +47,7 @@ bl_enum! {
         ReflectXPadY = BL_EXTEND_MODE_REFLECT_X_PAD_Y,
         ReflectXRepeatY = BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
     }
-    Default => RepeatXRepeatY
+    Default => PadXPadY
 }
 
 use ffi::BLStyleType::*;
