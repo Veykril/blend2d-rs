@@ -1,4 +1,4 @@
-#![deny(rust_2018_idioms)]
+#![deny(rust_2018_idioms, missing_debug_implementations)]
 #![allow(clippy::cast_lossless)]
 
 #[macro_use]
@@ -20,6 +20,7 @@ pub mod pattern;
 pub mod region;
 
 #[repr(transparent)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Tag(u32);
 
 use ffi::BLBooleanOp::*;

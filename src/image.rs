@@ -1,4 +1,4 @@
-use core::{ptr, slice};
+use core::{fmt, ptr, slice};
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -24,7 +24,6 @@ bitflags! {
 use ffi::BLImageScaleFilter::*;
 bl_enum! {
     pub enum ImageScaleFilter {
-        None     = BL_IMAGE_SCALE_FILTER_NONE,
         Nearest  = BL_IMAGE_SCALE_FILTER_NEAREST,
         Bilinear = BL_IMAGE_SCALE_FILTER_BILINEAR,
         Bicubic  = BL_IMAGE_SCALE_FILTER_BICUBIC,
@@ -40,10 +39,11 @@ bl_enum! {
         Mitchell = BL_IMAGE_SCALE_FILTER_MITCHELL,
         User     = BL_IMAGE_SCALE_FILTER_USER,
     }
-    Default => None
+    Default => Nearest
 }
 
 #[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct ImageScaleOptions {
     user_func: ffi::BLImageScaleUserFunc,
     user_data: *mut std::os::raw::c_void,
@@ -128,6 +128,11 @@ impl Image {
     }
 
     #[inline]
+    pub fn format(&self) -> ImageFormat {
+        (self.impl_().format as u32).into()
+    }
+
+    #[inline]
     pub fn size(&self) -> SizeI {
         let ffi::BLSizeI { w, h } = self.impl_().size;
         SizeI { w, h }
@@ -201,6 +206,15 @@ impl Image {
     }
 }
 
+impl fmt::Debug for Image {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Image")
+            .field("size", &self.size())
+            .field("format", &self.format())
+            .finish()
+    }
+}
+
 impl PartialEq for Image {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -232,4 +246,24 @@ pub struct ImageData<'a> {
     pub size: (i32, i32),
     pub format: ImageFormat,
     pub flags: ImageInfoFlags,
+}
+
+#[cfg(test)]
+mod test_codec {
+    use crate::{geometry::SizeI, image::Image};
+
+    #[test]
+    fn test_image_err_on_zero_size() {
+        assert!(Image::new(0, 100, Default::default()).is_err());
+        assert!(Image::new(100, 0, Default::default()).is_err());
+        assert!(Image::new(0, 0, Default::default()).is_err());
+    }
+
+    #[test]
+    fn test_image_scale() {
+        let new_size = SizeI { w: 100, h: 100 };
+        let mut image = Image::new(50, 50, Default::default()).unwrap();
+        image.scale(new_size, Default::default(), None).unwrap();
+        assert_eq!(image.size(), new_size);
+    }
 }

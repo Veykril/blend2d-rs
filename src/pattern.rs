@@ -1,4 +1,4 @@
-use core::ptr;
+use core::{fmt, ptr};
 
 use crate::{
     error::{errcode_to_result, Result},
@@ -116,17 +116,8 @@ impl Pattern {
     }
 
     #[inline]
-    pub fn has_matrix(&self) -> bool {
-        self.impl_().matrixType as i32 != ffi::BLMatrix2DType::BL_MATRIX2D_TYPE_IDENTITY as i32
-    }
-
-    #[inline]
-    pub fn matrix(&self) -> Option<&Matrix2D> {
-        if self.has_matrix() {
-            unsafe { Some(&*(&self.impl_().matrix as *const _ as *const _)) }
-        } else {
-            None
-        }
+    pub fn matrix(&self) -> &Matrix2D {
+        unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
     }
 }
 
@@ -148,6 +139,17 @@ impl PartialEq for Pattern {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { ffi::blPatternEquals(self.core(), other.core()) }
+    }
+}
+
+impl fmt::Debug for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Pattern")
+            .field("image", self.image())
+            .field("area", self.area())
+            .field("extend_mode", &self.extend_mode())
+            .field("matrix", self.matrix())
+            .finish()
     }
 }
 

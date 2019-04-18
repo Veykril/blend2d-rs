@@ -1,3 +1,4 @@
+///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
 use ffi::BLImplType::*;
@@ -57,6 +58,7 @@ bitflags! {
     }
 }
 
+/// Marker trait for virtual function table struct/
 pub trait VTable {}
 
 impl VTable for ffi::BLContextVirt {}
@@ -155,8 +157,7 @@ pub unsafe trait BlVariantCore: Sized {
     }
 
     #[inline]
-    #[allow(clippy::mut_from_ref)]
-    fn impl_mut(&self) -> &mut Self::Impl {
+    fn impl_mut(&mut self) -> &mut Self::Impl {
         unsafe { &mut *(self.as_variant_core().impl_ as *mut _) }
     }
 
@@ -209,18 +210,23 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
     type Impl = ffi::BLVariantImpl;
 }
 
-/// Implementing type must be #[repr(transparent)] and its only field may be a
-/// struct that contains a pointer to a BlxxxxImpl, otherwise the [`core`] and
-/// [`core_mut`] methods have to be implemented manually
+/// Implementing type must be either:
+///     #[repr(transparent)] and its only field may be a struct that contains a
+///     pointer to a BlxxxxImpl
+///
+///     #[repr(C)] and its first field must be a pointer to its core's
+///     [`Impl`] type
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;
 
+    /// The default implementation reinterprets &self as &Self::Core.
     #[inline]
     fn core(&self) -> &Self::Core {
         unsafe { &*(self as *const _ as *const _) }
     }
 
+    /// The default implementation reinterprets &mut self as &mut Self::Core.
     #[inline]
     fn core_mut(&mut self) -> &mut Self::Core {
         unsafe { &mut *(self as *mut _ as *mut _) }
@@ -232,21 +238,29 @@ pub unsafe trait WrappedBlCore: Sized {
     }
 
     #[inline]
-    #[allow(clippy::mut_from_ref)]
-    fn impl_mut(&self) -> &mut <Self::Core as BlVariantCore>::Impl {
-        self.core().impl_mut()
+    fn impl_mut(&mut self) -> &mut <Self::Core as BlVariantCore>::Impl {
+        self.core_mut().impl_mut()
     }
 
+    /// Checks whether the wrapped implementation is a none object.
     #[inline]
     fn is_none(&self) -> bool {
         self.impl_().impl_traits().contains(ImplTraits::NULL)
     }
 
+    /// Retrieves the none version of Self::Core
     #[inline]
     fn none() -> &'static Self::Core {
         unsafe { &*(&ffi::blNone[Self::IMPL_TYPE_INDEX] as *const _ as *const _) }
     }
 
+    /// Checks equality of the objects implementations by comparing the pointer.
+    #[inline]
+    fn impl_equals(&self, other: &Self) -> bool {
+        self.impl_() as *const _ == other.impl_() as *const _
+    }
+
+    /// Creates a weak refcount copy.
     #[inline]
     fn init_weak(&self) -> Self::Core {
         let mut other = unsafe { core::mem::zeroed() };

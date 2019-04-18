@@ -1,4 +1,4 @@
-use core::slice;
+use core::{fmt, slice};
 
 use crate::{
     error::{errcode_to_result, Result},
@@ -37,8 +37,8 @@ impl Region {
     }
 
     #[inline]
-    pub fn region_type(&mut self) -> RegionType {
-        unsafe { ffi::blRegionGetType(self.core_mut()).into() }
+    pub fn region_type(&self) -> RegionType {
+        unsafe { ffi::blRegionGetType(self.core()).into() }
     }
 
     #[inline]
@@ -228,6 +228,15 @@ impl PartialEq for Region {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { ffi::blRegionEquals(self.core(), other.core()) }
+    }
+}
+
+impl fmt::Debug for Region {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Region")
+            .field("region_type", &self.region_type())
+            .field("data", &self.data())
+            .finish()
     }
 }
 

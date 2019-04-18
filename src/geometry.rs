@@ -217,35 +217,35 @@ bl_enum! {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct PointI {
     pub x: i32,
     pub y: i32,
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct PointD {
     pub x: f64,
     pub y: f64,
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SizeI {
     pub w: i32,
     pub h: i32,
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct SizeD {
     pub w: f64,
     pub h: f64,
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct BoxI {
     pub x0: i32,
     pub y0: i32,
@@ -258,7 +258,7 @@ impl Geometry for BoxI {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct BoxD {
     pub x0: f64,
     pub y0: f64,
@@ -271,7 +271,7 @@ impl Geometry for BoxD {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct RectI {
     pub x: i32,
     pub y: i32,
@@ -284,7 +284,7 @@ impl Geometry for RectI {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct RectD {
     pub x: f64,
     pub y: f64,
@@ -297,7 +297,7 @@ impl Geometry for RectD {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Line {
     pub x0: f64,
     pub y0: f64,
@@ -310,7 +310,7 @@ impl Geometry for Line {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Triangle {
     pub x0: f64,
     pub y0: f64,
@@ -325,7 +325,7 @@ impl Geometry for Triangle {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct RoundRect {
     pub x: f64,
     pub y: f64,
@@ -340,7 +340,7 @@ impl Geometry for RoundRect {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Circle {
     pub cx: f64,
     pub cy: f64,
@@ -352,7 +352,7 @@ impl Geometry for Circle {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Ellipse {
     pub cx: f64,
     pub cy: f64,
@@ -365,7 +365,7 @@ impl Geometry for Ellipse {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Arc {
     pub cx: f64,
     pub cy: f64,
@@ -380,7 +380,7 @@ impl Geometry for Arc {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Chord {
     pub cx: f64,
     pub cy: f64,
@@ -395,7 +395,7 @@ impl Geometry for Chord {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Pie {
     pub cx: f64,
     pub cy: f64,

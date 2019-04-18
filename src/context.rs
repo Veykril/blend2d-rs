@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::{mem, ptr};
+use core::{fmt, mem, ptr};
 
 use crate::{
     array::Array,
@@ -149,10 +149,11 @@ bl_enum! {
 }
 
 #[repr(C)]
-#[derive(Default, Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct ContextCookie(u128);
 
 #[repr(C)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct ContextHints {
     pub rendering_quality: u8,
     pub gradient_quality: u8,
@@ -162,6 +163,17 @@ pub struct ContextHints {
 #[repr(transparent)]
 pub struct Context {
     core: ffi::BLContextCore,
+}
+
+impl fmt::Debug for Context {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Context")
+            .field("target_size", &self.target_size())
+            .field("hints", &self.hints())
+            .field("flatten_mode", &self.flatten_mode())
+            .field("comp_op", &self.comp_op())
+            .finish()
+    }
 }
 
 unsafe impl WrappedBlCore for Context {
@@ -225,6 +237,8 @@ impl Context {
         }
     }
 
+    /// Currently, end just calls reset. So it is fine to just drop the
+    /// context without calling this, but this might change in the future.
     #[inline]
     pub fn end(mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextEnd(self.core_mut())) }
@@ -630,7 +644,11 @@ impl Context {
             let mut out = 0;
             errcode_to_result((self.virt_op_style().getOpStyleRgba32
                 [u32::from(op) as usize]
-                .unwrap())(self.impl_mut(), &mut out))
+                .unwrap())(
+                // The function actually does not mutate self, so this cast is fine
+                self.impl_() as *const _ as *mut _,
+                &mut out,
+            ))
             .map(|_| out)
         }
     }
@@ -640,7 +658,11 @@ impl Context {
         unsafe {
             let mut out = 0;
             errcode_to_result((self.virt_op_style().getOpStyleRgba64[op as u32 as usize]
-                .unwrap())(self.impl_mut(), &mut out))
+                .unwrap())(
+                // The function actually does not mutate self, so this cast is fine
+                self.impl_() as *const _ as *mut _,
+                &mut out,
+            ))
             .map(|_| out)
         }
     }
@@ -960,7 +982,7 @@ impl MatrixTransform for Context {
 impl PartialEq for Context {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.impl_() as *const _ == other.impl_() as *const _
+        self.impl_equals(other)
     }
 }
 

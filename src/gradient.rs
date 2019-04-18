@@ -1,4 +1,4 @@
-use core::{marker::PhantomData, mem, ops, ptr, slice};
+use core::{fmt, marker::PhantomData, mem, ops, ptr, slice};
 
 use ffi::BLGradientValue::*;
 
@@ -24,18 +24,21 @@ pub trait GradientType: private::Sealed {
     const BL_TYPE: u32;
 }
 
+#[derive(Debug)]
 pub enum Linear {}
 impl GradientType for Linear {
     type ValuesType = LinearGradientValues;
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_LINEAR as u32;
 }
+#[derive(Debug)]
 pub enum Radial {}
 impl GradientType for Radial {
     type ValuesType = RadialGradientValues;
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_RADIAL as u32;
 }
+#[derive(Debug)]
 pub enum Conical {}
 impl GradientType for Conical {
     type ValuesType = ConicalGradientValues;
@@ -81,6 +84,7 @@ pub struct ConicalGradientValues {
 }
 
 /// A Dynamic Gradient
+#[derive(Debug)]
 pub enum DynamicGradient {
     Linear(LinearGradient),
     Radial(RadialGradient),
@@ -205,15 +209,15 @@ impl<T: GradientType> Gradient<T> {
 
     /// Sets the value struct of this gradient.
     #[inline]
-    pub fn set_values(&mut self, values: &T::ValuesType) {
+    pub fn set_values(&mut self, values: &T::ValuesType) -> Result<()> {
         unsafe {
-            ffi::blGradientSetValues(
+            errcode_to_result(ffi::blGradientSetValues(
                 self.core_mut(),
                 0,
                 values as *const _ as *const _,
                 mem::size_of::<T::ValuesType>() / mem::size_of::<f64>(),
-            )
-        };
+            ))
+        }
     }
 
     #[inline]
@@ -546,6 +550,21 @@ impl<T: GradientType> ops::Deref for Gradient<T> {
     }
 }
 
+impl<T> fmt::Debug for Gradient<T>
+where
+    T: GradientType,
+    T::ValuesType: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Gradient")
+            .field("values", self.values())
+            .field("extend_mode", &self.extend_mode())
+            .field("stops", &self.stops())
+            .field("matrix", self.matrix())
+            .finish()
+    }
+}
+
 impl<T: GradientType> PartialEq for Gradient<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -563,7 +582,7 @@ impl<T: GradientType> Drop for Gradient<T> {
 mod test_gradient {
     use crate::{
         gradient::{Conical, Gradient, GradientStop, Linear, LinearGradientValues},
-        matrix::Matrix2D,
+        matrix::{Matrix2D, MatrixTransform},
         ExtendMode,
     };
 
@@ -595,5 +614,29 @@ mod test_gradient {
         assert_eq!(gradient.values(), &values);
         assert_eq!(gradient.stops(), &stops);
         assert_eq!(gradient.matrix(), &mat);
+    }
+
+    /// blGradientEquals currently has a faulty implementation
+    // #[test]
+    fn test_gradient_default_eq_late_init() {
+        let values = LinearGradientValues {
+            x0: 0.0,
+            y0: 0.0,
+            x1: 100.0,
+            y1: 100.0,
+        };
+        let stops = [GradientStop {
+            offset: 0.5,
+            rgba: 0xFF123456,
+        }];
+        let mat = Matrix2D::scaling(1.0, 2.0);
+
+        let gradient = Gradient::<Linear>::new(&values, ExtendMode::PadXPadY, &stops, Some(&mat));
+        let mut default = Gradient::<Linear>::default();
+        default.set_values(&values).unwrap();
+        default.add_stop(stops[0]).unwrap();
+        default.set_matrix(&mat).unwrap();
+
+        assert_eq!(gradient, default);
     }
 }

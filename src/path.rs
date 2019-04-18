@@ -2,7 +2,7 @@
 use bitflags::bitflags;
 
 use core::{
-    mem,
+    fmt, mem,
     ops::{self, Range},
     ptr, slice,
 };
@@ -117,7 +117,7 @@ bl_enum! {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ApproximationOptions {
     flatten_mode: u8,
     offset_mode: u8,
@@ -177,6 +177,12 @@ impl StrokeOptions {
 impl Default for StrokeOptions {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Debug for StrokeOptions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("StrokeOptions").finish()
     }
 }
 
@@ -804,6 +810,14 @@ impl Drop for Path {
 impl Default for Path {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Debug for Path {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Path")
+            .field("vertex_data", &self.vertex_data())
+            .finish()
     }
 }
 
