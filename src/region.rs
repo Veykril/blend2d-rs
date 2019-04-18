@@ -25,7 +25,7 @@ pub struct Region {
 
 unsafe impl WrappedBlCore for Region {
     type Core = ffi::BLRegionCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_REGION as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Region as usize;
 }
 
 impl Region {

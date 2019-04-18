@@ -126,7 +126,7 @@ pub struct Gradient<T: GradientType> {
 
 unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
     type Core = ffi::BLGradientCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_GRADIENT as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Gradient as usize;
 }
 
 impl<T: GradientType> Gradient<T> {
@@ -616,8 +616,7 @@ mod test_gradient {
         assert_eq!(gradient.matrix(), &mat);
     }
 
-    /// blGradientEquals currently has a faulty implementation
-    // #[test]
+    #[test]
     fn test_gradient_default_eq_late_init() {
         let values = LinearGradientValues {
             x0: 0.0,

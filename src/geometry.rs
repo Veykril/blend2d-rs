@@ -344,7 +344,7 @@ impl Geometry for RoundRect {
 pub struct Circle {
     pub cx: f64,
     pub cy: f64,
-    pub radius: f64,
+    pub r: f64,
 }
 
 impl Geometry for Circle {

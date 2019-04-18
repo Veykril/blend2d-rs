@@ -199,7 +199,7 @@ pub struct Path {
 
 unsafe impl WrappedBlCore for Path {
     type Core = ffi::BLPathCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_PATH2D as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Path as usize;
 }
 
 impl Path {
@@ -259,7 +259,7 @@ impl Path {
     pub fn vertex_data(&self) -> &[PointD] {
         unsafe {
             slice::from_raw_parts(
-                self.impl_().__bindgen_anon_1.view.vertexData as *const _ as *const _,
+                ffi::blPathGetVertexData(self.core()) as *const _,
                 self.len(),
             )
         }

@@ -73,7 +73,7 @@ pub struct Image {
 
 unsafe impl WrappedBlCore for Image {
     type Core = ffi::BLImageCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Image as usize;
 }
 
 impl Image {

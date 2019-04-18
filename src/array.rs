@@ -343,15 +343,15 @@ macro_rules! impl_array_type {
     }
 }
 
-use ffi::BLImplType::*;
+use crate::variant::ImplType;
 #[cfg(target_pointer_width = "32")]
-const BL_IMPL_TYPE_ARRAY_USIZE: usize = BL_IMPL_TYPE_ARRAY_U32 as usize;
+const BL_IMPL_TYPE_ARRAY_USIZE: usize = ImplType::ArrayU32 as usize;
 #[cfg(target_pointer_width = "32")]
-const BL_IMPL_TYPE_ARRAY_ISIZE: usize = BL_IMPL_TYPE_ARRAY_I32 as usize;
+const BL_IMPL_TYPE_ARRAY_ISIZE: usize = ImplType::ArrayI32 as usize;
 #[cfg(target_pointer_width = "64")]
-const BL_IMPL_TYPE_ARRAY_USIZE: usize = BL_IMPL_TYPE_ARRAY_U64 as usize;
+const BL_IMPL_TYPE_ARRAY_USIZE: usize = ImplType::ArrayU64 as usize;
 #[cfg(target_pointer_width = "64")]
-const BL_IMPL_TYPE_ARRAY_ISIZE: usize = BL_IMPL_TYPE_ARRAY_I64 as usize;
+const BL_IMPL_TYPE_ARRAY_ISIZE: usize = ImplType::ArrayI64 as usize;
 
 impl<T> ArrayType for *const T {
     const IMPL_IDX: usize = BL_IMPL_TYPE_ARRAY_USIZE;
@@ -367,18 +367,18 @@ impl<T> ArrayType for &mut T {
 }
 
 impl_array_type! {
-    impl i8 = BL_IMPL_TYPE_ARRAY_I8;
-    impl u8 = BL_IMPL_TYPE_ARRAY_U8;
-    impl i16 = BL_IMPL_TYPE_ARRAY_I16;
-    impl u16 = BL_IMPL_TYPE_ARRAY_U16;
-    impl i32 = BL_IMPL_TYPE_ARRAY_I32;
-    impl u32 = BL_IMPL_TYPE_ARRAY_U32;
-    impl i64 = BL_IMPL_TYPE_ARRAY_I64;
-    impl u64 = BL_IMPL_TYPE_ARRAY_U64;
+    impl i8 = ImplType::ArrayI8;
+    impl u8 = ImplType::ArrayU8;
+    impl i16 = ImplType::ArrayI16;
+    impl u16 = ImplType::ArrayU16;
+    impl i32 = ImplType::ArrayI32;
+    impl u32 = ImplType::ArrayU32;
+    impl i64 = ImplType::ArrayI64;
+    impl u64 = ImplType::ArrayU64;
     impl isize = BL_IMPL_TYPE_ARRAY_ISIZE;
     impl usize = BL_IMPL_TYPE_ARRAY_USIZE;
-    impl f32 = BL_IMPL_TYPE_ARRAY_F32;
-    impl f64 = BL_IMPL_TYPE_ARRAY_F64;
+    impl f32 = ImplType::ArrayF32;
+    impl f64 = ImplType::ArrayF64;
 }
 use crate::{
     codec::{ImageCodec, ImageDecoder, ImageEncoder},
@@ -396,16 +396,16 @@ impl<T: WrappedBlCore> ArrayType for T {
 }
 so we have to unfortunately go with a manual macro implementation */
 impl_array_type! {
-    impl Context, Image, ImageCodec, ImageDecoder, ImageEncoder, Path, Pattern, Region = BL_IMPL_TYPE_ARRAY_VAR;
+    impl Context, Image, ImageCodec, ImageDecoder, ImageEncoder, Path, Pattern, Region = ImplType::ArrayVar;
 }
 impl<G: GradientType> ArrayType for Gradient<G> {
-    const IMPL_IDX: usize = BL_IMPL_TYPE_ARRAY_VAR as usize;
+    const IMPL_IDX: usize = ImplType::ArrayVar as usize;
 }
 use crate::{geometry::*, Tag};
 impl_array_type! {
-    impl Tag = BL_IMPL_TYPE_ARRAY_STRUCT_4;
-    impl PointD, PointI, SizeD, SizeI = BL_IMPL_TYPE_ARRAY_STRUCT_8;
-    impl Circle = BL_IMPL_TYPE_ARRAY_STRUCT_12;
-    impl BoxD, BoxI, Ellipse, Line, RectD, RectI = BL_IMPL_TYPE_ARRAY_STRUCT_16;
-    impl Arc, Chord, Pie, RoundRect, Triangle = BL_IMPL_TYPE_ARRAY_STRUCT_24;
+    impl Tag = ImplType::ArrayStruct4;
+    impl PointD, PointI, SizeD, SizeI = ImplType::ArrayStruct8;
+    impl Circle = ImplType::ArrayStruct12;
+    impl BoxD, BoxI, Ellipse, Line, RectD, RectI = ImplType::ArrayStruct16;
+    impl Arc, Chord, Pie, RoundRect, Triangle = ImplType::ArrayStruct24;
 }

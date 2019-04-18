@@ -30,7 +30,7 @@ bl_enum! {
         ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
         ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
         ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
-        Path2d               = BL_IMPL_TYPE_PATH2D,
+        Path               = BL_IMPL_TYPE_PATH,
         Region               = BL_IMPL_TYPE_REGION,
         Image                = BL_IMPL_TYPE_IMAGE,
         ImageCodec           = BL_IMPL_TYPE_IMAGE_CODEC,

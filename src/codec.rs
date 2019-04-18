@@ -33,7 +33,7 @@ pub struct ImageCodec {
 
 unsafe impl WrappedBlCore for ImageCodec {
     type Core = ffi::BLImageCodecCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_CODEC as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageCodec as usize;
 }
 
 impl ImageCodec {
@@ -183,7 +183,7 @@ pub struct ImageEncoder {
 
 unsafe impl WrappedBlCore for ImageEncoder {
     type Core = ffi::BLImageEncoderCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_ENCODER as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageEncoder as usize;
 }
 
 impl ImageEncoder {
@@ -233,7 +233,7 @@ pub struct ImageDecoder {
 
 unsafe impl WrappedBlCore for ImageDecoder {
     type Core = ffi::BLImageDecoderCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE_DECODER as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageDecoder as usize;
 }
 
 impl ImageDecoder {

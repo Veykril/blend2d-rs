@@ -16,7 +16,7 @@ pub struct Pattern {
 
 unsafe impl WrappedBlCore for Pattern {
     type Core = ffi::BLPatternCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_PATTERN as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Pattern as usize;
 }
 
 impl Pattern {
