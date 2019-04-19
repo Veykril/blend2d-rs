@@ -132,6 +132,7 @@ bl_enum! {
 }
 
 use ffi::BLRenderingQuality::*;
+use std::marker::PhantomData;
 bl_enum! {
     pub enum RenderingQuality {
         AntiAliasing = BL_RENDERING_QUALITY_ANTIALIAS,
@@ -159,11 +160,12 @@ pub struct ContextHints {
 }
 
 #[repr(transparent)]
-pub struct Context {
+pub struct Context<'a> {
     core: ffi::BLContextCore,
+    _pd: PhantomData<&'a mut [u8]>,
 }
 
-impl fmt::Debug for Context {
+impl fmt::Debug for Context<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Context")
             .field("target_size", &self.target_size())
@@ -174,25 +176,30 @@ impl fmt::Debug for Context {
     }
 }
 
-unsafe impl WrappedBlCore for Context {
+unsafe impl WrappedBlCore for Context<'_> {
     type Core = ffi::BLContextCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Context as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        Context {
+            core,
+            _pd: PhantomData,
+        }
+    }
 }
 
-impl Context {
+impl<'a> Context<'a> {
     #[inline]
-    pub fn new(target: &mut Image) -> Result<Context> {
+    pub fn new<'b: 'a>(target: &'a mut Image<'b>) -> Result<Context<'a>> {
         Self::new_with_options(target, None)
     }
 
-    pub fn new_with_options(
-        target: &mut Image,
+    pub fn new_with_options<'b: 'a>(
+        target: &'a mut Image<'b>,
         info: Option<ContextCreateInfo>,
-    ) -> Result<Context> {
+    ) -> Result<Context<'a>> {
         unsafe {
-            let mut this = Context {
-                core: *Self::none(),
-            };
+            let mut this = Context::from_core(*Self::none());
             let info = info.map(|info| ffi::BLContextCreateInfo {
                 flags: info.flags.bits(),
                 threadCount: info.thread_count,
@@ -227,17 +234,6 @@ impl Context {
     #[inline]
     pub fn context_type(&self) -> ContextType {
         self.impl_().contextType.into()
-    }
-
-    #[inline]
-    pub fn begin(&mut self, image: &mut Image) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blContextBegin(
-                self.core_mut(),
-                image.core_mut(),
-                ptr::null(),
-            ))
-        }
     }
 
     /// Currently, end just calls reset. So it is fine to just drop the
@@ -381,7 +377,7 @@ impl Context {
 }
 
 // FIXME? make functions generic over a Stroke/FillStyle trait?
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn fill_style_type(&self) -> StyleType {
         (self.state().styleType[ContextOpType::Fill as usize] as u32).into()
@@ -407,12 +403,12 @@ impl Context {
     }
 
     #[inline]
-    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern) -> Result<()> {
+    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern<'_>) -> Result<()> {
         self.set_fill_style(pattern.core().as_variant_core())
     }
 
     #[inline]
-    pub fn set_fill_style_image(&mut self, image: &Image) -> Result<()> {
+    pub fn set_fill_style_image(&mut self, image: &Image<'_>) -> Result<()> {
         self.set_fill_style(image.core().as_variant_core())
     }
 
@@ -582,7 +578,7 @@ impl Context {
     }
 
     #[inline]
-    pub fn set_stroke_style_image(&mut self, image: &Image) -> Result<()> {
+    pub fn set_stroke_style_image(&mut self, image: &Image<'_>) -> Result<()> {
         self.set_stroke_style(image.core().as_variant_core())
     }
 
@@ -690,7 +686,7 @@ impl Context {
 }
 
 /// Clip Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn restore_clipping(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextRestoreClipping(self.core_mut())) }
@@ -713,7 +709,7 @@ impl Context {
 }
 
 /// Clear Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn clear_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextClearAll(self.core_mut())) }
@@ -738,7 +734,7 @@ impl Context {
     pub fn blit_image<P: Point>(
         &mut self,
         dst: &P,
-        src: &Image,
+        src: &Image<'_>,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -755,7 +751,7 @@ impl Context {
     pub fn blit_scaled_image<R: Rect>(
         &mut self,
         dst: &R,
-        src: &Image,
+        src: &Image<'_>,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -770,7 +766,7 @@ impl Context {
 }
 
 /// Fill Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -864,7 +860,7 @@ impl Context {
 }
 
 /// Stroke Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -973,7 +969,7 @@ impl Context {
     }
 }
 
-impl MatrixTransform for Context {
+impl MatrixTransform for Context<'_> {
     #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
@@ -987,14 +983,14 @@ impl MatrixTransform for Context {
     }
 }
 
-impl PartialEq for Context {
+impl PartialEq for Context<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_equals(other)
     }
 }
 
-impl Drop for Context {
+impl Drop for Context<'_> {
     fn drop(&mut self) {
         unsafe { ffi::blContextReset(&mut self.core) };
     }

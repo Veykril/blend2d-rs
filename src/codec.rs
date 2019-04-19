@@ -34,15 +34,17 @@ pub struct ImageCodec {
 unsafe impl WrappedBlCore for ImageCodec {
     type Core = ffi::BLImageCodecCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageCodec as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        ImageCodec { core }
+    }
 }
 
 impl ImageCodec {
     /// Searches for an image codec in the array by the given name.
     pub fn find_by_name(codecs: &Array<ImageCodec>, name: &str) -> Result<Self> {
         unsafe {
-            let mut this = ImageCodec {
-                core: *Self::none(),
-            };
+            let mut this = ImageCodec::from_core(*Self::none());
             let name = CString::new(name).expect("Failed to create CString");
             errcode_to_result(ffi::blImageCodecFindByName(
                 this.core_mut(),
@@ -57,9 +59,7 @@ impl ImageCodec {
     #[inline]
     pub fn find_by_data<R: AsRef<[u8]>>(codecs: &Array<ImageCodec>, data: R) -> Result<Self> {
         unsafe {
-            let mut this = ImageCodec {
-                core: *Self::none(),
-            };
+            let mut this = ImageCodec::from_core(*Self::none());
             errcode_to_result(ffi::blImageCodecFindByData(
                 this.core_mut(),
                 codecs.core(),
@@ -184,6 +184,10 @@ pub struct ImageEncoder {
 unsafe impl WrappedBlCore for ImageEncoder {
     type Core = ffi::BLImageEncoderCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageEncoder as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        ImageEncoder { core }
+    }
 }
 
 impl ImageEncoder {
@@ -234,6 +238,10 @@ pub struct ImageDecoder {
 unsafe impl WrappedBlCore for ImageDecoder {
     type Core = ffi::BLImageDecoderCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageDecoder as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        ImageDecoder { core }
+    }
 }
 
 impl ImageDecoder {

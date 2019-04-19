@@ -26,14 +26,16 @@ pub struct Region {
 unsafe impl WrappedBlCore for Region {
     type Core = ffi::BLRegionCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Region as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        Region { core }
+    }
 }
 
 impl Region {
     #[inline]
     pub fn new() -> Self {
-        Region {
-            core: *Self::none(),
-        }
+        Region::from_core(*Self::none())
     }
 
     #[inline]

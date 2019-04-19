@@ -5,6 +5,7 @@
 mod macros;
 
 pub(in crate) mod variant;
+pub use self::variant::Shared;
 
 pub mod array;
 pub mod codec;

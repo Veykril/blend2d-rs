@@ -200,14 +200,16 @@ pub struct Path {
 unsafe impl WrappedBlCore for Path {
     type Core = ffi::BLPathCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Path as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        Path { core }
+    }
 }
 
 impl Path {
     #[inline]
     pub fn new() -> Self {
-        Path {
-            core: *Self::none(),
-        }
+        Path::from_core(*Self::none())
     }
 
     pub fn with_capacity(n: usize) -> Self {

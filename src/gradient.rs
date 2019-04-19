@@ -127,6 +127,13 @@ pub struct Gradient<T: GradientType> {
 unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
     type Core = ffi::BLGradientCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Gradient as usize;
+
+    fn from_core(core: Self::Core) -> Self {
+        Gradient {
+            core,
+            _pd: PhantomData,
+        }
+    }
 }
 
 impl<T: GradientType> Gradient<T> {
@@ -138,12 +145,10 @@ impl<T: GradientType> Gradient<T> {
         stops: &[GradientStop],
         m: Option<&Matrix2D>,
     ) -> Self {
-        let mut core = ffi::BLGradientCore {
-            impl_: ptr::null_mut(),
-        };
+        let mut this = Gradient::from_core(*Self::none());
         unsafe {
             ffi::blGradientInitAs(
-                &mut core,
+                this.core_mut(),
                 T::BL_TYPE,
                 values as *const _ as *const _,
                 extend_mode as u32,
@@ -152,10 +157,7 @@ impl<T: GradientType> Gradient<T> {
                 m.map_or(ptr::null_mut(), |m| m as *const _ as *const _),
             )
         };
-        Gradient {
-            core,
-            _pd: PhantomData,
-        }
+        this
     }
 
     /// Creates a new gradient from an iterator of [`GradientStop`]s and an

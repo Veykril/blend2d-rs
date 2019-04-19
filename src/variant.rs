@@ -163,7 +163,7 @@ pub unsafe trait BlVariantCore: Sized {
 
     #[inline]
     fn init_weak(&self, other: &mut Self) {
-        unsafe { ffi::blVariantInitWeak(other as *mut _ as *mut _, &self as *const _ as *const _) };
+        unsafe { ffi::blVariantInitWeak(other as *mut _ as *mut _, self as *const _ as *const _) };
     }
 }
 
@@ -219,6 +219,7 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;
+    fn from_core(core: Self::Core) -> Self;
 
     /// The default implementation reinterprets &self as &Self::Core.
     #[inline]
@@ -266,5 +267,62 @@ pub unsafe trait WrappedBlCore: Sized {
         let mut other = unsafe { core::mem::zeroed() };
         self.core().init_weak(&mut other);
         other
+    }
+}
+
+/// A wrapper-struct for Blend2D objects that makes use of the internal
+/// refcounting done by blend2d.
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Shared<T: WrappedBlCore>(T);
+
+impl<T: WrappedBlCore> Shared<T> {
+    pub fn new(val: T) -> Self {
+        Shared(val)
+    }
+
+    pub fn ref_count(&self) -> usize {
+        self.0.impl_().ref_count()
+    }
+}
+
+impl<T: WrappedBlCore> Clone for Shared<T> {
+    fn clone(&self) -> Self {
+        Shared(T::from_core(self.0.init_weak()))
+    }
+}
+
+impl<T: WrappedBlCore> PartialEq for Shared<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.impl_equals(other)
+    }
+}
+
+impl<T: WrappedBlCore> core::ops::Deref for Shared<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: WrappedBlCore> Drop for Shared<T> {
+    fn drop(&mut self) {
+        unsafe { ffi::blVariantReset(self.0.core_mut() as *mut _ as *mut _) };
+    }
+}
+
+#[cfg(test)]
+mod test_shared {
+    use crate::{path::Path, Shared};
+    #[test]
+    fn test_shared_clone() {
+        let mut path = Path::new();
+        path.move_to(1.0, 1.0).unwrap();
+        let shared = Shared::new(path);
+        assert_eq!(shared.ref_count(), 1);
+        let clone = shared.clone();
+        assert_eq!(shared.ref_count(), 2);
+        assert_eq!(shared.ref_count(), clone.ref_count());
     }
 }

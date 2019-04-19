@@ -17,23 +17,24 @@ pub struct Array<T: ArrayType> {
 unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
     type Core = ffi::BLArrayCore;
     const IMPL_TYPE_INDEX: usize = T::IMPL_IDX;
+
+    fn from_core(core: Self::Core) -> Self {
+        Array {
+            core,
+            _pd: PhantomData,
+        }
+    }
 }
 
 impl<T: ArrayType> Array<T> {
     /// Creates a new empty array.
     pub fn new() -> Self {
-        Array {
-            core: *Self::none(),
-            _pd: PhantomData,
-        }
+        Self::from_core(*Self::none())
     }
 
     /// Creates a new empty array.
     pub fn with_capacity(cap: usize) -> Self {
-        let mut this = Array {
-            core: *Self::none(),
-            _pd: PhantomData,
-        };
+        let mut this = Array::from_core(*Self::none());
         this.reserve(cap);
         this
     }
@@ -538,7 +539,7 @@ mod test_array {
             Image::new(4, 4, Default::default()).unwrap(),
             Image::new(5, 5, Default::default()).unwrap(),
         ];
-        let mut arr = Array::<Image>::new();
+        let mut arr = Array::<Image<'static>>::new();
         arr.push(img[0].clone());
         arr.push(img[1].clone());
         arr.push(img[2].clone());
