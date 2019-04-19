@@ -1,14 +1,13 @@
-use core::{fmt, slice};
+use core::{borrow::Borrow, fmt, slice};
 
 use crate::{
     error::{errcode_to_result, Result},
-    geometry::{BoxI, PointI},
+    geometry::{BoxI, HitTest, PointI},
     variant::WrappedBlCore,
     BooleanOp,
 };
 
 use ffi::BLRegionType::*;
-use std::borrow::Borrow;
 bl_enum! {
     pub enum RegionType {
         Empty   = BL_REGION_TYPE_EMPTY,
@@ -27,6 +26,7 @@ unsafe impl WrappedBlCore for Region {
     type Core = ffi::BLRegionCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Region as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Region { core }
     }
@@ -43,21 +43,25 @@ impl Region {
         unsafe { ffi::blRegionGetType(self.core()).into() }
     }
 
+    /// Returns true if this region is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.data().len() == 0
+        self.region_type() == RegionType::Empty
     }
 
+    /// Returns true if this region is a rectangle.
     #[inline]
     pub fn is_rect(&self) -> bool {
-        self.data().len() == 1
+        self.region_type() == RegionType::Rect
     }
 
+    /// Returns true if this region is of complex shape.
     #[inline]
     pub fn is_complex(&self) -> bool {
-        self.data().len() > 1
+        self.region_type() == RegionType::Complex
     }
 
+    /// The region's boxes.
     #[inline]
     pub fn data(&self) -> &[BoxI] {
         unsafe {
@@ -66,36 +70,48 @@ impl Region {
         }
     }
 
+    /// The number of [`BoxI`] this region contains.
     #[inline]
     pub fn len(&self) -> usize {
         self.data().len()
     }
 
+    /// Returns the currently allocated capacity of the region.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.impl_().capacity
     }
 
+    /// A bounding box representing this region.
     #[inline]
     pub fn bounding_box(&self) -> &BoxI {
         unsafe { &*(&self.impl_().boundingBox as *const _ as *const _) }
     }
 
+    /// Clears the region.
     #[inline]
     pub fn clear(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blRegionClear(self.core_mut())) }
     }
 
+    /// Reserves capacity for at least n boxes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if blend2d returns an
+    /// [`OutOfMemory`](../error/enum.Error.html#variant.OutOfMemory) error
     #[inline]
     pub fn reserve(&mut self, n: usize) {
         self.try_reserve(n).unwrap()
     }
 
+    /// Reserves capacity for at least n boxes.
     #[inline]
     pub fn try_reserve(&mut self, n: usize) -> Result<()> {
         unsafe { errcode_to_result(ffi::blRegionReserve(self.core_mut(), n)) }
     }
 
+    /// Shrinks the region's allocated capacity down to its current length.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         unsafe { errcode_to_result(ffi::blRegionShrink(self.core_mut())).unwrap() }
@@ -149,6 +165,10 @@ impl Region {
         }
     }
 
+    /// Translates the region by the given [`PointI`].
+    /// Possible overflow will be handled by clipping to a maximum region
+    /// boundary, so the final region could be smaller than the region before
+    /// translation.
     #[inline]
     pub fn translate(&mut self, p: &PointI) -> Result<()> {
         unsafe {
@@ -160,6 +180,8 @@ impl Region {
         }
     }
 
+    /// Translates the region by the given [`PointI`] and clips it to the given
+    /// `[BoxI]`.
     #[inline]
     pub fn translate_and_clip(&mut self, p: &PointI, clip: &BoxI) -> Result<()> {
         unsafe {
@@ -171,7 +193,8 @@ impl Region {
             ))
         }
     }
-
+    /// Translates the region by the given region and clips it to the given
+    /// `[BoxI]`.
     #[inline]
     pub fn intersect_and_clip(&mut self, region: &Region, clip: &BoxI) -> Result<()> {
         unsafe {
@@ -184,24 +207,16 @@ impl Region {
         }
     }
 
+    /// Tests if a given [`PointI`] is in the region.
     #[inline]
-    pub fn hit_test(&mut self, p: &PointI) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blRegionHitTest(
-                self.core_mut(),
-                p as *const _ as *const _,
-            ))
-        }
+    pub fn hit_test(&self, p: &PointI) -> HitTest {
+        unsafe { ffi::blRegionHitTest(self.core(), p as *const _ as *const _).into() }
     }
 
+    /// Tests if a given [`BoxI`] is in the region.
     #[inline]
-    pub fn hit_test_box(&mut self, b: &BoxI) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blRegionHitTestBoxI(
-                self.core_mut(),
-                b as *const _ as *const _,
-            ))
-        }
+    pub fn hit_test_box(&self, b: &BoxI) -> HitTest {
+        unsafe { ffi::blRegionHitTestBoxI(self.core(), b as *const _ as *const _).into() }
     }
 }
 

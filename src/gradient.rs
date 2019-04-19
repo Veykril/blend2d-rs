@@ -1,4 +1,11 @@
-use core::{fmt, marker::PhantomData, mem, ops, ptr, slice};
+use core::{
+    borrow::Borrow,
+    fmt,
+    marker::PhantomData,
+    mem,
+    ops::{self, RangeBounds},
+    ptr, slice,
+};
 
 use ffi::BLGradientValue::*;
 
@@ -9,7 +16,6 @@ use crate::{
     variant::WrappedBlCore,
     ExtendMode,
 };
-use std::{borrow::Borrow, ops::RangeBounds};
 
 mod private {
     pub trait Sealed {}
@@ -128,6 +134,7 @@ unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
     type Core = ffi::BLGradientCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Gradient as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Gradient {
             core,
@@ -139,10 +146,11 @@ unsafe impl<T: GradientType> WrappedBlCore for Gradient<T> {
 impl<T: GradientType> Gradient<T> {
     /// Creates a new gradient with optional initial stops and an optional
     /// transformation [`Matrix2D`].
-    pub fn new(
+    #[inline]
+    pub fn new<R: AsRef<[GradientStop]>>(
         values: &T::ValuesType,
         extend_mode: ExtendMode,
-        stops: &[GradientStop],
+        stops: R,
         m: Option<&Matrix2D>,
     ) -> Self {
         let mut this = Gradient::from_core(*Self::none());
@@ -152,8 +160,8 @@ impl<T: GradientType> Gradient<T> {
                 T::BL_TYPE,
                 values as *const _ as *const _,
                 extend_mode as u32,
-                stops.as_ptr() as *const _ as *const _,
-                stops.len(),
+                stops.as_ref().as_ptr() as *const _ as *const _,
+                stops.as_ref().len(),
                 m.map_or(ptr::null_mut(), |m| m as *const _ as *const _),
             )
         };
@@ -161,15 +169,19 @@ impl<T: GradientType> Gradient<T> {
     }
 
     /// Creates a new gradient from an iterator of [`GradientStop`]s and an
-    /// optional transformation [`Matrix2D`]..
-    pub fn new_from_iter<I: Iterator<Item = GradientStop>>(
+    /// optional transformation [`Matrix2D`].
+    pub fn new_from_iter<I: IntoIterator<Item = GradientStop>>(
         values: &T::ValuesType,
         extend_mode: ExtendMode,
         stops: I,
         m: Option<&Matrix2D>,
     ) -> Self {
-        let stops = stops.collect::<Vec<_>>();
-        Self::new(values, extend_mode, &stops, m)
+        let mut this = Self::new(values, extend_mode, &[], m);
+        let stops = stops.into_iter();
+        let len = stops.size_hint().1.unwrap_or(stops.size_hint().0);
+        this.try_reserve(len).unwrap();
+        this.extend(stops);
+        this
     }
 
     #[inline]
@@ -277,7 +289,7 @@ impl<T: GradientType> Gradient<T> {
     /// Returns the number of stops in this gradient.
     #[inline]
     pub fn len(&self) -> usize {
-        unsafe { self.impl_().__bindgen_anon_1.__bindgen_anon_1.size }
+        unsafe { ffi::blGradientGetSize(self.core()) }
     }
 
     /// Returns the number of stops in this gradient.
@@ -532,6 +544,7 @@ where
 }
 
 impl<T: GradientType> Borrow<[GradientStop]> for Gradient<T> {
+    #[inline]
     fn borrow(&self) -> &[GradientStop] {
         self
     }
@@ -547,8 +560,43 @@ impl<T: GradientType> AsRef<[GradientStop]> for Gradient<T> {
 impl<T: GradientType> ops::Deref for Gradient<T> {
     type Target = [GradientStop];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.stops()
+    }
+}
+
+impl<T, I> ops::Index<I> for Gradient<T>
+where
+    T: GradientType,
+    I: slice::SliceIndex<[GradientStop]>,
+{
+    type Output = I::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
+        ops::Index::index(&**self, index)
+    }
+}
+
+impl<'a, T: GradientType> IntoIterator for &'a Gradient<T> {
+    type Item = &'a GradientStop;
+    type IntoIter = slice::Iter<'a, GradientStop>;
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<T: GradientType> Extend<GradientStop> for Gradient<T> {
+    #[inline]
+    fn extend<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = GradientStop>,
+    {
+        for stop in iter {
+            let _ = self.add_stop(stop);
+        }
     }
 }
 

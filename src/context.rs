@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::{fmt, mem, ptr};
+use core::{fmt, marker::PhantomData, mem, ptr};
 
 use crate::{
     array::Array,
@@ -132,7 +132,6 @@ bl_enum! {
 }
 
 use ffi::BLRenderingQuality::*;
-use std::marker::PhantomData;
 bl_enum! {
     pub enum RenderingQuality {
         AntiAliasing = BL_RENDERING_QUALITY_ANTIALIAS,
@@ -180,6 +179,7 @@ unsafe impl WrappedBlCore for Context<'_> {
     type Core = ffi::BLContextCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Context as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Context {
             core,

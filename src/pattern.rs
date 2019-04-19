@@ -19,6 +19,7 @@ unsafe impl WrappedBlCore for Pattern<'_> {
     type Core = ffi::BLPatternCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Pattern as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Pattern {
             core,
@@ -27,14 +28,16 @@ unsafe impl WrappedBlCore for Pattern<'_> {
     }
 }
 
-impl Pattern<'_> {
+impl<'a> Pattern<'a> {
+    /// Creates a new pattern that borrows the given [`Image`] immutably for its
+    /// lifetime.
     #[inline]
     pub fn new(
-        image: &Image<'_>,
+        image: &'a Image<'a>,
         area: Option<&RectI>,
         extend_mode: ExtendMode,
         matrix: Option<&Matrix2D>,
-    ) -> Self {
+    ) -> Pattern<'a> {
         let mut this = Pattern::from_core(*Self::none());
         unsafe {
             ffi::blPatternInitAs(
@@ -48,49 +51,58 @@ impl Pattern<'_> {
         this
     }
 
+    /// The pattern's [`Image`].
     #[inline]
-    pub fn image<'a>(&'a self) -> &Image<'a> {
+    pub fn image(&'a self) -> &'a Image<'a> {
         unsafe { &*(&self.impl_().image as *const _ as *const _) }
     }
 
+    /// Returns this pattern with a new [`Image`].
+    ///
+    /// There is no set function because such a function would not be able to
+    /// change the pattern's lifetime.
     #[inline]
-    pub fn set_image(&mut self, image: &Image<'_>) -> Result<()> {
+    pub fn with_new_image<'b>(mut self, image: &'b Image<'b>) -> Result<Pattern<'b>> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 ptr::null(),
             ))
+            .map(|_| Pattern {
+                core: self.core,
+                _pd: PhantomData,
+            })
         }
     }
 
+    /// Returns this pattern with a new clipped [`Image`].
     #[inline]
-    pub fn set_image_clipped(&mut self, image: &Image<'_>, area: &RectI) -> Result<()> {
+    pub fn with_new_image_clipped<'b>(
+        mut self,
+        image: &'b Image<'b>,
+        area: &RectI,
+    ) -> Result<Pattern<'b>> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 area as *const _ as *const _,
             ))
+            .map(|_| Pattern {
+                core: self.core,
+                _pd: PhantomData,
+            })
         }
     }
 
-    #[inline]
-    pub fn reset_image(&mut self) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blPatternSetImage(
-                self.core_mut(),
-                Image::none(),
-                ptr::null(),
-            ))
-        }
-    }
-
+    /// The clipping area.
     #[inline]
     pub fn area(&self) -> &RectI {
         unsafe { &*(&self.impl_().area as *const _ as *const _) }
     }
 
+    /// Sets the clipping area.
     #[inline]
     pub fn set_area(&mut self, area: &RectI) -> Result<()> {
         unsafe {
@@ -101,26 +113,31 @@ impl Pattern<'_> {
         }
     }
 
+    /// Resets the clipping area to zero.
     #[inline]
     pub fn reset_area(&mut self) -> Result<()> {
         self.set_area(&RectI::default())
     }
 
+    /// The pattern's [`ExtendMode`].
     #[inline]
     pub fn extend_mode(&self) -> ExtendMode {
         (self.impl_().extendMode as u32).into()
     }
 
+    /// Sets the pattern's [`ExtendMode`].
     #[inline]
     pub fn set_extend_mode(&mut self, mode: ExtendMode) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPatternSetExtendMode(self.core_mut(), mode.into())) }
     }
 
+    /// Resets the pattern's [`ExtendMode`] to the default.
     #[inline]
     pub fn reset_extend_mode(&mut self) -> Result<()> {
         self.set_extend_mode(Default::default())
     }
 
+    /// SThe pattern's [`Matrix2D`]
     #[inline]
     pub fn matrix(&self) -> &Matrix2D {
         unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
@@ -138,6 +155,13 @@ impl MatrixTransform for Pattern<'_> {
                 data.as_ptr() as *const _,
             ))
         }
+    }
+}
+
+impl<'a> From<&'a Image<'a>> for Pattern<'a> {
+    #[inline]
+    fn from(image: &'a Image<'a>) -> Self {
+        Self::new(image, None, Default::default(), None)
     }
 }
 

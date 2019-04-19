@@ -18,6 +18,7 @@ unsafe impl<T: ArrayType> WrappedBlCore for Array<T> {
     type Core = ffi::BLArrayCore;
     const IMPL_TYPE_INDEX: usize = T::IMPL_IDX;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Array {
             core,

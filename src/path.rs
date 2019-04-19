@@ -2,6 +2,7 @@
 use bitflags::bitflags;
 
 use core::{
+    borrow::Borrow,
     fmt, mem,
     ops::{self, Range},
     ptr, slice,
@@ -10,7 +11,7 @@ use core::{
 use crate::{
     bl_range,
     error::{errcode_to_result, Result},
-    geometry::{BoxD, FillRule, Geometry, GeometryDirection, Point, PointD, RectD},
+    geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD},
     matrix::Matrix2D,
     variant::WrappedBlCore,
 };
@@ -128,24 +129,29 @@ pub struct ApproximationOptions {
 }
 
 impl ApproximationOptions {
+    #[inline]
     pub fn set_flatten_mode(&mut self, mode: FlattenMode) {
         self.flatten_mode = mode as u8;
     }
 
+    #[inline]
     pub fn flatten_mode(&self) -> FlattenMode {
         (self.flatten_mode as u32).into()
     }
 
+    #[inline]
     pub fn set_offset_mode(&mut self, mode: OffsetMode) {
         self.offset_mode = mode as u8;
     }
 
+    #[inline]
     pub fn offset_mode(&self) -> OffsetMode {
         (self.offset_mode as u32).into()
     }
 }
 
 impl Default for ApproximationOptions {
+    #[inline]
     fn default() -> Self {
         unsafe { *(&ffi::blDefaultApproximationOptions as *const _ as *const ApproximationOptions) }
     }
@@ -166,6 +172,7 @@ impl StrokeOptions {
         }
     }
 
+    #[inline]
     pub fn set_caps(&mut self, cap: StrokeCap) {
         unsafe {
             self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
@@ -175,6 +182,7 @@ impl StrokeOptions {
 }
 
 impl Default for StrokeOptions {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -201,52 +209,69 @@ unsafe impl WrappedBlCore for Path {
     type Core = ffi::BLPathCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Path as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         Path { core }
     }
 }
 
 impl Path {
+    /// Creates a new empty path.
     #[inline]
     pub fn new() -> Self {
         Path::from_core(*Self::none())
     }
 
+    /// Creates a new path with space for n elements before having to
+    /// reallocate.
+    #[inline]
     pub fn with_capacity(n: usize) -> Self {
         let mut this = Self::new();
         this.reserve(n);
         this
     }
 
+    /// Clears the path.
     #[inline]
     pub fn clear(&mut self) {
         unsafe { ffi::blPathClear(self.core_mut()) };
     }
 
+    /// Shrinks the path's allocated capacity down to its currently used size.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
         unsafe { errcode_to_result(ffi::blPathShrink(self.core_mut())).unwrap() };
     }
 
+    /// Reserves capacity for at least n items.
+    ///
+    /// # Panics
+    ///
+    /// Panics if blend2d returns an
+    /// [`OutOfMemory`](../error/enum.Error.html#variant.OutOfMemory) error
     #[inline]
     pub fn reserve(&mut self, n: usize) {
         self.try_reserve(n).unwrap();
     }
 
+    /// Reserves capacity for at least n items.
     pub fn try_reserve(&mut self, n: usize) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathReserve(self.core_mut(), n)) }
     }
 
+    /// Returns the current number of vertices in the path.
     #[inline]
     pub fn len(&self) -> usize {
         unsafe { self.impl_().__bindgen_anon_1.view.size }
     }
 
+    /// Returns the currently allocated capacity of the path.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.impl_().capacity as usize
     }
 
+    /// Returns true if the path has no vertices.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -267,6 +292,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn info_flags(&self) -> Result<PathFlags> {
         unsafe {
             let mut flags = 0;
@@ -275,6 +301,8 @@ impl Path {
         }
     }
 
+    /// Retrieves a bounding box of all vertices and control points.
+    #[inline]
     pub fn control_box(&self) -> Result<BoxD> {
         unsafe {
             let mut box2d = BoxD::default();
@@ -286,6 +314,8 @@ impl Path {
         }
     }
 
+    /// Retrieves a bounding box of all on-path vertices and curve extremas.
+    #[inline]
     pub fn bounding_box(&self) -> Result<BoxD> {
         unsafe {
             let mut box2d = BoxD::default();
@@ -297,6 +327,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn figure_range(&self, index: usize) -> Result<Range<usize>> {
         unsafe {
             let mut range = ffi::BLRange { start: 0, end: 0 };
@@ -309,6 +340,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn last_vertex(&self) -> Result<PointD> {
         unsafe {
             let mut point = PointD::default();
@@ -320,6 +352,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn closest_vertex(&self, p: &PointD, max_distance: f64) -> Result<(usize, f64)> {
         unsafe {
             let mut idx = 0;
@@ -335,13 +368,11 @@ impl Path {
         }
     }
 
-    pub fn hit_test(&self, p: &PointD, fill_rule: FillRule) -> Result<()> {
+    /// Hit tests the given point p by respecting the given [`FillRule`].
+    #[inline]
+    pub fn hit_test(&self, p: &PointD, fill_rule: FillRule) -> HitTest {
         unsafe {
-            errcode_to_result(ffi::blPathHitTest(
-                self.core(),
-                p as *const _ as *const _,
-                fill_rule as u32,
-            ))
+            ffi::blPathHitTest(self.core(), p as *const _ as *const _, fill_rule as u32).into()
         }
     }
 
@@ -585,6 +616,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn add_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
         other: &Path,
@@ -611,6 +643,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn add_translated_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
         other: &Path,
@@ -639,6 +672,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn add_transformed_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
         other: &Path,
@@ -667,6 +701,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn add_reversed_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
         other: &Path,
@@ -701,6 +736,7 @@ impl Path {
         }
     }
 
+    #[inline]
     pub fn add_stroked_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
         other: &Path,
@@ -721,6 +757,8 @@ impl Path {
 }
 
 impl Path {
+    /// Translates the whole path by the given point.
+    #[inline]
     pub fn translate(&mut self, p: &PointD) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTranslate(
@@ -731,6 +769,8 @@ impl Path {
         }
     }
 
+    /// Translates a part of the path by the given point.
+    #[inline]
     pub fn translate_range<R: ops::RangeBounds<usize>>(
         &mut self,
         range: R,
@@ -745,6 +785,8 @@ impl Path {
         }
     }
 
+    /// Transforms the whole path by the given transformation matrix.
+    #[inline]
     pub fn transform(&mut self, m: &Matrix2D) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathTransform(
@@ -755,6 +797,8 @@ impl Path {
         }
     }
 
+    /// Transforms a part of the path by the given transformation matrix.
+    #[inline]
     pub fn transform_range<R: ops::RangeBounds<usize>>(
         &mut self,
         range: R,
@@ -769,6 +813,9 @@ impl Path {
         }
     }
 
+    /// Fits the whole path into the given rect by taking into account fit flags
+    /// passed by [`FitFlags`].
+    #[inline]
     pub fn fit_to(&mut self, rect: &RectD, flags: PathFitFlags) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPathFitTo(
@@ -780,6 +827,9 @@ impl Path {
         }
     }
 
+    /// Fits a part of the path specified by the given range into the given rect
+    /// by taking into account the given [`FitFlags`].
+    #[inline]
     pub fn fit_to_range<R: ops::RangeBounds<usize>>(
         &mut self,
         range: R,
@@ -798,6 +848,7 @@ impl Path {
 }
 
 impl PartialEq for Path {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { ffi::blPathEquals(self.core(), other.core()) }
     }
@@ -810,8 +861,23 @@ impl Drop for Path {
 }
 
 impl Default for Path {
+    #[inline]
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Borrow<[PointD]> for Path {
+    #[inline]
+    fn borrow(&self) -> &[PointD] {
+        self.vertex_data()
+    }
+}
+
+impl AsRef<[PointD]> for Path {
+    #[inline]
+    fn as_ref(&self) -> &[PointD] {
+        self.vertex_data()
     }
 }
 

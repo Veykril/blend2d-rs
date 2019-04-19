@@ -35,6 +35,7 @@ unsafe impl WrappedBlCore for ImageCodec {
     type Core = ffi::BLImageCodecCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageCodec as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         ImageCodec { core }
     }
@@ -185,6 +186,7 @@ unsafe impl WrappedBlCore for ImageEncoder {
     type Core = ffi::BLImageEncoderCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageEncoder as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         ImageEncoder { core }
     }
@@ -239,6 +241,7 @@ unsafe impl WrappedBlCore for ImageDecoder {
     type Core = ffi::BLImageDecoderCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::ImageDecoder as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Self {
         ImageDecoder { core }
     }

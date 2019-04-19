@@ -1,4 +1,6 @@
-use core::{fmt, ptr, slice};
+use bitflags::bitflags;
+
+use core::{fmt, marker::PhantomData, ptr, slice};
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -12,8 +14,6 @@ use crate::{
     variant::WrappedBlCore,
 };
 
-use bitflags::bitflags;
-
 use ffi::BLImageInfoFlags::*;
 bitflags! {
     pub struct ImageInfoFlags: u32 {
@@ -22,7 +22,6 @@ bitflags! {
 }
 
 use ffi::BLImageScaleFilter::*;
-use std::marker::PhantomData;
 bl_enum! {
     pub enum ImageScaleFilter {
         Nearest  = BL_IMAGE_SCALE_FILTER_NEAREST,
@@ -77,6 +76,7 @@ unsafe impl WrappedBlCore for Image<'_> {
     type Core = ffi::BLImageCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Image as usize;
 
+    #[inline]
     fn from_core(core: Self::Core) -> Image<'static> {
         Image {
             core,
@@ -255,9 +255,9 @@ impl PartialEq for Image<'_> {
     }
 }
 
-impl Clone for Image<'_> {
+impl<'a> Clone for Image<'a> {
     #[inline]
-    fn clone(&self) -> Self {
+    fn clone(&self) -> Image<'a> {
         let mut new = Image::from_core(*Self::none());
         unsafe { ffi::blImageAssignDeep(new.core_mut(), self.core()) };
         new
