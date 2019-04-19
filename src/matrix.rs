@@ -27,7 +27,7 @@ bl_enum! {
 
 // Row-Major
 #[repr(transparent)]
-#[derive(Default, Copy, Clone)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Matrix2D([f64; ffi::BLMatrix2DValue::BL_MATRIX2D_VALUE_COUNT as usize]);
 
 impl Matrix2D {

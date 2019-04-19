@@ -1,19 +1,20 @@
 use bitflags::bitflags;
 
-use core::{mem, ptr};
+use core::{fmt, marker::PhantomData, mem, ptr};
 
 use crate::{
     array::Array,
     error::{errcode_to_result, Result},
     geometry::{
-        Arc, BoxD, Chord, Circle, Ellipse, GeoViewArray, Geometry, Pie, Point, Rect, RectD,
-        RoundRect, SizeD, Triangle,
+        Arc, BoxD, Chord, Circle, Ellipse, FillRule, GeoViewArray, Geometry, Line, Pie, Point,
+        Rect, RectD, RectI, RoundRect, SizeD, Triangle,
     },
     gradient::{Conical, DynamicGradient, Gradient, GradientType, Linear, LinearGradient, Radial},
     image::Image,
     matrix::{Matrix2DOp, MatrixTransform},
     path::{
-        ApproximationOptions, FlattenMode, StrokeCap, StrokeCapPosition, StrokeJoin, StrokeOptions,
+        ApproximationOptions, FlattenMode, Path, StrokeCap, StrokeCapPosition, StrokeJoin,
+        StrokeOptions,
     },
     pattern::Pattern,
     variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
@@ -25,8 +26,8 @@ bl_enum! {
     pub enum ContextType {
         None = BL_CONTEXT_TYPE_NONE,
         Dummy = BL_CONTEXT_TYPE_DUMMY,
+        //Proxy = BL_CONTEXT_TYPE_PROXY,
         Raster = BL_CONTEXT_TYPE_RASTER,
-        RasterAsync = BL_CONTEXT_TYPE_RASTER_ASYNC,
     }
     Default => None
 }
@@ -60,18 +61,12 @@ bitflags! {
 use ffi::BLContextCreateFlags;
 bitflags! {
     pub struct ContextCreateFlags: u32 {
-        const ISOLATED_RUNTIME = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_ISOLATED_RUNTIME as u32;
-        const OVERRIDE_FEATURES = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_OVERRIDE_FEATURES as u32;
+        const FORCE_THREADS = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_FORCE_THREADS as u32;
+        const FALLBACK_TO_SYNC = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_FALLBACK_TO_SYNC as u32;
+        const ISOLATED_THREADS = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_ISOLATED_THREADS as u32;
+        const ISOLATED_JIT= BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_ISOLATED_JIT as u32;
+        const OVERRIDE_CPU_FEATURES = BLContextCreateFlags::BL_CONTEXT_CREATE_FLAG_OVERRIDE_CPU_FEATURES as u32;
     }
-}
-
-use ffi::BLClipOp::*;
-bl_enum! {
-    pub enum ClipOP {
-        Replace = BL_CLIP_OP_REPLACE,
-        Intersect = BL_CLIP_OP_INTERSECT,
-    }
-    Default => Replace
 }
 
 use ffi::BLClipMode::*;
@@ -136,10 +131,6 @@ bl_enum! {
     Default => Nearest
 }
 
-use crate::{
-    geometry::{Line, RectI},
-    path::Path,
-};
 use ffi::BLRenderingQuality::*;
 bl_enum! {
     pub enum RenderingQuality {
@@ -148,11 +139,19 @@ bl_enum! {
     Default => AntiAliasing
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct ContextCreateInfo {
+    pub flags: ContextCreateFlags,
+    pub thread_count: u32,
+    pub cpu_features: u32,
+}
+
 #[repr(C)]
-#[derive(Default, Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialOrd, PartialEq)]
 pub struct ContextCookie(u128);
 
 #[repr(C)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct ContextHints {
     pub rendering_quality: u8,
     pub gradient_quality: u8,
@@ -160,34 +159,57 @@ pub struct ContextHints {
 }
 
 #[repr(transparent)]
-pub struct Context {
+pub struct Context<'a> {
     core: ffi::BLContextCore,
+    _pd: PhantomData<&'a mut [u8]>,
 }
 
-unsafe impl WrappedBlCore for Context {
+impl fmt::Debug for Context<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Context")
+            .field("target_size", &self.target_size())
+            .field("hints", &self.hints())
+            .field("flatten_mode", &self.flatten_mode())
+            .field("comp_op", &self.comp_op())
+            .finish()
+    }
+}
+
+unsafe impl WrappedBlCore for Context<'_> {
     type Core = ffi::BLContextCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_CONTEXT as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Context as usize;
+
+    #[inline]
+    fn from_core(core: Self::Core) -> Self {
+        Context {
+            core,
+            _pd: PhantomData,
+        }
+    }
 }
 
-impl Context {
+impl<'a> Context<'a> {
     #[inline]
-    pub fn new(target: &mut Image) -> Result<Context> {
+    pub fn new<'b: 'a>(target: &'a mut Image<'b>) -> Result<Context<'a>> {
         Self::new_with_options(target, None)
     }
 
-    // FIXME figure out how ContextCreateOptions is used
-    fn new_with_options(
-        target: &mut Image,
-        options: Option<ffi::BLContextCreateOptions>,
-    ) -> Result<Context> {
+    pub fn new_with_options<'b: 'a>(
+        target: &'a mut Image<'b>,
+        info: Option<ContextCreateInfo>,
+    ) -> Result<Context<'a>> {
         unsafe {
-            let mut this = Context {
-                core: *Self::none(),
-            };
+            let mut this = Context::from_core(*Self::none());
+            let info = info.map(|info| ffi::BLContextCreateInfo {
+                flags: info.flags.bits(),
+                threadCount: info.thread_count,
+                cpuFeatures: info.cpu_features,
+                reserved: [0; 5],
+            });
             errcode_to_result(ffi::blContextInitAs(
                 this.core_mut(),
                 target.core_mut(),
-                options.as_ref().map_or(ptr::null(), |ptr| ptr as *const _),
+                info.as_ref().map_or(ptr::null(), |ptr| ptr as *const _),
             ))
             .map(move |_| this)
         }
@@ -214,20 +236,26 @@ impl Context {
         self.impl_().contextType.into()
     }
 
-    #[inline]
-    pub fn begin(&mut self, image: &mut Image) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blContextBegin(
-                self.core_mut(),
-                image.core_mut(),
-                ptr::null(),
-            ))
-        }
-    }
-
+    /// Currently, end just calls reset. So it is fine to just drop the
+    /// context without calling this, but this might change in the future.
     #[inline]
     pub fn end(mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextEnd(self.core_mut())) }
+    }
+
+    #[inline]
+    pub fn fill_rule(&self) -> FillRule {
+        (self.state().fillRule as u32).into()
+    }
+
+    #[inline]
+    pub fn set_fill_rule(&mut self, rule: FillRule) -> Result<()> {
+        unsafe {
+            errcode_to_result((self.impl_().virt().setFillRule.unwrap())(
+                self.impl_mut(),
+                rule as u32,
+            ))
+        }
     }
 
     #[inline]
@@ -284,7 +312,7 @@ impl Context {
 
     #[inline]
     pub fn hints(&self) -> &ContextHints {
-        unsafe { &*(&self.state().__bindgen_anon_1.hints as *const _ as *const _) }
+        unsafe { &*(&self.state().hints as *const _ as *const _) }
     }
 
     #[inline]
@@ -349,10 +377,10 @@ impl Context {
 }
 
 // FIXME? make functions generic over a Stroke/FillStyle trait?
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn fill_style_type(&self) -> StyleType {
-        unsafe { (self.state().__bindgen_anon_2.__bindgen_anon_1.fillStyleType as u32).into() }
+        (self.state().styleType[ContextOpType::Fill as usize] as u32).into()
     }
 
     #[inline]
@@ -375,12 +403,12 @@ impl Context {
     }
 
     #[inline]
-    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern) -> Result<()> {
+    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern<'_>) -> Result<()> {
         self.set_fill_style(pattern.core().as_variant_core())
     }
 
     #[inline]
-    pub fn set_fill_style_image(&mut self, image: &Image) -> Result<()> {
+    pub fn set_fill_style_image(&mut self, image: &Image<'_>) -> Result<()> {
         self.set_fill_style(image.core().as_variant_core())
     }
 
@@ -438,15 +466,8 @@ impl Context {
     }
 
     #[inline]
-    pub fn stroke_dast_offset(&self) -> f64 {
+    pub fn stroke_dash_offset(&self) -> f64 {
         self.state().strokeOptions.miterLimit
-    }
-
-    #[inline]
-    pub fn stroke_options(&self) -> &StrokeOptions {
-        //FIXME? Make a Ref/RefMut wrapper struct that doesnt call the destructor,
-        // instead of doing this nasty ref casting
-        unsafe { &*(&self.state().strokeOptions as *const _ as *const _) }
     }
 
     #[inline]
@@ -506,13 +527,25 @@ impl Context {
     }
 
     #[inline]
+    pub fn stroke_options(&self) -> Result<StrokeOptions> {
+        let mut options = StrokeOptions::new();
+        unsafe {
+            errcode_to_result(ffi::blContextGetStrokeOptions(
+                self.core(),
+                &mut options.core,
+            ))
+            .map(|_| options)
+        }
+    }
+
+    #[inline]
     pub fn set_stroke_options(&mut self, opts: &StrokeOptions) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextSetStrokeOptions(self.core_mut(), &opts.core)) }
     }
 
     #[inline]
     pub fn stroke_alpha(&self) -> f64 {
-        unsafe { self.state().__bindgen_anon_3.__bindgen_anon_1.strokeAlpha }
+        self.state().styleAlpha[ContextOpType::Stroke as usize]
     }
 
     #[inline]
@@ -522,14 +555,7 @@ impl Context {
 
     #[inline]
     pub fn stroke_style_type(&self) -> StyleType {
-        unsafe {
-            (self
-                .state()
-                .__bindgen_anon_2
-                .__bindgen_anon_1
-                .strokeStyleType as u32)
-                .into()
-        }
+        (self.state().styleType[ContextOpType::Stroke as usize] as u32).into()
     }
 
     #[inline]
@@ -552,7 +578,7 @@ impl Context {
     }
 
     #[inline]
-    pub fn set_stroke_style_image(&mut self, image: &Image) -> Result<()> {
+    pub fn set_stroke_style_image(&mut self, image: &Image<'_>) -> Result<()> {
         self.set_stroke_style(image.core().as_variant_core())
     }
 
@@ -602,15 +628,9 @@ impl Context {
     }
 
     #[inline]
-    fn virt_op_style(&self) -> ffi::BLContextVirt__bindgen_ty_1__bindgen_ty_2 {
-        unsafe { self.impl_().virt().__bindgen_anon_1.__bindgen_anon_2 }
-    }
-
-    #[inline]
     pub fn set_op_style_rgba32(&mut self, op: ContextOpType, val: u32) -> Result<()> {
         unsafe {
-            errcode_to_result((self.virt_op_style().setOpStyleRgba32
-                [u32::from(op) as usize]
+            errcode_to_result((self.impl_().virt().setStyleRgba32[u32::from(op) as usize]
                 .unwrap())(self.impl_mut(), val))
         }
     }
@@ -618,8 +638,7 @@ impl Context {
     #[inline]
     pub fn set_op_style_rgba64(&mut self, op: ContextOpType, val: u64) -> Result<()> {
         unsafe {
-            errcode_to_result((self.virt_op_style().setOpStyleRgba64
-                [u32::from(op) as usize]
+            errcode_to_result((self.impl_().virt().setStyleRgba64[u32::from(op) as usize]
                 .unwrap())(self.impl_mut(), val))
         }
     }
@@ -628,9 +647,12 @@ impl Context {
     pub fn get_op_style_rgba32(&self, op: ContextOpType) -> Result<u32> {
         unsafe {
             let mut out = 0;
-            errcode_to_result((self.virt_op_style().getOpStyleRgba32
-                [u32::from(op) as usize]
-                .unwrap())(self.impl_mut(), &mut out))
+            errcode_to_result((self.impl_().virt().getStyleRgba32[u32::from(op) as usize]
+                .unwrap())(
+                // The function actually does not mutate self, so this cast is fine
+                self.impl_() as *const _ as *mut _,
+                &mut out,
+            ))
             .map(|_| out)
         }
     }
@@ -639,28 +661,32 @@ impl Context {
     pub fn get_op_style_rgba64(&self, op: ContextOpType) -> Result<u64> {
         unsafe {
             let mut out = 0;
-            errcode_to_result((self.virt_op_style().getOpStyleRgba64[op as u32 as usize]
-                .unwrap())(self.impl_mut(), &mut out))
+            errcode_to_result((self.impl_().virt().getStyleRgba64[op as u32 as usize]
+                .unwrap())(
+                // The function actually does not mutate self, so this cast is fine
+                self.impl_() as *const _ as *mut _,
+                &mut out,
+            ))
             .map(|_| out)
         }
     }
 
     #[inline]
     pub fn op_alpha(&self, op: ContextOpType) -> f64 {
-        unsafe { self.state().__bindgen_anon_3.opAlpha[op as u32 as usize] }
+        self.state().styleAlpha[op as u32 as usize]
     }
 
     #[inline]
     pub fn set_op_alpha(&mut self, op: ContextOpType, alpha: f64) -> Result<()> {
         unsafe {
-            errcode_to_result((self.virt_op_style().setOpAlpha[op as u32 as usize]
+            errcode_to_result((self.impl_().virt().setStyleAlpha[op as u32 as usize]
                 .unwrap())(self.impl_mut(), alpha))
         }
     }
 }
 
 /// Clip Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn restore_clipping(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextRestoreClipping(self.core_mut())) }
@@ -683,7 +709,7 @@ impl Context {
 }
 
 /// Clear Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn clear_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextClearAll(self.core_mut())) }
@@ -708,7 +734,7 @@ impl Context {
     pub fn blit_image<P: Point>(
         &mut self,
         dst: &P,
-        src: &Image,
+        src: &Image<'_>,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -725,7 +751,7 @@ impl Context {
     pub fn blit_scaled_image<R: Rect>(
         &mut self,
         dst: &R,
-        src: &Image,
+        src: &Image<'_>,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -740,7 +766,7 @@ impl Context {
 }
 
 /// Fill Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -769,7 +795,7 @@ impl Context {
 
     #[inline]
     pub fn fill_circle(&mut self, cx: f64, cy: f64, r: f64) -> Result<()> {
-        self.fill_geometry(&Circle { cx, cy, radius: r })
+        self.fill_geometry(&Circle { cx, cy, r })
     }
 
     #[inline]
@@ -834,7 +860,7 @@ impl Context {
 }
 
 /// Stroke Operations
-impl Context {
+impl Context<'_> {
     #[inline]
     pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -863,7 +889,7 @@ impl Context {
 
     #[inline]
     pub fn stroke_circle(&mut self, cx: f64, cy: f64, r: f64) -> Result<()> {
-        self.stroke_geometry(&Circle { cx, cy, radius: r })
+        self.stroke_geometry(&Circle { cx, cy, r })
     }
 
     #[inline]
@@ -943,7 +969,7 @@ impl Context {
     }
 }
 
-impl MatrixTransform for Context {
+impl MatrixTransform for Context<'_> {
     #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
@@ -957,14 +983,14 @@ impl MatrixTransform for Context {
     }
 }
 
-impl PartialEq for Context {
+impl PartialEq for Context<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.impl_() as *const _ == other.impl_() as *const _
+        self.impl_equals(other)
     }
 }
 
-impl Drop for Context {
+impl Drop for Context<'_> {
     fn drop(&mut self) {
         unsafe { ffi::blContextReset(&mut self.core) };
     }

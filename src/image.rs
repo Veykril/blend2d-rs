@@ -1,4 +1,6 @@
-use core::slice;
+use bitflags::bitflags;
+
+use core::{fmt, marker::PhantomData, ptr, slice};
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -12,8 +14,6 @@ use crate::{
     variant::WrappedBlCore,
 };
 
-use bitflags::bitflags;
-
 use ffi::BLImageInfoFlags::*;
 bitflags! {
     pub struct ImageInfoFlags: u32 {
@@ -24,7 +24,6 @@ bitflags! {
 use ffi::BLImageScaleFilter::*;
 bl_enum! {
     pub enum ImageScaleFilter {
-        None     = BL_IMAGE_SCALE_FILTER_NONE,
         Nearest  = BL_IMAGE_SCALE_FILTER_NEAREST,
         Bilinear = BL_IMAGE_SCALE_FILTER_BILINEAR,
         Bicubic  = BL_IMAGE_SCALE_FILTER_BICUBIC,
@@ -40,30 +39,86 @@ bl_enum! {
         Mitchell = BL_IMAGE_SCALE_FILTER_MITCHELL,
         User     = BL_IMAGE_SCALE_FILTER_USER,
     }
-    Default => None
+    Default => Nearest
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct ImageScaleOptions {
+    user_func: ffi::BLImageScaleUserFunc,
+    user_data: *mut std::os::raw::c_void,
+    pub radius: f64,
+    pub b: f64,
+    pub c: f64,
+    _data: f64,
+}
+
+impl Default for ImageScaleOptions {
+    fn default() -> Self {
+        ImageScaleOptions {
+            user_func: None,
+            user_data: ptr::null_mut(),
+            radius: 2.0,
+            b: 1.0 / 3.0,
+            c: 1.0 / 3.0,
+            _data: 0.0,
+        }
+    }
 }
 
 #[repr(transparent)]
-pub struct Image {
+pub struct Image<'a> {
     core: BLImageCore,
+    _pd: PhantomData<&'a mut [u8]>,
 }
 
-unsafe impl WrappedBlCore for Image {
+unsafe impl WrappedBlCore for Image<'_> {
     type Core = ffi::BLImageCore;
-    const IMPL_TYPE_INDEX: usize = ffi::BLImplType::BL_IMPL_TYPE_IMAGE as usize;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Image as usize;
+
+    #[inline]
+    fn from_core(core: Self::Core) -> Image<'static> {
+        Image {
+            core,
+            _pd: PhantomData,
+        }
+    }
 }
 
-impl Image {
-    pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Self> {
+impl<'a> Image<'a> {
+    #[inline]
+    pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Image<'static>> {
         unsafe {
-            let mut this = Image {
-                core: *Self::none(),
-            };
-            errcode_to_result(ffi::blImageInitAs(
+            let mut this = Image::from_core(*Self::none());
+            errcode_to_result(ffi::blImageCreate(
                 this.core_mut(),
                 width,
                 height,
                 format.into(),
+            ))
+            .map(|_| this)
+        }
+    }
+
+    #[inline]
+    pub fn new_external(
+        width: i32,
+        height: i32,
+        format: ImageFormat,
+        data: &'a mut [u8],
+        stride: isize,
+    ) -> Result<Image<'a>> {
+        unsafe {
+            let mut this = Image::from_core(*Self::none());
+            errcode_to_result(ffi::blImageCreateFromData(
+                this.core_mut(),
+                width,
+                height,
+                format.into(),
+                data.as_mut_ptr() as *mut _,
+                stride,
+                None,
+                ptr::null_mut(),
             ))
             .map(|_| this)
         }
@@ -75,7 +130,7 @@ impl Image {
         format: ImageFormat,
         data: &R,
         codecs: &Array<ImageCodec>,
-    ) -> Result<()> {
+    ) -> Result<Image<'static>> {
         let mut this = Self::new(width, height, format)?;
         unsafe {
             errcode_to_result(ffi::blImageReadFromData(
@@ -84,14 +139,16 @@ impl Image {
                 data.as_ref().len(),
                 codecs.core(),
             ))
+            .map(|_| this)
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P, codecs: &Array<ImageCodec>) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        codecs: &Array<ImageCodec>,
+    ) -> Result<Image<'static>> {
         unsafe {
-            let mut this = Image {
-                core: *Self::none(),
-            };
+            let mut this = Image::from_core(*Self::none());
             let path =
                 CString::new(path.as_ref().to_string_lossy().as_bytes()).expect("Invalid Path");
             errcode_to_result(ffi::blImageReadFromFile(
@@ -103,15 +160,23 @@ impl Image {
         }
     }
 
+    #[inline]
+    pub fn format(&self) -> ImageFormat {
+        (self.impl_().format as u32).into()
+    }
+
+    #[inline]
     pub fn size(&self) -> SizeI {
         let ffi::BLSizeI { w, h } = self.impl_().size;
         SizeI { w, h }
     }
 
+    #[inline]
     pub fn width(&self) -> i32 {
         self.size().w
     }
 
+    #[inline]
     pub fn height(&self) -> i32 {
         self.size().h
     }
@@ -132,6 +197,24 @@ impl Image {
         }
     }
 
+    #[inline]
+    pub fn scale(
+        &mut self,
+        size: SizeI,
+        filter: ImageScaleFilter,
+        options: Option<&ImageScaleOptions>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blImageScale(
+                self.core_mut(),
+                self.core(),
+                &size as *const _ as *const _,
+                filter as u32,
+                options.map_or(ptr::null(), |opt| opt as *const _ as *const _),
+            ))
+        }
+    }
+
     pub fn write_to_file<P: AsRef<Path>>(&self, path: P, codec: &ImageCodec) -> Result<()> {
         unsafe {
             let path =
@@ -143,25 +226,45 @@ impl Image {
             ))
         }
     }
+
+    #[inline]
+    pub fn write_to_data(&self, dst: &mut Array<u8>, codec: &ImageCodec) -> Result<()> {
+        unsafe {
+            errcode_to_result(ffi::blImageWriteToData(
+                self.core(),
+                dst.core_mut(),
+                codec.core(),
+            ))
+        }
+    }
 }
 
-impl PartialEq for Image {
+impl fmt::Debug for Image<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Image")
+            .field("size", &self.size())
+            .field("format", &self.format())
+            .finish()
+    }
+}
+
+impl PartialEq for Image<'_> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { ffi::blImageEquals(self.core(), other.core()) }
     }
 }
 
-impl Clone for Image {
-    fn clone(&self) -> Self {
-        let mut new = Image {
-            core: *Self::none(),
-        };
+impl<'a> Clone for Image<'a> {
+    #[inline]
+    fn clone(&self) -> Image<'a> {
+        let mut new = Image::from_core(*Self::none());
         unsafe { ffi::blImageAssignDeep(new.core_mut(), self.core()) };
         new
     }
 }
 
-impl Drop for Image {
+impl Drop for Image<'_> {
     fn drop(&mut self) {
         unsafe { ffi::blImageReset(&mut self.core) };
     }
@@ -174,4 +277,24 @@ pub struct ImageData<'a> {
     pub size: (i32, i32),
     pub format: ImageFormat,
     pub flags: ImageInfoFlags,
+}
+
+#[cfg(test)]
+mod test_codec {
+    use crate::{geometry::SizeI, image::Image};
+
+    #[test]
+    fn test_image_err_on_zero_size() {
+        assert!(Image::new(0, 100, Default::default()).is_err());
+        assert!(Image::new(100, 0, Default::default()).is_err());
+        assert!(Image::new(0, 0, Default::default()).is_err());
+    }
+
+    #[test]
+    fn test_image_scale() {
+        let new_size = SizeI { w: 100, h: 100 };
+        let mut image = Image::new(50, 50, Default::default()).unwrap();
+        image.scale(new_size, Default::default(), None).unwrap();
+        assert_eq!(image.size(), new_size);
+    }
 }

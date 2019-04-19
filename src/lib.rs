@@ -1,10 +1,11 @@
-#![deny(rust_2018_idioms)]
+#![deny(rust_2018_idioms, missing_debug_implementations)]
 #![allow(clippy::cast_lossless)]
 
 #[macro_use]
 mod macros;
 
 pub(in crate) mod variant;
+pub use self::variant::Shared;
 
 pub mod array;
 pub mod codec;
@@ -20,6 +21,7 @@ pub mod pattern;
 pub mod region;
 
 #[repr(transparent)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Tag(u32);
 
 use ffi::BLBooleanOp::*;
@@ -47,7 +49,7 @@ bl_enum! {
         ReflectXPadY = BL_EXTEND_MODE_REFLECT_X_PAD_Y,
         ReflectXRepeatY = BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
     }
-    Default => RepeatXRepeatY
+    Default => PadXPadY
 }
 
 use ffi::BLStyleType::*;

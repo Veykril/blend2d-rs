@@ -1,3 +1,4 @@
+///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
 use ffi::BLImplType::*;
@@ -29,7 +30,7 @@ bl_enum! {
         ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
         ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
         ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
-        Path2d               = BL_IMPL_TYPE_PATH2D,
+        Path               = BL_IMPL_TYPE_PATH,
         Region               = BL_IMPL_TYPE_REGION,
         Image                = BL_IMPL_TYPE_IMAGE,
         ImageCodec           = BL_IMPL_TYPE_IMAGE_CODEC,
@@ -57,6 +58,7 @@ bitflags! {
     }
 }
 
+/// Marker trait for virtual function table struct/
 pub trait VTable {}
 
 impl VTable for ffi::BLContextVirt {}
@@ -155,14 +157,13 @@ pub unsafe trait BlVariantCore: Sized {
     }
 
     #[inline]
-    #[allow(clippy::mut_from_ref)]
-    fn impl_mut(&self) -> &mut Self::Impl {
+    fn impl_mut(&mut self) -> &mut Self::Impl {
         unsafe { &mut *(self.as_variant_core().impl_ as *mut _) }
     }
 
     #[inline]
     fn init_weak(&self, other: &mut Self) {
-        unsafe { ffi::blVariantInitWeak(other as *mut _ as *mut _, &self as *const _ as *const _) };
+        unsafe { ffi::blVariantInitWeak(other as *mut _ as *mut _, self as *const _ as *const _) };
     }
 }
 
@@ -209,18 +210,24 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
     type Impl = ffi::BLVariantImpl;
 }
 
-/// Implementing type must be #[repr(transparent)] and its only field may be a
-/// struct that contains a pointer to a BlxxxxImpl, otherwise the [`core`] and
-/// [`core_mut`] methods have to be implemented manually
+/// Implementing type must be either:
+///     #[repr(transparent)] and its only field may be a struct that contains a
+///     pointer to a BlxxxxImpl
+///
+///     #[repr(C)] and its first field must be a pointer to its core's
+///     [`Impl`] type
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;
+    fn from_core(core: Self::Core) -> Self;
 
+    /// The default implementation reinterprets &self as &Self::Core.
     #[inline]
     fn core(&self) -> &Self::Core {
         unsafe { &*(self as *const _ as *const _) }
     }
 
+    /// The default implementation reinterprets &mut self as &mut Self::Core.
     #[inline]
     fn core_mut(&mut self) -> &mut Self::Core {
         unsafe { &mut *(self as *mut _ as *mut _) }
@@ -232,25 +239,90 @@ pub unsafe trait WrappedBlCore: Sized {
     }
 
     #[inline]
-    #[allow(clippy::mut_from_ref)]
-    fn impl_mut(&self) -> &mut <Self::Core as BlVariantCore>::Impl {
-        self.core().impl_mut()
+    fn impl_mut(&mut self) -> &mut <Self::Core as BlVariantCore>::Impl {
+        self.core_mut().impl_mut()
     }
 
+    /// Checks whether the wrapped implementation is a none object.
     #[inline]
     fn is_none(&self) -> bool {
         self.impl_().impl_traits().contains(ImplTraits::NULL)
     }
 
+    /// Retrieves the none version of Self::Core
     #[inline]
     fn none() -> &'static Self::Core {
         unsafe { &*(&ffi::blNone[Self::IMPL_TYPE_INDEX] as *const _ as *const _) }
     }
 
+    /// Checks equality of the objects implementations by comparing the pointer.
+    #[inline]
+    fn impl_equals(&self, other: &Self) -> bool {
+        self.impl_() as *const _ == other.impl_() as *const _
+    }
+
+    /// Creates a weak refcount copy.
     #[inline]
     fn init_weak(&self) -> Self::Core {
         let mut other = unsafe { core::mem::zeroed() };
         self.core().init_weak(&mut other);
         other
+    }
+}
+
+/// A wrapper-struct for Blend2D objects that makes use of the internal
+/// refcounting done by blend2d.
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Shared<T: WrappedBlCore>(T);
+
+impl<T: WrappedBlCore> Shared<T> {
+    pub fn new(val: T) -> Self {
+        Shared(val)
+    }
+
+    pub fn ref_count(&self) -> usize {
+        self.0.impl_().ref_count()
+    }
+}
+
+impl<T: WrappedBlCore> Clone for Shared<T> {
+    fn clone(&self) -> Self {
+        Shared(T::from_core(self.0.init_weak()))
+    }
+}
+
+impl<T: WrappedBlCore> PartialEq for Shared<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.impl_equals(other)
+    }
+}
+
+impl<T: WrappedBlCore> core::ops::Deref for Shared<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: WrappedBlCore> Drop for Shared<T> {
+    fn drop(&mut self) {
+        unsafe { ffi::blVariantReset(self.0.core_mut() as *mut _ as *mut _) };
+    }
+}
+
+#[cfg(test)]
+mod test_shared {
+    use crate::{path::Path, Shared};
+    #[test]
+    fn test_shared_clone() {
+        let mut path = Path::new();
+        path.move_to(1.0, 1.0).unwrap();
+        let shared = Shared::new(path);
+        assert_eq!(shared.ref_count(), 1);
+        let clone = shared.clone();
+        assert_eq!(shared.ref_count(), 2);
+        assert_eq!(shared.ref_count(), clone.ref_count());
     }
 }
