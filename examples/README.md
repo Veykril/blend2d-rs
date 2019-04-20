@@ -13,3 +13,7 @@ The examples here mimic the ones shown on the official [blend2d getting started 
 [Getting Started 5: Composition](./composition.rs)
 
 [Getting Started 6: Stroking](./stroking.rs)
+
+Other:
+
+[Blend2D + Rust](./rust_bl_logo.rs)

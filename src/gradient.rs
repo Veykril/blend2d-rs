@@ -184,14 +184,6 @@ impl<T: GradientType> Gradient<T> {
         this
     }
 
-    #[inline]
-    pub(in crate) unsafe fn with_type<U: GradientType>(self) -> Gradient<U> {
-        Gradient {
-            core: self.core,
-            _pd: PhantomData,
-        }
-    }
-
     /// The [`ExtendMode`] of this gradient.
     #[inline]
     pub fn extend_mode(&self) -> ExtendMode {
@@ -515,6 +507,13 @@ impl Gradient<Conical> {
     #[inline]
     pub fn set_angle(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_CONICAL_ANGLE as usize, val)
+    }
+}
+
+impl<'a, T: GradientType> From<&'a T::ValuesType> for Gradient<T> {
+    #[inline]
+    fn from(v: &T::ValuesType) -> Self {
+        Self::new(v, Default::default(), &[], None)
     }
 }
 
