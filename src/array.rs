@@ -310,9 +310,12 @@ impl<T: ArrayType + Copy> Clone for Array<T> {
     }
 }
 
-impl<T: ArrayType> fmt::Debug for Array<T> {
+impl<T> fmt::Debug for Array<T>
+where
+    T: ArrayType + fmt::Debug,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", &*self)
+        write!(f, "{:?}", self.as_ref())
     }
 }
 
