@@ -9,6 +9,7 @@ use core::{
 };
 
 use crate::{
+    array::Array,
     bl_range,
     error::{errcode_to_result, Result},
     geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD},
@@ -170,6 +171,46 @@ impl StrokeOptions {
             ffi::blStrokeOptionsInit(&mut core);
             StrokeOptions { core }
         }
+    }
+
+    #[inline]
+    pub fn width(&self) -> f64 {
+        self.core.width
+    }
+
+    #[inline]
+    pub fn miter_limit(&self) -> f64 {
+        self.core.miterLimit
+    }
+
+    #[inline]
+    pub fn join(&self) -> StrokeJoin {
+        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.join as u32).into() }
+    }
+
+    #[inline]
+    pub fn dash_offset(&self) -> f64 {
+        self.core.dashOffset
+    }
+
+    #[inline]
+    pub fn start_cap(&self) -> StrokeCap {
+        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.startCap as u32).into() }
+    }
+
+    #[inline]
+    pub fn end_cap(&self) -> StrokeCap {
+        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.endCap as u32).into() }
+    }
+
+    #[inline]
+    pub fn dash_array(&self) -> &Array<f64> {
+        unsafe { &*(&self.core.dashArray as *const _ as *const _) }
+    }
+
+    #[inline]
+    pub fn transform_order(&self) -> StrokeTransformOrder {
+        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.transformOrder as u32).into() }
     }
 
     #[inline]

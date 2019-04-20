@@ -46,6 +46,6 @@ fn main() {
     let codec = ImageCodec::built_in_codecs()
         .find_codec_by_name("BMP")
         .unwrap();
-    img.write_to_file("bl-getting-started-2.bmp", &codec)
+    img.write_to_file("bl-getting-started-2.bmp", codec)
         .expect("Writing to file failed");
 }

@@ -14,7 +14,7 @@ fn main() {
         ctx.fill_all()?;
 
         // Read an image from file.
-        let texture = Image::from_path("examples/ferris.png", ImageCodec::built_in_codecs())?;
+        let texture = Image::from_path("assets/ferris.png", ImageCodec::built_in_codecs())?;
 
         // Create a pattern and use it to fill a rounded-rect.
         let pattern = Pattern::new(&texture, None, Default::default(), None);
@@ -33,6 +33,6 @@ fn main() {
     let codec = ImageCodec::built_in_codecs()
         .find_codec_by_name("BMP")
         .unwrap();
-    img.write_to_file("bl-getting-started-3.bmp", &codec)
+    img.write_to_file("bl-getting-started-3.bmp", codec)
         .expect("Writing to file failed");
 }

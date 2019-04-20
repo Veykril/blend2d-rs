@@ -1,8 +1,5 @@
 use core::fmt;
-use std::{
-    borrow::Cow,
-    ffi::{CStr, CString},
-};
+use std::{borrow::Cow, ffi::CStr};
 
 use ffi::BLImageCodecFeatures::*;
 
@@ -43,32 +40,29 @@ unsafe impl WrappedBlCore for ImageCodec {
 
 impl ImageCodec {
     /// Searches for an image codec in the array by the given name.
-    pub fn find_by_name(codecs: &Array<ImageCodec>, name: &str) -> Result<Self> {
-        unsafe {
-            let mut this = ImageCodec::from_core(*Self::none());
-            let name = CString::new(name).expect("Failed to create CString");
-            errcode_to_result(ffi::blImageCodecFindByName(
-                this.core_mut(),
-                codecs.core(),
-                name.as_ptr(),
-            ))
-            .map(|_| this)
-        }
+    pub fn find_by_name<'a>(codecs: &'a Array<ImageCodec>, name: &str) -> Option<&'a ImageCodec> {
+        codecs.iter().find(|codec| codec.name() == name)
     }
 
     /// Searches for an image codec in the array by the given data.
-    #[inline]
-    pub fn find_by_data<R: AsRef<[u8]>>(codecs: &Array<ImageCodec>, data: R) -> Result<Self> {
-        unsafe {
-            let mut this = ImageCodec::from_core(*Self::none());
-            errcode_to_result(ffi::blImageCodecFindByData(
-                this.core_mut(),
-                codecs.core(),
-                data.as_ref().as_ptr() as *const _,
-                data.as_ref().len(),
-            ))
-            .map(|_| this)
+    pub fn find_by_data<R: AsRef<[u8]>>(
+        codecs: &Array<ImageCodec>,
+        data: R,
+    ) -> Option<&ImageCodec> {
+        let mut best_score = 0;
+        let mut candidate = None;
+        let data = data.as_ref();
+
+        for codec in codecs {
+            let score = unsafe {
+                ffi::blImageCodecInspectData(codec.core(), data.as_ptr() as *const _, data.len())
+            };
+            if score > best_score {
+                best_score = score;
+                candidate = Some(codec)
+            }
         }
+        candidate
     }
 
     /// Creates an [`ImageDecoder`] for this codec.

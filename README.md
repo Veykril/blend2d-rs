@@ -22,7 +22,6 @@ This will hopefully change in the near future.
 
 - Not everything has been tested, so bugs might occur.
 
-
 ## Setup
 
 This crate requires [CMake](https://cmake.org/) to be installed and available on `PATH`.
@@ -33,6 +32,14 @@ Also make sure to initialize the submodules after cloning the repository(`git su
 
 You can find the examples [here](./examples).
 
+[![rust_bl_logo](./assets/rust_bl_logo.png)](./examples/rust_bl_logo.rs)
+
+## Current Design Decision
+- The [Clone Trait](https://doc.rust-lang.org/std/clone/trait.Clone.html)
+is currently only implemented for types that allow to be deeply cloned
+by blend2d. Ref-counting clones are currently in general avoided. This
+might change due to restrictions this decision might incur. [See Issue #8](https://github.com/Veykril/blend2d-rs/issues/8).
+
 ## License
 
 Licensed under either of
@@ -42,7 +49,11 @@ Licensed under either of
 
 at your option.
 
+The Rust logo is owned by Mozilla and distributed under the terms of the
+[Creative Commons Attribution license (CC-BY)](https://creativecommons.org/licenses/by/4.0/).
+
 ### Contribution
+
 
 Unless you explicitly state otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the Apache-2.0
