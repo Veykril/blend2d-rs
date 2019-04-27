@@ -11,6 +11,8 @@ pub mod array;
 pub mod codec;
 pub mod context;
 pub mod error;
+pub mod font;
+pub mod font_defs;
 pub mod format;
 pub mod geometry;
 pub mod gradient;

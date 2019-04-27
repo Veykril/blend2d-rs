@@ -495,10 +495,10 @@ impl_array_type!(blArrayAppendU32, blArrayInsertU32, blArrayInsertU32 for (isize
 impl_array_type!(blArrayAppendU64, blArrayInsertU64, blArrayInsertU64 for (isize = ImplType::ArrayI64), (usize = ImplType::ArrayU64));
 
 mod scope {
-    use crate::{array::ArrayType, geometry::*, variant::ImplType, Tag};
+    use crate::{array::ArrayType, font_defs::*, geometry::*, variant::ImplType, Tag};
     impl_array_type! {
         (Tag = ImplType::ArrayStruct4);
-        (PointD, PointI, SizeD, SizeI = ImplType::ArrayStruct8);
+        (PointD, PointI, SizeD, SizeI, FontFeature, FontVariation = ImplType::ArrayStruct8);
         (Circle = ImplType::ArrayStruct12);
         (BoxD, BoxI, Ellipse, Line, RectD, RectI = ImplType::ArrayStruct16);
         (Arc, Chord, Pie, RoundRect, Triangle = ImplType::ArrayStruct24);
