@@ -1,4 +1,4 @@
-use core::{fmt, ptr, slice, str};
+use core::{fmt, slice, str};
 use std::ffi::CString;
 
 use crate::{
@@ -111,7 +111,7 @@ impl FontLoader {
     }
 
     /// FIXME lifetimes
-    pub fn from_data<R: AsRef<[u8]>>(data: R) -> Result<Self> {
+    /*pub fn from_data<R: AsRef<[u8]>>(data: R) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
         unsafe {
             errcode_to_result(ffi::blFontLoaderCreateFromData(
@@ -123,7 +123,7 @@ impl FontLoader {
             ))
             .map(|_| this)
         }
-    }
+    }*/
 
     #[inline]
     pub fn create_font_face(&self, index: u32) -> Result<FontFace> {
@@ -210,6 +210,10 @@ impl FontFace {
             ))
             .map(|_| this)
         }
+    }
+
+    pub fn create_font(&self, size: f32) -> Result<Font> {
+        Font::from_face(self, size)
     }
 
     #[inline]

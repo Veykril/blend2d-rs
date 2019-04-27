@@ -5,6 +5,7 @@ use core::{fmt, marker::PhantomData, ptr};
 use crate::{
     array::Array,
     error::{errcode_to_result, Result},
+    font::Font,
     geometry::{
         Arc, BoxD, Chord, Circle, Ellipse, FillRule, GeoViewArray, Geometry, Line, Pie, Point,
         Rect, RectD, RectI, RoundRect, SizeD, Triangle,
@@ -844,6 +845,20 @@ impl Context<'_, '_> {
         P: GeoViewArray,
     {
         self.fill_geometry(slice.as_ref())
+    }
+
+    #[inline]
+    pub fn fill_utf8_text<P: Point>(&mut self, dst: P, font: &Font, text: &str) -> Result<()> {
+        unsafe {
+            errcode_to_result(P::FILL_TEXT(
+                self.core_mut(),
+                &dst as *const _ as *const _,
+                font.core(),
+                text.as_bytes().as_ptr() as *const _,
+                text.len(),
+                ffi::BLTextEncoding::BL_TEXT_ENCODING_UTF8 as u32,
+            ))
+        }
     }
 }
 

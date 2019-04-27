@@ -79,6 +79,14 @@ type BlitImageFn<T> = unsafe extern "C" fn(
     *const ffi::BLImageCore,
     *const ffi::BLRectI,
 ) -> ffi::BLResult;
+type FillTextFn<T> = unsafe extern "C" fn(
+    *mut ffi::BLContextCore,
+    *const T,
+    *const ffi::BLFontCore,
+    *const std::ffi::c_void,
+    usize,
+    u32,
+) -> ffi::BLResult;
 // trait for overloading
 pub trait Point: private::Sealed + Copy {
     #[doc(hidden)]
@@ -89,6 +97,8 @@ pub trait Point: private::Sealed + Copy {
     fn into_f64(self) -> [f64; 2];
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType>;
+    #[doc(hidden)]
+    const FILL_TEXT: FillTextFn<Self::FfiType>;
 }
 impl Point for PointI {
     #[doc(hidden)]
@@ -101,6 +111,8 @@ impl Point for PointI {
     }
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageI;
+    #[doc(hidden)]
+    const FILL_TEXT: FillTextFn<Self::FfiType> = ffi::blContextFillTextI;
 }
 impl Point for PointD {
     #[doc(hidden)]
@@ -113,6 +125,8 @@ impl Point for PointD {
     }
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageD;
+    #[doc(hidden)]
+    const FILL_TEXT: FillTextFn<Self::FfiType> = ffi::blContextFillTextD;
 }
 
 type BlitScaledImageFn<T> = unsafe extern "C" fn(

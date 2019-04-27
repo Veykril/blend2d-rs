@@ -170,12 +170,12 @@ impl Region {
     /// boundary, so the final region could be smaller than the region before
     /// translation.
     #[inline]
-    pub fn translate(&mut self, p: &PointI) -> Result<()> {
+    pub fn translate(&mut self, p: PointI) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blRegionTranslate(
                 self.core_mut(),
                 self.core(),
-                p as *const _ as *const _,
+                &p as *const _ as *const _,
             ))
         }
     }
@@ -183,12 +183,12 @@ impl Region {
     /// Translates the region by the given [`PointI`] and clips it to the given
     /// `[BoxI]`.
     #[inline]
-    pub fn translate_and_clip(&mut self, p: &PointI, clip: &BoxI) -> Result<()> {
+    pub fn translate_and_clip(&mut self, p: PointI, clip: &BoxI) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blRegionTranslateAndClip(
                 self.core_mut(),
                 self.core(),
-                p as *const _ as *const _,
+                &p as *const _ as *const _,
                 clip as *const _ as *const _,
             ))
         }
@@ -209,8 +209,8 @@ impl Region {
 
     /// Tests if a given [`PointI`] is in the region.
     #[inline]
-    pub fn hit_test(&self, p: &PointI) -> HitTest {
-        unsafe { ffi::blRegionHitTest(self.core(), p as *const _ as *const _).into() }
+    pub fn hit_test(&self, p: PointI) -> HitTest {
+        unsafe { ffi::blRegionHitTest(self.core(), &p as *const _ as *const _).into() }
     }
 
     /// Tests if a given [`BoxI`] is in the region.
