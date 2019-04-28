@@ -15,6 +15,7 @@ pub mod font;
 pub mod font_defs;
 pub mod format;
 pub mod geometry;
+pub mod glyph_buffer;
 pub mod gradient;
 pub mod image;
 pub mod matrix;

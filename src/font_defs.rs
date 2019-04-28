@@ -1,6 +1,11 @@
 use bitflags::bitflags;
 
-use crate::geometry::{BoxD, PointD, PointI};
+use core::fmt;
+
+use crate::{
+    geometry::{BoxD, PointD, PointI},
+    Tag,
+};
 
 use ffi::BLGlyphItemFlags::*;
 bitflags! {
@@ -183,7 +188,6 @@ bl_enum! {
     Default => Ltr
 }
 
-use crate::Tag;
 use ffi::BLTextOrientation::*;
 bl_enum! {
     pub enum TextOrientation {
@@ -196,7 +200,7 @@ bl_enum! {
 #[cfg(target_endian = "little")]
 #[repr(C)]
 #[derive(Debug)]
-pub(in crate) struct GlyphItem {
+pub struct GlyphItem {
     pub glyph_id: u16,
     reserved: u16,
 }
@@ -204,7 +208,7 @@ pub(in crate) struct GlyphItem {
 #[cfg(target_endian = "big")]
 #[repr(C)]
 #[derive(Debug)]
-pub(in crate) struct GlyphItem {
+pub struct GlyphItem {
     reserved: u16,
     pub glyph_id: u16,
 }
@@ -218,7 +222,7 @@ pub(in crate) struct GlyphInfo {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct GlyphPlacement {
+pub(in crate) struct GlyphPlacement {
     pub placement: PointI,
     pub advance: PointI,
 }
@@ -243,15 +247,20 @@ impl GlyphMappingState {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct GlyphOutlineSinkInfo {
+pub(in crate) struct GlyphOutlineSinkInfo {
     pub glyph_index: usize,
     pub contour_count: usize,
 }
 
-#[repr(C)]
-#[derive(Debug)]
-struct GlyphRun {
-    //todo GlyphRun
+// Fixme figure out what glyph run actually does and expose a proper api
+pub struct GlyphRun<'a> {
+    pub(in crate) raw: &'a ffi::BLGlyphRun,
+}
+
+impl fmt::Debug for GlyphRun<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("GlyphRun").finish()
+    }
 }
 
 #[repr(C)]
@@ -267,7 +276,7 @@ pub struct FontFaceInfo {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct FontTable {
+pub(in crate) struct FontTable {
     pub data: *const u8,
     pub size: usize,
 }
@@ -315,7 +324,7 @@ pub struct FontMetrics {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FontDesignMetrics {
     pub units_per_em: i32,
     pub line_gap: i32,
@@ -338,7 +347,7 @@ pub struct FontDesignMetrics {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TextMetrics {
     pub advance: PointD,
     pub bounding_box: BoxD,

@@ -6,7 +6,6 @@ use blend2d::{
     geometry::PointD,
     image::Image,
     matrix::MatrixTransform,
-    ExtendMode,
 };
 
 fn main() {

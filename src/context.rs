@@ -6,6 +6,7 @@ use crate::{
     array::Array,
     error::{errcode_to_result, Result},
     font::Font,
+    font_defs::GlyphRun,
     geometry::{
         Arc, BoxD, Chord, Circle, Ellipse, FillRule, GeoViewArray, Geometry, Line, Pie, Point,
         Rect, RectD, RectI, RoundRect, SizeD, Triangle,
@@ -860,6 +861,23 @@ impl Context<'_, '_> {
             ))
         }
     }
+
+    #[inline]
+    pub fn fill_glyph_run<P: Point>(
+        &mut self,
+        dst: P,
+        font: &Font,
+        glyph_run: GlyphRun<'_>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(P::FILL_GLYPH_RUN(
+                self.core_mut(),
+                &dst as *const _ as *const _,
+                font.core(),
+                glyph_run.raw,
+            ))
+        }
+    }
 }
 
 /// Stroke Operations
@@ -969,6 +987,37 @@ impl Context<'_, '_> {
         P: GeoViewArray,
     {
         self.stroke_geometry(slice.as_ref())
+    }
+
+    #[inline]
+    pub fn stroke_utf8_text<P: Point>(&mut self, dst: P, font: &Font, text: &str) -> Result<()> {
+        unsafe {
+            errcode_to_result(P::STROKE_TEXT(
+                self.core_mut(),
+                &dst as *const _ as *const _,
+                font.core(),
+                text.as_bytes().as_ptr() as *const _,
+                text.len(),
+                ffi::BLTextEncoding::BL_TEXT_ENCODING_UTF8 as u32,
+            ))
+        }
+    }
+
+    #[inline]
+    pub fn stroke_glyph_run<P: Point>(
+        &mut self,
+        dst: P,
+        font: &Font,
+        glyph_run: GlyphRun<'_>,
+    ) -> Result<()> {
+        unsafe {
+            errcode_to_result(P::STROKE_GLYPH_RUN(
+                self.core_mut(),
+                &dst as *const _ as *const _,
+                font.core(),
+                glyph_run.raw,
+            ))
+        }
     }
 }
 
