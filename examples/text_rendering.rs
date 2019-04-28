@@ -22,7 +22,7 @@ fn main() {
         ctx.fill_utf8_text(PointD { x: 60.0, y: 80.0 }, &font, "Hello Blend2D!")?;
 
         ctx.rotate(core::f64::consts::FRAC_PI_4)?;
-        ctx.fill_utf8_text(PointD { x: 250.0, y: 80.0 }, &font, "Rotated Text!")?;
+        ctx.fill_utf8_text(PointD { x: 250.0, y: 80.0 }, &font, "Rotated Text")?;
         ctx.end()
     };
     render(ctx).expect("Rendering to context failed");

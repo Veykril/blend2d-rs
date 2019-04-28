@@ -160,12 +160,12 @@ pub struct ContextHints {
 }
 
 #[repr(transparent)]
-pub struct Context<'a, 'b: 'a> {
+pub struct Context<'a> {
     core: ffi::BLContextCore,
-    _pd: PhantomData<&'a mut Image<'b>>,
+    _pd: PhantomData<&'a mut Image>,
 }
 
-impl fmt::Debug for Context<'_, '_> {
+impl fmt::Debug for Context<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Context")
             .field("target_size", &self.target_size())
@@ -176,7 +176,7 @@ impl fmt::Debug for Context<'_, '_> {
     }
 }
 
-unsafe impl WrappedBlCore for Context<'_, '_> {
+unsafe impl WrappedBlCore for Context<'_> {
     type Core = ffi::BLContextCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Context as usize;
 
@@ -189,19 +189,19 @@ unsafe impl WrappedBlCore for Context<'_, '_> {
     }
 }
 
-impl<'a, 'b: 'a> Context<'a, 'b> {
+impl<'a> Context<'a> {
     /// Creates a new context that renders to the given [`Image`].
     #[inline]
-    pub fn new(target: &'a mut Image<'b>) -> Result<Context<'a, 'b>> {
+    pub fn new(target: &'a mut Image) -> Result<Context<'a>> {
         Self::new_with_options(target, None)
     }
 
     /// Creates a new context with optional creation info that renders to the
     /// given [`Image`].
     pub fn new_with_options(
-        target: &'a mut Image<'b>,
+        target: &'a mut Image,
         info: Option<ContextCreateInfo>,
-    ) -> Result<Context<'a, 'b>> {
+    ) -> Result<Context<'a>> {
         unsafe {
             let mut this = Context::from_core(*Self::none());
             let info = info.map(|info| ffi::BLContextCreateInfo {
@@ -410,7 +410,7 @@ impl<'a, 'b: 'a> Context<'a, 'b> {
 }
 
 // FIXME? make functions generic over a Stroke/FillStyle trait?
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn fill_rule(&self) -> FillRule {
         (self.state().fillRule as u32).into()
@@ -455,7 +455,7 @@ impl Context<'_, '_> {
     }
 
     #[inline]
-    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern<'_>) -> Result<()> {
+    pub fn set_fill_style_pattern(&mut self, pattern: &Pattern) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextSetFillStyle(
                 self.core_mut(),
@@ -491,7 +491,7 @@ impl Context<'_, '_> {
     }
 }
 
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn stroke_alpha(&self) -> f64 {
         self.state().styleAlpha[ContextOpType::Stroke as usize]
@@ -521,7 +521,7 @@ impl Context<'_, '_> {
     }
 
     #[inline]
-    pub fn set_stroke_style_pattern(&mut self, pattern: &Pattern<'_>) -> Result<()> {
+    pub fn set_stroke_style_pattern(&mut self, pattern: &Pattern) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextSetStrokeStyle(
                 self.core_mut(),
@@ -676,7 +676,7 @@ impl Context<'_, '_> {
 }
 
 /// Clip Operations
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn restore_clipping(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextRestoreClipping(self.core_mut())) }
@@ -699,7 +699,7 @@ impl Context<'_, '_> {
 }
 
 /// Clear Operations
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn clear_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextClearAll(self.core_mut())) }
@@ -724,7 +724,7 @@ impl Context<'_, '_> {
     pub fn blit_image<P: Point>(
         &mut self,
         dst: &P,
-        src: &Image<'_>,
+        src: &Image,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -741,7 +741,7 @@ impl Context<'_, '_> {
     pub fn blit_scaled_image<R: Rect>(
         &mut self,
         dst: &R,
-        src: &Image<'_>,
+        src: &Image,
         src_area: Option<&RectI>,
     ) -> Result<()> {
         unsafe {
@@ -756,7 +756,7 @@ impl Context<'_, '_> {
 }
 
 /// Fill Operations
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -881,7 +881,7 @@ impl Context<'_, '_> {
 }
 
 /// Stroke Operations
-impl Context<'_, '_> {
+impl Context<'_> {
     #[inline]
     pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -1021,7 +1021,7 @@ impl Context<'_, '_> {
     }
 }
 
-impl MatrixTransform for Context<'_, '_> {
+impl MatrixTransform for Context<'_> {
     #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
@@ -1035,14 +1035,14 @@ impl MatrixTransform for Context<'_, '_> {
     }
 }
 
-impl PartialEq for Context<'_, '_> {
+impl PartialEq for Context<'_> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_equals(other)
     }
 }
 
-impl Drop for Context<'_, '_> {
+impl Drop for Context<'_> {
     fn drop(&mut self) {
         unsafe { ffi::blContextReset(&mut self.core) };
     }

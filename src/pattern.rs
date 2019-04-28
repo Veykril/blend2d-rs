@@ -1,4 +1,4 @@
-use core::{fmt, marker::PhantomData, ptr};
+use core::{fmt, ptr};
 
 use crate::{
     error::{errcode_to_result, Result},
@@ -10,34 +10,30 @@ use crate::{
 };
 
 #[repr(transparent)]
-pub struct Pattern<'a> {
+pub struct Pattern {
     core: ffi::BLPatternCore,
-    _pd: PhantomData<&'a Image<'a>>,
 }
 
-unsafe impl WrappedBlCore for Pattern<'_> {
+unsafe impl WrappedBlCore for Pattern {
     type Core = ffi::BLPatternCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Pattern as usize;
 
     #[inline]
     fn from_core(core: Self::Core) -> Self {
-        Pattern {
-            core,
-            _pd: PhantomData,
-        }
+        Pattern { core }
     }
 }
 
-impl<'a> Pattern<'a> {
+impl Pattern {
     /// Creates a new pattern that borrows the given [`Image`] immutably for its
     /// lifetime.
     #[inline]
     pub fn new(
-        image: &'a Image<'a>,
+        image: &Image,
         area: Option<&RectI>,
         extend_mode: ExtendMode,
         matrix: Option<&Matrix2D>,
-    ) -> Pattern<'a> {
+    ) -> Pattern {
         let mut this = Pattern::from_core(*Self::none());
         unsafe {
             ffi::blPatternInitAs(
@@ -53,7 +49,7 @@ impl<'a> Pattern<'a> {
 
     /// The pattern's [`Image`].
     #[inline]
-    pub fn image(&'a self) -> &'a Image<'a> {
+    pub fn image(&self) -> &Image {
         unsafe { &*(&self.impl_().image as *const _ as *const _) }
     }
 
@@ -62,37 +58,27 @@ impl<'a> Pattern<'a> {
     /// There is no set function because such a function would not be able to
     /// change the pattern's lifetime.
     #[inline]
-    pub fn with_new_image<'b>(mut self, image: &'b Image<'b>) -> Result<Pattern<'b>> {
+    pub fn with_new_image(mut self, image: &Image) -> Result<Pattern> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 ptr::null(),
             ))
-            .map(|_| Pattern {
-                core: self.core,
-                _pd: PhantomData,
-            })
+            .map(|_| Pattern { core: self.core })
         }
     }
 
     /// Returns this pattern with a new clipped [`Image`].
     #[inline]
-    pub fn with_new_image_clipped<'b>(
-        mut self,
-        image: &'b Image<'b>,
-        area: &RectI,
-    ) -> Result<Pattern<'b>> {
+    pub fn with_new_image_clipped(mut self, image: &Image, area: &RectI) -> Result<Pattern> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 area as *const _ as *const _,
             ))
-            .map(|_| Pattern {
-                core: self.core,
-                _pd: PhantomData,
-            })
+            .map(|_| Pattern { core: self.core })
         }
     }
 
@@ -144,7 +130,7 @@ impl<'a> Pattern<'a> {
     }
 }
 
-impl MatrixTransform for Pattern<'_> {
+impl MatrixTransform for Pattern {
     #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
@@ -158,21 +144,21 @@ impl MatrixTransform for Pattern<'_> {
     }
 }
 
-impl<'a> From<&'a Image<'a>> for Pattern<'a> {
+impl From<&Image> for Pattern {
     #[inline]
-    fn from(image: &'a Image<'a>) -> Self {
+    fn from(image: &Image) -> Self {
         Self::new(image, None, Default::default(), None)
     }
 }
 
-impl PartialEq for Pattern<'_> {
+impl PartialEq for Pattern {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         unsafe { ffi::blPatternEquals(self.core(), other.core()) }
     }
 }
 
-impl fmt::Debug for Pattern<'_> {
+impl fmt::Debug for Pattern {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Pattern")
             .field("image", self.image())
@@ -183,7 +169,7 @@ impl fmt::Debug for Pattern<'_> {
     }
 }
 
-impl Clone for Pattern<'_> {
+impl Clone for Pattern {
     fn clone(&self) -> Self {
         let mut new = Pattern::from_core(*Self::none());
         unsafe { ffi::blPatternAssignDeep(new.core_mut(), self.core()) };
@@ -191,7 +177,7 @@ impl Clone for Pattern<'_> {
     }
 }
 
-impl Drop for Pattern<'_> {
+impl Drop for Pattern {
     fn drop(&mut self) {
         unsafe { ffi::blPatternReset(&mut self.core) };
     }
