@@ -1,5 +1,5 @@
 use core::{fmt, slice, str};
-use std::ffi::CString;
+use std::{ffi::CString, path::Path};
 
 use crate::{
     array::Array,
@@ -9,7 +9,6 @@ use crate::{
     variant::{BlVariantImpl, WrappedBlCore},
     Tag,
 };
-
 /// Font Data
 #[repr(transparent)]
 pub struct FontData {
@@ -91,13 +90,13 @@ unsafe impl WrappedBlCore for FontLoader {
 
 impl FontLoader {
     /// Creates a new font by reading a file at the given path.
-    pub fn from_path(file_name: &str) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
-        let file_name = CString::new(file_name).unwrap();
+        let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontLoaderCreateFromFile(
                 this.core_mut(),
-                file_name.as_ptr(),
+                path.as_ptr(),
             ))
             .map(|_| this)
         }
@@ -208,13 +207,13 @@ unsafe impl WrappedBlCore for FontFace {
 
 impl FontFace {
     /// Creates a new FontFace from a given path.
-    pub fn from_path(file_name: &str) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
-        let file_name = CString::new(file_name).unwrap();
+        let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontFaceCreateFromFile(
                 this.core_mut(),
-                file_name.as_ptr(),
+                path.as_ptr(),
             ))
             .map(|_| this)
         }

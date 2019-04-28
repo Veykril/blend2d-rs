@@ -141,10 +141,9 @@ impl Image {
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P, codecs: &Array<ImageCodec>) -> Result<Image> {
+        let mut this = Image::from_core(*Self::none());
+        let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
-            let mut this = Image::from_core(*Self::none());
-            let path =
-                CString::new(path.as_ref().to_string_lossy().as_bytes()).expect("Invalid Path");
             errcode_to_result(ffi::blImageReadFromFile(
                 this.core_mut(),
                 path.as_ptr(),

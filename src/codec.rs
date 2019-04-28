@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{borrow::Cow, ffi::CStr};
+use core::{fmt, str};
+use std::ffi::CStr;
 
 use ffi::BLImageCodecFeatures::*;
 
@@ -114,20 +114,20 @@ impl ImageCodec {
 
     /// The codec's name.
     #[inline]
-    pub fn name(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().name).to_string_lossy() }
+    pub fn name(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().name).to_bytes()) }
     }
 
     /// The codec's vendor.
     #[inline]
-    pub fn vendor(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().vendor).to_string_lossy() }
+    pub fn vendor(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().vendor).to_bytes()) }
     }
 
     /// The codec's mime-type.
     #[inline]
-    pub fn mime_type(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().mimeType).to_string_lossy() }
+    pub fn mime_type(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().mimeType).to_bytes()) }
     }
 
     /// The codec's file extensions.
