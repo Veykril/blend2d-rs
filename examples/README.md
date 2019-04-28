@@ -14,6 +14,10 @@ The examples here mimic the ones shown on the official [blend2d getting started 
 
 [Getting Started 6: Stroking](./stroking.rs)
 
+[Getting Started 7: Text Rendering](./text_rendering).rs)
+
+[Getting Started 7: Glyph Buffer](./glyph_buffer.rs)
+
 Other:
 
 [Blend2D + Rust](./rust_bl_logo.rs)

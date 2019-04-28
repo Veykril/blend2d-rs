@@ -109,8 +109,14 @@ unsafe impl BlVariantImpl for ffi::BLContextImpl {
 unsafe impl BlVariantImpl for ffi::BLGradientImpl {
     type VTable = ();
 }
+unsafe impl BlVariantImpl for ffi::BLFontImpl {
+    type VTable = ();
+}
 unsafe impl BlVariantImpl for ffi::BLFontDataImpl {
     type VTable = ffi::BLFontDataVirt;
+}
+unsafe impl BlVariantImpl for ffi::BLFontFaceImpl {
+    type VTable = ffi::BLFontFaceVirt;
 }
 unsafe impl BlVariantImpl for ffi::BLFontLoaderImpl {
     type VTable = ffi::BLFontLoaderVirt;
@@ -176,8 +182,14 @@ unsafe impl BlVariantCore for ffi::BLContextCore {
 unsafe impl BlVariantCore for ffi::BLGradientCore {
     type Impl = ffi::BLGradientImpl;
 }
+unsafe impl BlVariantCore for ffi::BLFontCore {
+    type Impl = ffi::BLFontImpl;
+}
 unsafe impl BlVariantCore for ffi::BLFontDataCore {
     type Impl = ffi::BLFontDataImpl;
+}
+unsafe impl BlVariantCore for ffi::BLFontFaceCore {
+    type Impl = ffi::BLFontFaceImpl;
 }
 unsafe impl BlVariantCore for ffi::BLFontLoaderCore {
     type Impl = ffi::BLFontLoaderImpl;

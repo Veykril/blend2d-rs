@@ -32,3 +32,12 @@ name = "composition"
 
 [[example]]
 name = "transformation"
+
+[[example]]
+name = "text_rendering"
+
+[[example]]
+name = "glyph_buffer"
+
+[[example]]
+name = "rust_bl_logo"

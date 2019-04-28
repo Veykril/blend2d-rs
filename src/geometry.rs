@@ -79,6 +79,20 @@ type BlitImageFn<T> = unsafe extern "C" fn(
     *const ffi::BLImageCore,
     *const ffi::BLRectI,
 ) -> ffi::BLResult;
+type ContextTextFn<T> = unsafe extern "C" fn(
+    *mut ffi::BLContextCore,
+    *const T,
+    *const ffi::BLFontCore,
+    *const std::ffi::c_void,
+    usize,
+    u32,
+) -> ffi::BLResult;
+type ContextGlyphRunFn<T> = unsafe extern "C" fn(
+    *mut ffi::BLContextCore,
+    *const T,
+    *const ffi::BLFontCore,
+    *const ffi::BLGlyphRun,
+) -> ffi::BLResult;
 // trait for overloading
 pub trait Point: private::Sealed + Copy {
     #[doc(hidden)]
@@ -89,6 +103,14 @@ pub trait Point: private::Sealed + Copy {
     fn into_f64(self) -> [f64; 2];
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType>;
+    #[doc(hidden)]
+    const FILL_TEXT: ContextTextFn<Self::FfiType>;
+    #[doc(hidden)]
+    const STROKE_TEXT: ContextTextFn<Self::FfiType>;
+    #[doc(hidden)]
+    const FILL_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType>;
+    #[doc(hidden)]
+    const STROKE_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType>;
 }
 impl Point for PointI {
     #[doc(hidden)]
@@ -101,6 +123,14 @@ impl Point for PointI {
     }
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageI;
+    #[doc(hidden)]
+    const FILL_TEXT: ContextTextFn<Self::FfiType> = ffi::blContextFillTextI;
+    #[doc(hidden)]
+    const STROKE_TEXT: ContextTextFn<Self::FfiType> = ffi::blContextStrokeTextI;
+    #[doc(hidden)]
+    const FILL_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType> = ffi::blContextFillGlyphRunI;
+    #[doc(hidden)]
+    const STROKE_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType> = ffi::blContextStrokeGlyphRunI;
 }
 impl Point for PointD {
     #[doc(hidden)]
@@ -113,14 +143,16 @@ impl Point for PointD {
     }
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageD;
+    #[doc(hidden)]
+    const FILL_TEXT: ContextTextFn<Self::FfiType> = ffi::blContextFillTextD;
+    #[doc(hidden)]
+    const STROKE_TEXT: ContextTextFn<Self::FfiType> = ffi::blContextStrokeTextD;
+    #[doc(hidden)]
+    const FILL_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType> = ffi::blContextFillGlyphRunD;
+    #[doc(hidden)]
+    const STROKE_GLYPH_RUN: ContextGlyphRunFn<Self::FfiType> = ffi::blContextStrokeGlyphRunD;
 }
 
-type BlitScaledImageFn<T> = unsafe extern "C" fn(
-    *mut ffi::BLContextCore,
-    *const T,
-    *const ffi::BLImageCore,
-    *const ffi::BLRectI,
-) -> ffi::BLResult;
 type ClipToRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
 type ClearRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
 // trait for overloading
@@ -143,7 +175,7 @@ impl Rect for RectI {
     #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectI;
     #[doc(hidden)]
-    const BLIT_SCALED_IMAGE: BlitScaledImageFn<Self::FfiType> = ffi::blContextBlitScaledImageI;
+    const BLIT_SCALED_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitScaledImageI;
 }
 
 impl Rect for RectD {
@@ -154,7 +186,7 @@ impl Rect for RectD {
     #[doc(hidden)]
     const CLEAR_RECT: ClearRectFn<Self::FfiType> = ffi::blContextClearRectD;
     #[doc(hidden)]
-    const BLIT_SCALED_IMAGE: BlitScaledImageFn<Self::FfiType> = ffi::blContextBlitScaledImageD;
+    const BLIT_SCALED_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitScaledImageD;
 }
 
 use ffi::BLGeometryDirection::*;
