@@ -621,6 +621,12 @@ impl<T: GradientType> PartialEq for Gradient<T> {
     }
 }
 
+impl<T: GradientType> Clone for Gradient<T> {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
+}
+
 impl<T: GradientType> Drop for Gradient<T> {
     fn drop(&mut self) {
         unsafe { ffi::blGradientReset(&mut self.core) };

@@ -304,9 +304,7 @@ impl<T: ArrayType> PartialEq for Array<T> {
 
 impl<T: ArrayType + Copy> Clone for Array<T> {
     fn clone(&self) -> Self {
-        let mut new = Self::new();
-        unsafe { ffi::blArrayAssignDeep(new.core_mut(), self.core()) };
-        new
+        Self::from_core(self.init_weak())
     }
 }
 
@@ -543,7 +541,7 @@ mod test_array {
             Image::new(4, 4, Default::default()).unwrap(),
             Image::new(5, 5, Default::default()).unwrap(),
         ];
-        let mut arr = Array::<Image<'static>>::new();
+        let mut arr = Array::<Image>::new();
         arr.push(img[0].clone());
         arr.push(img[1].clone());
         arr.push(img[2].clone());

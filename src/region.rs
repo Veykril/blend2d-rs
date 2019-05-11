@@ -259,9 +259,7 @@ impl fmt::Debug for Region {
 
 impl Clone for Region {
     fn clone(&self) -> Self {
-        let mut new = Self::new();
-        unsafe { ffi::blRegionAssignDeep(new.core_mut(), self.core()) };
-        new
+        Self::from_core(self.init_weak())
     }
 }
 

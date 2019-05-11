@@ -16,7 +16,7 @@ The examples here mimic the ones shown on the official [blend2d getting started 
 
 [Getting Started 7: Text Rendering](./text_rendering).rs)
 
-[Getting Started 7: Glyph Buffer](./glyph_buffer.rs)
+[Getting Started 8: Glyph Buffer](./glyph_buffer.rs)
 
 Other:
 

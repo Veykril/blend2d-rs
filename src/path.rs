@@ -932,8 +932,6 @@ impl fmt::Debug for Path {
 
 impl Clone for Path {
     fn clone(&self) -> Self {
-        let mut new = Self::new();
-        unsafe { ffi::blPathAssignDeep(new.core_mut(), self.core()) };
-        new
+        Self::from_core(self.init_weak())
     }
 }

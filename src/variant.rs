@@ -1,6 +1,13 @@
 ///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
+use crate::{
+    array::{Array, ArrayType},
+    image::Image,
+    path::Path,
+    pattern::Pattern,
+    region::Region,
+};
 use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
@@ -30,7 +37,7 @@ bl_enum! {
         ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
         ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
         ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
-        Path               = BL_IMPL_TYPE_PATH,
+        Path                 = BL_IMPL_TYPE_PATH,
         Region               = BL_IMPL_TYPE_REGION,
         Image                = BL_IMPL_TYPE_IMAGE,
         ImageCodec           = BL_IMPL_TYPE_IMAGE_CODEC,
@@ -51,10 +58,12 @@ bl_enum! {
 
 bitflags! {
     pub struct ImplTraits: u8 {
-        const NULL = ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
-        const VIRTUAL = ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
-        const EXTERNAL = ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
-        const FOREIGN = ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
+        const NULL =      ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
+        const VIRTUAL =   ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
+        const MUTABLE =   ffi::BLImplTraits::BL_IMPL_TRAIT_MUTABLE as u8;
+        const IMMUTABLE = ffi::BLImplTraits::BL_IMPL_TRAIT_IMMUTABLE as u8;
+        const EXTERNAL =  ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
+        const FOREIGN =   ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
     }
 }
 
@@ -231,6 +240,7 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;
+
     fn from_core(core: Self::Core) -> Self;
 
     /// The default implementation reinterprets &self as &Self::Core.
@@ -282,59 +292,48 @@ pub unsafe trait WrappedBlCore: Sized {
     }
 }
 
-/// A wrapper-struct for Blend2D objects that makes use of the internal
-/// refcounting done by blend2d.
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct Shared<T: WrappedBlCore>(T);
+type BlAssignDeep<C> = unsafe extern "C" fn(*mut C, *const C) -> ffi::BLResult;
 
-impl<T: WrappedBlCore> Shared<T> {
-    pub fn new(val: T) -> Self {
-        Shared(val)
-    }
-
-    pub fn ref_count(&self) -> usize {
-        self.0.impl_().ref_count()
-    }
-}
-
-impl<T: WrappedBlCore> Clone for Shared<T> {
-    fn clone(&self) -> Self {
-        Shared(T::from_core(self.0.init_weak()))
+/// A trait for deep cloning the object. This is different from [Clone] for
+/// blObjects in the regard that normal cloning only creates a weak
+/// reference-counted clone.
+pub trait DeepClone
+where
+    Self: WrappedBlCore,
+    <Self as WrappedBlCore>::Core: Copy + 'static,
+{
+    #[doc(hidden)]
+    const ASSIGN_DEEP: BlAssignDeep<<Self as WrappedBlCore>::Core>;
+    /// Returns a deeply cloned copy of the value.
+    fn clone_deep(&self) -> Self {
+        let mut new = Self::from_core(*Self::none());
+        unsafe { Self::ASSIGN_DEEP(new.core_mut(), self.core()) };
+        new
     }
 }
 
-impl<T: WrappedBlCore> PartialEq for Shared<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.impl_equals(other)
-    }
+impl DeepClone for Image {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blImageAssignDeep;
+}
+impl DeepClone for Path {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPathAssignDeep;
 }
 
-impl<T: WrappedBlCore> core::ops::Deref for Shared<T> {
-    type Target = T;
+// Fails to compile on rust stable but works fine on nightly(E0277). I believe
+// this might be related to https://github.com/rust-lang/rust/issues/24159,
+// but im unsure as to how one could circumvent it
+/*impl<T> DeepClone for Array<T>
+where
+    T: ArrayType,
+    Array<T>: WrappedBlCore,
+    <Array<T> as WrappedBlCore>::Core: Copy + 'static,
+{
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blArrayAssignDeep;
+}*/
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+impl DeepClone for Region {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blRegionAssignDeep;
 }
-
-impl<T: WrappedBlCore> Drop for Shared<T> {
-    fn drop(&mut self) {
-        unsafe { ffi::blVariantReset(self.0.core_mut() as *mut _ as *mut _) };
-    }
-}
-
-#[cfg(test)]
-mod test_shared {
-    use crate::{path::Path, Shared};
-    #[test]
-    fn test_shared_clone() {
-        let mut path = Path::new();
-        path.move_to(1.0, 1.0).unwrap();
-        let shared = Shared::new(path);
-        assert_eq!(shared.ref_count(), 1);
-        let clone = shared.clone();
-        assert_eq!(shared.ref_count(), 2);
-        assert_eq!(shared.ref_count(), clone.ref_count());
-    }
+impl DeepClone for Pattern {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPatternAssignDeep;
 }

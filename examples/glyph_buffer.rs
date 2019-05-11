@@ -1,12 +1,4 @@
-use blend2d::{
-    codec::ImageCodec,
-    context::{CompOp, Context},
-    font::FontFace,
-    format::ImageFormat,
-    geometry::PointD,
-    glyph_buffer::GlyphBuffer,
-    image::Image,
-};
+use blend2d::{font::FontFace, geometry::PointD, glyph_buffer::GlyphBuffer, prelude::*};
 
 fn main() {
     let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
@@ -16,7 +8,7 @@ fn main() {
         ctx.fill_all()?;
         ctx.set_fill_style_rgba32(0xFFFFFFFF)?;
 
-        let font_face = FontFace::from_path("assets/NotoSans-Regular.ttf")?;
+        let font_face = FontFace::from_path("assets/NotoSans-Regular.ttf", DataAccessFlags::READ)?;
         let font = font_face.create_font(20.0)?;
         let fm = font.font_metrics();
 
@@ -41,9 +33,10 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codec = ImageCodec::built_in_codecs()
-        .find_codec_by_name("BMP")
-        .unwrap();
-    img.write_to_file("bl-getting-started-8.bmp", codec)
-        .expect("Writing to file failed");
+    let codecs = ImageCodec::built_in_codecs();
+    img.write_to_file(
+        "bl-getting-started-8.bmp",
+        codecs.find_codec_by_name("BMP").unwrap(),
+    )
+    .expect("Writing to file failed");
 }

@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{borrow::Cow, ffi::CStr};
+use core::{fmt, ptr, str};
+use std::ffi::CStr;
 
 use ffi::BLImageCodecFeatures::*;
 
@@ -108,26 +108,30 @@ impl ImageCodec {
 
     /// Returns a static reference of the blend2d builtin codecs.
     #[inline]
-    pub fn built_in_codecs() -> &'static Array<ImageCodec> {
-        unsafe { &*(ffi::blImageCodecBuiltInCodecs() as *const _ as *const _) }
+    pub fn built_in_codecs() -> Array<ImageCodec> {
+        let mut core = ffi::BLArrayCore {
+            impl_: ptr::null_mut(),
+        };
+        unsafe { ffi::blImageCodecArrayInitBuiltInCodecs(&mut core) };
+        WrappedBlCore::from_core(core)
     }
 
     /// The codec's name.
     #[inline]
-    pub fn name(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().name).to_string_lossy() }
+    pub fn name(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().name).to_bytes()) }
     }
 
     /// The codec's vendor.
     #[inline]
-    pub fn vendor(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().vendor).to_string_lossy() }
+    pub fn vendor(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().vendor).to_bytes()) }
     }
 
     /// The codec's mime-type.
     #[inline]
-    pub fn mime_type(&self) -> Cow<'_, str> {
-        unsafe { CStr::from_ptr(self.impl_().mimeType).to_string_lossy() }
+    pub fn mime_type(&self) -> &str {
+        unsafe { str::from_utf8_unchecked(CStr::from_ptr(self.impl_().mimeType).to_bytes()) }
     }
 
     /// The codec's file extensions.
@@ -162,6 +166,12 @@ impl PartialEq for ImageCodec {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_equals(other)
+    }
+}
+
+impl Clone for ImageCodec {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
     }
 }
 
@@ -209,6 +219,12 @@ impl PartialEq for ImageEncoder {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_equals(other)
+    }
+}
+
+impl Clone for ImageEncoder {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
     }
 }
 
@@ -267,6 +283,12 @@ impl PartialEq for ImageDecoder {
     }
 }
 
+impl Clone for ImageDecoder {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
+}
+
 impl fmt::Debug for ImageDecoder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ImageDecoder")
@@ -292,15 +314,17 @@ mod test_codec {
 
     #[test]
     fn test_encoder_creation() {
-        let codec = ImageCodec::built_in_codecs().first().unwrap();
+        let codecs = ImageCodec::built_in_codecs();
+        let codec = codecs.first().unwrap();
         let encoder = codec.create_encoder().unwrap();
         assert_eq!(codec, encoder.codec());
     }
 
     #[test]
     fn test_decoder_creation() {
-        let codec = ImageCodec::built_in_codecs().first().unwrap();
-        let encoder = codec.create_decoder().unwrap();
-        assert_eq!(codec, encoder.codec());
+        let codecs = ImageCodec::built_in_codecs();
+        let codec = codecs.first().unwrap();
+        let decoder = codec.create_decoder().unwrap();
+        assert_eq!(codec, decoder.codec());
     }
 }

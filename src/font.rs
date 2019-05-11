@@ -1,5 +1,5 @@
 use core::{fmt, slice, str};
-use std::ffi::CString;
+use std::{ffi::CString, path::Path};
 
 use crate::{
     array::Array,
@@ -7,9 +7,8 @@ use crate::{
     font_defs::*,
     glyph_buffer::GlyphBuffer,
     variant::{BlVariantImpl, WrappedBlCore},
-    Tag,
+    DataAccessFlags, Tag,
 };
-
 /// Font Data
 #[repr(transparent)]
 pub struct FontData {
@@ -91,13 +90,14 @@ unsafe impl WrappedBlCore for FontLoader {
 
 impl FontLoader {
     /// Creates a new font by reading a file at the given path.
-    pub fn from_path(file_name: &str) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P, read_flags: DataAccessFlags) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
-        let file_name = CString::new(file_name).unwrap();
+        let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontLoaderCreateFromFile(
                 this.core_mut(),
-                file_name.as_ptr(),
+                path.as_ptr(),
+                read_flags.bits(),
             ))
             .map(|_| this)
         }
@@ -177,6 +177,12 @@ impl PartialEq for FontLoader {
     }
 }
 
+impl Clone for FontLoader {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
+}
+
 impl Drop for FontLoader {
     #[inline]
     fn drop(&mut self) {
@@ -208,13 +214,14 @@ unsafe impl WrappedBlCore for FontFace {
 
 impl FontFace {
     /// Creates a new FontFace from a given path.
-    pub fn from_path(file_name: &str) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P, read_flags: DataAccessFlags) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
-        let file_name = CString::new(file_name).unwrap();
+        let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontFaceCreateFromFile(
                 this.core_mut(),
-                file_name.as_ptr(),
+                path.as_ptr(),
+                read_flags.bits(),
             ))
             .map(|_| this)
         }
@@ -370,6 +377,18 @@ fn bl_string_to_str(bl_string: &ffi::BLStringCore) -> &str {
     unsafe {
         let ffi_slice = (*bl_string.impl_).__bindgen_anon_1.__bindgen_anon_1;
         str::from_utf8_unchecked(slice::from_raw_parts(ffi_slice.data as _, ffi_slice.size))
+    }
+}
+
+impl PartialEq for FontFace {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { ffi::blFontFaceEquals(self.core(), other.core()) }
+    }
+}
+
+impl Clone for FontFace {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
     }
 }
 
@@ -574,6 +593,18 @@ impl Font {
     //TODO getGlyphOutlines
 
     //TODO getGlyphRunOutlines
+}
+
+impl PartialEq for Font {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { ffi::blFontEquals(self.core(), other.core()) }
+    }
+}
+
+impl Clone for Font {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
 }
 
 impl Drop for Font {

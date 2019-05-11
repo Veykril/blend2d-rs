@@ -1,10 +1,4 @@
-use blend2d::{
-    codec::ImageCodec,
-    context::{CompOp, Context},
-    format::ImageFormat,
-    image::Image,
-    path::Path,
-};
+use blend2d::{path::Path, prelude::*};
 
 fn main() {
     let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");
@@ -33,9 +27,10 @@ fn main() {
     render(ctx).expect("Rendering to context failed");
 
     // Let's use some built-in codecs provided by Blend2D.
-    let codec = ImageCodec::built_in_codecs()
-        .find_codec_by_name("BMP")
-        .unwrap();
-    img.write_to_file("bl-getting-started-1.bmp", codec)
-        .expect("Writing to file failed");
+    let codecs = ImageCodec::built_in_codecs();
+    img.write_to_file(
+        "bl-getting-started-1.bmp",
+        codecs.find_codec_by_name("BMP").unwrap(),
+    )
+    .expect("Writing to file failed");
 }

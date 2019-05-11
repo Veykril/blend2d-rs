@@ -5,7 +5,7 @@
 mod macros;
 
 pub(in crate) mod variant;
-pub use self::variant::Shared;
+pub use self::variant::DeepClone;
 
 pub mod array;
 pub mod codec;
@@ -21,7 +21,10 @@ pub mod image;
 pub mod matrix;
 pub mod path;
 pub mod pattern;
+pub mod prelude;
 pub mod region;
+
+use bitflags::bitflags;
 
 #[repr(transparent)]
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -42,15 +45,15 @@ bl_enum! {
 use ffi::BLExtendMode::*;
 bl_enum! {
     pub enum ExtendMode {
-        PadXPadY = BL_EXTEND_MODE_PAD_X_PAD_Y,
-        RepeatXRepeatY = BL_EXTEND_MODE_REPEAT_X_REPEAT_Y,
+        PadXPadY =         BL_EXTEND_MODE_PAD_X_PAD_Y,
+        RepeatXRepeatY =   BL_EXTEND_MODE_REPEAT_X_REPEAT_Y,
         ReflectXReflectY = BL_EXTEND_MODE_REFLECT_X_REFLECT_Y,
-        PadXRepeatY = BL_EXTEND_MODE_PAD_X_REPEAT_Y,
-        PadXReflectY = BL_EXTEND_MODE_PAD_X_REFLECT_Y,
-        RepeatXPadY = BL_EXTEND_MODE_REPEAT_X_PAD_Y,
-        RepeatXReflectY = BL_EXTEND_MODE_REPEAT_X_REFLECT_Y,
-        ReflectXPadY = BL_EXTEND_MODE_REFLECT_X_PAD_Y,
-        ReflectXRepeatY = BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
+        PadXRepeatY =      BL_EXTEND_MODE_PAD_X_REPEAT_Y,
+        PadXReflectY =     BL_EXTEND_MODE_PAD_X_REFLECT_Y,
+        RepeatXPadY =      BL_EXTEND_MODE_REPEAT_X_PAD_Y,
+        RepeatXReflectY =  BL_EXTEND_MODE_REPEAT_X_REFLECT_Y,
+        ReflectXPadY =     BL_EXTEND_MODE_REFLECT_X_PAD_Y,
+        ReflectXRepeatY =  BL_EXTEND_MODE_REFLECT_X_REPEAT_Y,
     }
     Default => PadXPadY
 }
@@ -58,12 +61,21 @@ bl_enum! {
 use ffi::BLStyleType::*;
 bl_enum! {
     pub enum StyleType {
-        None = BL_STYLE_TYPE_NONE,
-        Solid = BL_STYLE_TYPE_SOLID,
-        Pattern = BL_STYLE_TYPE_PATTERN,
+        None =     BL_STYLE_TYPE_NONE,
+        Solid =    BL_STYLE_TYPE_SOLID,
+        Pattern =  BL_STYLE_TYPE_PATTERN,
         Gradient = BL_STYLE_TYPE_GRADIENT,
     }
     Default => None
+}
+
+use ffi::BLDataAccessFlags::*;
+bitflags! {
+    pub struct DataAccessFlags: u32 {
+        const READ       = BL_DATA_ACCESS_READ as u32;
+        const WRITE      = BL_DATA_ACCESS_READ as u32;
+        const READ_WRITE = BL_DATA_ACCESS_READ as u32;
+    }
 }
 
 use core::ops;

@@ -29,7 +29,7 @@ impl GlyphBuffer {
     pub fn new() -> Self {
         let mut this = GlyphBuffer {
             core: ffi::BLGlyphBufferCore {
-                data: ptr::null_mut(),
+                impl_: ptr::null_mut(),
             },
         };
         unsafe { ffi::blGlyphBufferInit(&mut this.core) };
@@ -46,14 +46,14 @@ impl GlyphBuffer {
     #[inline]
     pub fn glyph_run(&self) -> GlyphRun<'_> {
         GlyphRun {
-            raw: unsafe { &(*self.core.data).__bindgen_anon_1.glyphRun },
+            raw: unsafe { &(*self.core.impl_).__bindgen_anon_1.glyphRun },
         }
     }
 
     #[inline]
     pub fn glyph_item_data(&self) -> GlyphRun<'_> {
         GlyphRun {
-            raw: unsafe { &(*self.core.data).__bindgen_anon_1.glyphRun },
+            raw: unsafe { &(*self.core.impl_).__bindgen_anon_1.glyphRun },
         }
     }
 
