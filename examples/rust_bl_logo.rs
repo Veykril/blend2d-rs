@@ -1,12 +1,10 @@
 use blend2d::{
-    codec::ImageCodec,
-    context::{CompOp, Context},
-    format::ImageFormat,
     geometry::SizeI,
     gradient::{Gradient, GradientStop, LinearGradientValues, RadialGradientValues},
-    image::{Image, ImageScaleFilter},
+    image::ImageScaleFilter,
     matrix::Matrix2D,
     pattern::Pattern,
+    prelude::*,
     ExtendMode,
 };
 

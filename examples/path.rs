@@ -1,10 +1,4 @@
-use blend2d::{
-    codec::ImageCodec,
-    context::{CompOp, Context},
-    format::ImageFormat,
-    image::Image,
-    path::Path,
-};
+use blend2d::{path::Path, prelude::*};
 
 fn main() {
     let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");

@@ -21,6 +21,7 @@ pub mod image;
 pub mod matrix;
 pub mod path;
 pub mod pattern;
+pub mod prelude;
 pub mod region;
 
 use bitflags::bitflags;

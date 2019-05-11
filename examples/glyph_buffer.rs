@@ -1,13 +1,4 @@
-use blend2d::{
-    codec::ImageCodec,
-    context::{CompOp, Context},
-    font::FontFace,
-    format::ImageFormat,
-    geometry::PointD,
-    glyph_buffer::GlyphBuffer,
-    image::Image,
-    DataAccessFlags,
-};
+use blend2d::{font::FontFace, geometry::PointD, glyph_buffer::GlyphBuffer, prelude::*};
 
 fn main() {
     let mut img = Image::new(480, 480, ImageFormat::PRgb32).expect("Unable to create image");

@@ -325,18 +325,3 @@ impl DeepClone for Region {
 impl DeepClone for Pattern {
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPatternAssignDeep;
 }
-
-#[cfg(test)]
-mod test_shared {
-    use crate::{path::Path, Shared};
-    #[test]
-    fn test_shared_clone() {
-        let mut path = Path::new();
-        path.move_to(1.0, 1.0).unwrap();
-        let shared = Shared::new(path);
-        assert_eq!(shared.ref_count(), 1);
-        let clone = shared.clone();
-        assert_eq!(shared.ref_count(), 2);
-        assert_eq!(shared.ref_count(), clone.ref_count());
-    }
-}
