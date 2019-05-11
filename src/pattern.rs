@@ -171,9 +171,7 @@ impl fmt::Debug for Pattern {
 
 impl Clone for Pattern {
     fn clone(&self) -> Self {
-        let mut new = Pattern::from_core(*Self::none());
-        unsafe { ffi::blPatternAssignDeep(new.core_mut(), self.core()) };
-        new
+        Self::from_core(self.init_weak())
     }
 }
 

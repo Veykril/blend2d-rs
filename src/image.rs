@@ -251,9 +251,7 @@ impl PartialEq for Image {
 impl Clone for Image {
     #[inline]
     fn clone(&self) -> Image {
-        let mut new = Image::from_core(*Self::none());
-        unsafe { ffi::blImageAssignDeep(new.core_mut(), self.core()) };
-        new
+        Self::from_core(self.init_weak())
     }
 }
 

@@ -1,6 +1,13 @@
 ///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
+use crate::{
+    array::{Array, ArrayType},
+    image::Image,
+    path::Path,
+    pattern::Pattern,
+    region::Region,
+};
 use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
@@ -233,6 +240,7 @@ unsafe impl BlVariantCore for ffi::BLVariantCore {
 pub unsafe trait WrappedBlCore: Sized {
     type Core: BlVariantCore;
     const IMPL_TYPE_INDEX: usize;
+
     fn from_core(core: Self::Core) -> Self;
 
     /// The default implementation reinterprets &self as &Self::Core.
@@ -284,46 +292,38 @@ pub unsafe trait WrappedBlCore: Sized {
     }
 }
 
-/// A wrapper-struct for Blend2D objects that makes use of the internal
-/// refcounting done by blend2d.
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct Shared<T: WrappedBlCore>(T);
+type BlAssignDeep<C> = unsafe extern "C" fn(*mut C, *const C) -> ffi::BLResult;
 
-impl<T: WrappedBlCore> Shared<T> {
-    pub fn new(val: T) -> Self {
-        Shared(val)
-    }
-
-    pub fn ref_count(&self) -> usize {
-        self.0.impl_().ref_count()
-    }
-}
-
-impl<T: WrappedBlCore> Clone for Shared<T> {
-    fn clone(&self) -> Self {
-        Shared(T::from_core(self.0.init_weak()))
+/// A trait for deep cloning the object. This is different from [Clone] for
+/// blObjects in the regard that normal cloning only creates a weak
+/// reference-counted clone.
+pub trait DeepClone
+where
+    Self: WrappedBlCore,
+    <Self as WrappedBlCore>::Core: Copy + 'static,
+{
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core>;
+    fn clone_deep(&self) -> Self {
+        let mut new = Self::from_core(*Self::none());
+        unsafe { Self::ASSIGN_DEEP(new.core_mut(), self.core()) };
+        new
     }
 }
 
-impl<T: WrappedBlCore> PartialEq for Shared<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.impl_equals(other)
-    }
+impl DeepClone for Image {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blImageAssignDeep;
 }
-
-impl<T: WrappedBlCore> core::ops::Deref for Shared<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+impl DeepClone for Path {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPathAssignDeep;
 }
-
-impl<T: WrappedBlCore> Drop for Shared<T> {
-    fn drop(&mut self) {
-        unsafe { ffi::blVariantReset(self.0.core_mut() as *mut _ as *mut _) };
-    }
+impl<T: ArrayType> DeepClone for Array<T> {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blArrayAssignDeep;
+}
+impl DeepClone for Region {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blRegionAssignDeep;
+}
+impl DeepClone for Pattern {
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPatternAssignDeep;
 }
 
 #[cfg(test)]

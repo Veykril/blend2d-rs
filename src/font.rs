@@ -177,6 +177,12 @@ impl PartialEq for FontLoader {
     }
 }
 
+impl Clone for FontLoader {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
+}
+
 impl Drop for FontLoader {
     #[inline]
     fn drop(&mut self) {
@@ -371,6 +377,18 @@ fn bl_string_to_str(bl_string: &ffi::BLStringCore) -> &str {
     unsafe {
         let ffi_slice = (*bl_string.impl_).__bindgen_anon_1.__bindgen_anon_1;
         str::from_utf8_unchecked(slice::from_raw_parts(ffi_slice.data as _, ffi_slice.size))
+    }
+}
+
+impl PartialEq for FontFace {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { ffi::blFontFaceEquals(self.core(), other.core()) }
+    }
+}
+
+impl Clone for FontFace {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
     }
 }
 
@@ -575,6 +593,18 @@ impl Font {
     //TODO getGlyphOutlines
 
     //TODO getGlyphRunOutlines
+}
+
+impl PartialEq for Font {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { ffi::blFontEquals(self.core(), other.core()) }
+    }
+}
+
+impl Clone for Font {
+    fn clone(&self) -> Self {
+        Self::from_core(self.init_weak())
+    }
 }
 
 impl Drop for Font {
