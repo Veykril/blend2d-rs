@@ -30,7 +30,7 @@ bl_enum! {
         ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
         ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
         ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
-        Path               = BL_IMPL_TYPE_PATH,
+        Path                 = BL_IMPL_TYPE_PATH,
         Region               = BL_IMPL_TYPE_REGION,
         Image                = BL_IMPL_TYPE_IMAGE,
         ImageCodec           = BL_IMPL_TYPE_IMAGE_CODEC,
@@ -51,10 +51,12 @@ bl_enum! {
 
 bitflags! {
     pub struct ImplTraits: u8 {
-        const NULL = ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
-        const VIRTUAL = ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
-        const EXTERNAL = ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
-        const FOREIGN = ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
+        const NULL =      ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
+        const VIRTUAL =   ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
+        const MUTABLE =   ffi::BLImplTraits::BL_IMPL_TRAIT_MUTABLE as u8;
+        const IMMUTABLE = ffi::BLImplTraits::BL_IMPL_TRAIT_IMMUTABLE as u8;
+        const EXTERNAL =  ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
+        const FOREIGN =   ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
     }
 }
 

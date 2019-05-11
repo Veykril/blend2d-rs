@@ -6,6 +6,7 @@ use blend2d::{
     geometry::PointD,
     image::Image,
     matrix::MatrixTransform,
+    DataAccessFlags,
 };
 
 fn main() {
@@ -15,7 +16,7 @@ fn main() {
         ctx.set_comp_op(CompOp::SrcCopy)?;
         ctx.fill_all()?;
 
-        let font_face = FontFace::from_path("assets/NotoSans-Regular.ttf")?;
+        let font_face = FontFace::from_path("assets/NotoSans-Regular.ttf", DataAccessFlags::READ)?;
         let font = font_face.create_font(50.0)?;
 
         ctx.set_fill_style_rgba32(0xFFFFFFFF)?;
@@ -27,9 +28,10 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codec = ImageCodec::built_in_codecs()
-        .find_codec_by_name("BMP")
-        .unwrap();
-    img.write_to_file("bl-getting-started-7.bmp", codec)
-        .expect("Writing to file failed");
+    let codecs = ImageCodec::built_in_codecs();
+    img.write_to_file(
+        "bl-getting-started-7.bmp",
+        codecs.find_codec_by_name("BMP").unwrap(),
+    )
+    .expect("Writing to file failed");
 }

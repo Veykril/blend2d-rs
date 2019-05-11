@@ -7,7 +7,7 @@ use crate::{
     font_defs::*,
     glyph_buffer::GlyphBuffer,
     variant::{BlVariantImpl, WrappedBlCore},
-    Tag,
+    DataAccessFlags, Tag,
 };
 /// Font Data
 #[repr(transparent)]
@@ -90,13 +90,14 @@ unsafe impl WrappedBlCore for FontLoader {
 
 impl FontLoader {
     /// Creates a new font by reading a file at the given path.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P, read_flags: DataAccessFlags) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
         let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontLoaderCreateFromFile(
                 this.core_mut(),
                 path.as_ptr(),
+                read_flags.bits(),
             ))
             .map(|_| this)
         }
@@ -207,13 +208,14 @@ unsafe impl WrappedBlCore for FontFace {
 
 impl FontFace {
     /// Creates a new FontFace from a given path.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P, read_flags: DataAccessFlags) -> Result<Self> {
         let mut this = Self::from_core(*Self::none());
         let path = CString::new(path.as_ref().to_string_lossy().into_owned().into_bytes()).unwrap();
         unsafe {
             errcode_to_result(ffi::blFontFaceCreateFromFile(
                 this.core_mut(),
                 path.as_ptr(),
+                read_flags.bits(),
             ))
             .map(|_| this)
         }

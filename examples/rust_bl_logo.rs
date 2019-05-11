@@ -52,7 +52,7 @@ fn main() {
         // your image.
         let mut logo = Image::from_path(
             "assets/rust-logo-512x512-blk.png",
-            ImageCodec::built_in_codecs(),
+            &ImageCodec::built_in_codecs(),
         )?;
         logo.scale(
             SizeI {
@@ -101,9 +101,10 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codec = ImageCodec::built_in_codecs()
-        .find_codec_by_name("BMP")
-        .unwrap();
-    img.write_to_file("rust_bl_logo.bmp", codec)
-        .expect("Writing to file failed");
+    let codecs = ImageCodec::built_in_codecs();
+    img.write_to_file(
+        "rust_bl_logo.bmp",
+        codecs.find_codec_by_name("BMP").unwrap(),
+    )
+    .expect("Writing to file failed");
 }

@@ -1,4 +1,4 @@
-use core::{fmt, str};
+use core::{fmt, ptr, str};
 use std::ffi::CStr;
 
 use ffi::BLImageCodecFeatures::*;
@@ -108,8 +108,12 @@ impl ImageCodec {
 
     /// Returns a static reference of the blend2d builtin codecs.
     #[inline]
-    pub fn built_in_codecs() -> &'static Array<ImageCodec> {
-        unsafe { &*(ffi::blImageCodecBuiltInCodecs() as *const _ as *const _) }
+    pub fn built_in_codecs() -> Array<ImageCodec> {
+        let mut core = ffi::BLArrayCore {
+            impl_: ptr::null_mut(),
+        };
+        unsafe { ffi::blImageCodecArrayInitBuiltInCodecs(&mut core) };
+        WrappedBlCore::from_core(core)
     }
 
     /// The codec's name.
@@ -292,15 +296,17 @@ mod test_codec {
 
     #[test]
     fn test_encoder_creation() {
-        let codec = ImageCodec::built_in_codecs().first().unwrap();
+        let codecs = ImageCodec::built_in_codecs();
+        let codec = codecs.first().unwrap();
         let encoder = codec.create_encoder().unwrap();
         assert_eq!(codec, encoder.codec());
     }
 
     #[test]
     fn test_decoder_creation() {
-        let codec = ImageCodec::built_in_codecs().first().unwrap();
-        let encoder = codec.create_decoder().unwrap();
-        assert_eq!(codec, encoder.codec());
+        let codecs = ImageCodec::built_in_codecs();
+        let codec = codecs.first().unwrap();
+        let decoder = codec.create_decoder().unwrap();
+        assert_eq!(codec, decoder.codec());
     }
 }
