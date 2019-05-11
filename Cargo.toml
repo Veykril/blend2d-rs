@@ -1,6 +1,6 @@
 [package]
 name = "blend2d"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Lukas Wirth <lukastw97@gmail.com>"]
 edition = "2018"
 description = "Rust bindings for blend2d"
@@ -12,7 +12,7 @@ readme = "README.md"
 exclude = ["assets", "examples"]
 
 [dependencies]
-ffi = { package = "blend2d-sys", version = "0.2.0-pre", path = "blend2d-sys" }
+ffi = { package = "blend2d-sys", version = "0.2.0", path = "blend2d-sys" }
 bitflags = "1.0.4"
 
 [[example]]

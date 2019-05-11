@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::{fmt, marker::PhantomData, ptr};
+use core::{fmt, ptr};
 
 use crate::{
     array::Array,
@@ -160,12 +160,11 @@ pub struct ContextHints {
 }
 
 #[repr(transparent)]
-pub struct Context<'a> {
+pub struct Context {
     core: ffi::BLContextCore,
-    _pd: PhantomData<&'a mut Image>,
 }
 
-impl fmt::Debug for Context<'_> {
+impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Context")
             .field("target_size", &self.target_size())
@@ -176,32 +175,29 @@ impl fmt::Debug for Context<'_> {
     }
 }
 
-unsafe impl WrappedBlCore for Context<'_> {
+unsafe impl WrappedBlCore for Context {
     type Core = ffi::BLContextCore;
     const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Context as usize;
 
     #[inline]
     fn from_core(core: Self::Core) -> Self {
-        Context {
-            core,
-            _pd: PhantomData,
-        }
+        Context { core }
     }
 }
 
-impl<'a> Context<'a> {
+impl Context {
     /// Creates a new context that renders to the given [`Image`].
     #[inline]
-    pub fn new(target: &'a mut Image) -> Result<Context<'a>> {
+    pub fn new(target: &mut Image) -> Result<Context> {
         Self::new_with_options(target, None)
     }
 
     /// Creates a new context with optional creation info that renders to the
     /// given [`Image`].
     pub fn new_with_options(
-        target: &'a mut Image,
+        target: &mut Image,
         info: Option<ContextCreateInfo>,
-    ) -> Result<Context<'a>> {
+    ) -> Result<Context> {
         unsafe {
             let mut this = Context::from_core(*Self::none());
             let info = info.map(|info| ffi::BLContextCreateInfo {
@@ -410,7 +406,7 @@ impl<'a> Context<'a> {
 }
 
 // FIXME? make functions generic over a Stroke/FillStyle trait?
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn fill_rule(&self) -> FillRule {
         (self.state().fillRule as u32).into()
@@ -491,7 +487,7 @@ impl Context<'_> {
     }
 }
 
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn stroke_alpha(&self) -> f64 {
         self.state().styleAlpha[ContextOpType::Stroke as usize]
@@ -676,7 +672,7 @@ impl Context<'_> {
 }
 
 /// Clip Operations
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn restore_clipping(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextRestoreClipping(self.core_mut())) }
@@ -699,7 +695,7 @@ impl Context<'_> {
 }
 
 /// Clear Operations
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn clear_all(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blContextClearAll(self.core_mut())) }
@@ -756,7 +752,7 @@ impl Context<'_> {
 }
 
 /// Fill Operations
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -881,7 +877,7 @@ impl Context<'_> {
 }
 
 /// Stroke Operations
-impl Context<'_> {
+impl Context {
     #[inline]
     pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
@@ -1021,7 +1017,7 @@ impl Context<'_> {
     }
 }
 
-impl MatrixTransform for Context<'_> {
+impl MatrixTransform for Context {
     #[inline]
     #[doc(hidden)]
     fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
@@ -1035,14 +1031,14 @@ impl MatrixTransform for Context<'_> {
     }
 }
 
-impl PartialEq for Context<'_> {
+impl PartialEq for Context {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.impl_equals(other)
     }
 }
 
-impl Drop for Context<'_> {
+impl Drop for Context {
     fn drop(&mut self) {
         unsafe { ffi::blContextReset(&mut self.core) };
     }

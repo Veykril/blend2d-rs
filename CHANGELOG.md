@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2018-05-11
+
+### Changed
+
+- Clone is now a weak reference clone
+- Lots of api changes
+
+### Added
+
+- DeepClone trait for objects that are deep cloneable
+- Most Font and Glyph related stuff
+- Debug implementation for most types
+- Travis CI
+
 ## [0.1.2] - 2018-04-17
 
 ### Changed

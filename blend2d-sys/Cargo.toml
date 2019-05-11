@@ -1,6 +1,6 @@
 [package]
 name = "blend2d-sys"
-version = "0.2.0-pre"
+version = "0.2.0"
 authors = ["Lukas Wirth <lukastw97@gmail.com>"]
 edition = "2018"
 description = "Raw ffi bindings for blend2d"
@@ -12,5 +12,5 @@ build = "build.rs"
 links = "blend2d"
 
 [build-dependencies]
-cmake = "^0.1"
-bindgen = "^0.49.0"
+cmake = "0.1"
+bindgen = "0.49"
