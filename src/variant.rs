@@ -302,7 +302,9 @@ where
     Self: WrappedBlCore,
     <Self as WrappedBlCore>::Core: Copy + 'static,
 {
-    const ASSIGN_DEEP: BlAssignDeep<Self::Core>;
+    #[doc(hidden)]
+    const ASSIGN_DEEP: BlAssignDeep<<Self as WrappedBlCore>::Core>;
+    /// Returns a deeply cloned copy of the value.
     fn clone_deep(&self) -> Self {
         let mut new = Self::from_core(*Self::none());
         unsafe { Self::ASSIGN_DEEP(new.core_mut(), self.core()) };
@@ -316,9 +318,19 @@ impl DeepClone for Image {
 impl DeepClone for Path {
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPathAssignDeep;
 }
-impl<T: ArrayType> DeepClone for Array<T> {
+
+// Fails to compile on rust stable but works fine on nightly(E0277). I believe
+// this might be related to https://github.com/rust-lang/rust/issues/24159,
+// but im unsure as to how one could circumvent it
+/*impl<T> DeepClone for Array<T>
+where
+    T: ArrayType,
+    Array<T>: WrappedBlCore,
+    <Array<T> as WrappedBlCore>::Core: Copy + 'static,
+{
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blArrayAssignDeep;
-}
+}*/
+
 impl DeepClone for Region {
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blRegionAssignDeep;
 }

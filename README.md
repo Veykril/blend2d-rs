@@ -36,10 +36,11 @@ You can find the examples [here](./examples).
 
 ## Current Design Decision
 - The [Clone Trait](https://doc.rust-lang.org/std/clone/trait.Clone.html)
-is currently only implemented for types that allow to be deeply cloned
-by blend2d. Ref-counting clones are currently in general avoided. This
-might change due to restrictions this decision might incur. [See Issue #8](https://github.com/Veykril/blend2d-rs/issues/8).
-
+is currently implemented in such a way that it does weak clones by using
+the underlying ref-counting of blend2d. Deep clones can be achieved by 
+using the corresponding DeepClone Trait.
+- OutOfMemory errors returned by blend2d will as of now panic the 
+program by default.
 ## License
 
 Licensed under either of
