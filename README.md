@@ -38,7 +38,7 @@ You can find the examples [here](./examples).
 - The [Clone Trait](https://doc.rust-lang.org/std/clone/trait.Clone.html)
 is currently implemented in such a way that it does weak clones by using
 the underlying ref-counting of blend2d. Deep clones can be achieved by 
-using the corresponding DeepClone Trait.
+using the corresponding [DeepClone Trait](https://docs.rs/blend2d/*/blend2d/trait.DeepClone.html).
 - OutOfMemory errors returned by blend2d will as of now panic the 
 program by default.
 ## License
