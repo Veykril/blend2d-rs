@@ -33,7 +33,7 @@ impl<T: ArrayType> Array<T> {
         Self::from_core(*Self::none())
     }
 
-    /// Creates a new empty array.
+    /// Creates a new empty array with space for `cap` elements.
     pub fn with_capacity(cap: usize) -> Self {
         let mut this = Array::from_core(*Self::none());
         this.reserve(cap);
@@ -143,33 +143,31 @@ impl<T: ArrayType> Array<T> {
     }
 }
 
-// Copy bound to prevent from passing cores as ref resulting in a ref count
-// clone
 impl<T> Array<T>
 where
-    T: ArrayType + Copy,
+    T: ArrayType + Clone,
 {
     /// Appends all items in the slice to the array.
     #[inline]
-    pub fn extend_from_slice(&mut self, data: &[T]) -> Result<()> {
+    pub fn extend_from_slice<S: AsRef<[T]>>(&mut self, data: S) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayAppendView(
                 self.core_mut(),
-                data.as_ptr() as *const _,
-                data.len(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
             ))
         }
     }
 
     /// Inserts all items in the slice into the array at the given index.
     #[inline]
-    pub fn insert_from_slice(&mut self, index: usize, data: &[T]) -> Result<()> {
+    pub fn insert_from_slice<S: AsRef<[T]>>(&mut self, index: usize, data: S) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blArrayInsertView(
                 self.core_mut(),
                 index,
-                data.as_ptr() as *const _,
-                data.len(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
             ))
         }
     }
@@ -177,16 +175,17 @@ where
     /// Replaces the elements specified by the range of indices with the given
     /// slice.
     #[inline]
-    pub fn replace_from_slice<R>(&mut self, range: R, data: &[T]) -> Result<()>
+    pub fn replace_from_slice<R, S>(&mut self, range: R, data: S) -> Result<()>
     where
         R: ops::RangeBounds<usize>,
+        S: AsRef<[T]>,
     {
         unsafe {
             errcode_to_result(ffi::blArrayReplaceView(
                 self.core_mut(),
                 &bl_range(range),
-                data.as_ptr() as *const _,
-                data.len(),
+                data.as_ref().as_ptr() as *const _,
+                data.as_ref().len(),
             ))
         }
     }
@@ -218,6 +217,24 @@ impl<T: ArrayType> FromIterator<T> for Array<T> {
 
 impl<T: ArrayType> From<Vec<T>> for Array<T> {
     fn from(v: Vec<T>) -> Self {
+        let mut this = Self::with_capacity(v.len());
+        unsafe {
+            errcode_to_result(ffi::blArrayAppendView(
+                this.core_mut(),
+                v.as_ptr() as *const _,
+                v.len(),
+            ))
+            .unwrap();
+        }
+        this
+    }
+}
+
+impl<'a, T> From<&'a [T]> for Array<T>
+where
+    T: ArrayType + Clone,
+{
+    fn from(v: &[T]) -> Self {
         let mut this = Self::with_capacity(v.len());
         unsafe {
             errcode_to_result(ffi::blArrayAppendView(
@@ -302,7 +319,7 @@ impl<T: ArrayType> PartialEq for Array<T> {
     }
 }
 
-impl<T: ArrayType + Copy> Clone for Array<T> {
+impl<T: ArrayType> Clone for Array<T> {
     fn clone(&self) -> Self {
         Self::from_core(self.init_weak())
     }
