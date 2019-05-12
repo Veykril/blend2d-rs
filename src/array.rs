@@ -345,13 +345,14 @@ impl Array<ImageCodec> {
     /// Searches for an image codec in the array by the given name.
     #[inline]
     pub fn find_codec_by_name(&self, name: &str) -> Option<&ImageCodec> {
-        ImageCodec::find_by_name(self, name)
+        self.iter().find(|c| c.name() == name)
     }
 
     /// Searches for an image codec in the array by the given data.
     #[inline]
     pub fn find_codec_by_data<R: AsRef<[u8]>>(&self, data: R) -> Option<&ImageCodec> {
-        ImageCodec::find_by_data(self, data)
+        self.into_iter()
+            .max_by_key(|codec| codec.inspect_data(data.as_ref()))
     }
 }
 

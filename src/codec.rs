@@ -1,4 +1,4 @@
-use core::{fmt, ptr, str};
+use core::{fmt, mem, ptr, str};
 use std::ffi::CStr;
 
 use ffi::BLImageCodecFeatures::*;
@@ -6,6 +6,7 @@ use ffi::BLImageCodecFeatures::*;
 use crate::{
     array::Array,
     error::{errcode_to_result, Result},
+    image::{Image, ImageInfo},
     variant::WrappedBlCore,
 };
 
@@ -39,39 +40,11 @@ unsafe impl WrappedBlCore for ImageCodec {
 }
 
 impl ImageCodec {
-    /// Searches for an image codec in the array by the given name.
-    pub fn find_by_name<'a>(codecs: &'a Array<ImageCodec>, name: &str) -> Option<&'a ImageCodec> {
-        codecs.iter().find(|codec| codec.name() == name)
-    }
-
-    /// Searches for an image codec in the array by the given data.
-    pub fn find_by_data<R: AsRef<[u8]>>(
-        codecs: &Array<ImageCodec>,
-        data: R,
-    ) -> Option<&ImageCodec> {
-        let mut best_score = 0;
-        let mut candidate = None;
-        let data = data.as_ref();
-
-        for codec in codecs {
-            let score = unsafe {
-                ffi::blImageCodecInspectData(codec.core(), data.as_ptr() as *const _, data.len())
-            };
-            if score > best_score {
-                best_score = score;
-                candidate = Some(codec)
-            }
-        }
-        candidate
-    }
-
     /// Creates an [`ImageDecoder`] for this codec.
     #[inline]
     pub fn create_decoder(&self) -> Result<ImageDecoder> {
         unsafe {
-            let mut decoder = ImageDecoder {
-                core: *ImageDecoder::none(),
-            };
+            let mut decoder = ImageDecoder::from_core(*ImageDecoder::none());
             errcode_to_result(ffi::blImageCodecCreateDecoder(
                 self.core(),
                 decoder.core_mut(),
@@ -84,9 +57,7 @@ impl ImageCodec {
     #[inline]
     pub fn create_encoder(&self) -> Result<ImageEncoder> {
         unsafe {
-            let mut encoder = ImageEncoder {
-                core: *ImageEncoder::none(),
-            };
+            let mut encoder = ImageEncoder::from_core(*ImageEncoder::none());
             errcode_to_result(ffi::blImageCodecCreateEncoder(
                 self.core(),
                 encoder.core_mut(),
@@ -95,8 +66,11 @@ impl ImageCodec {
         }
     }
 
+    /// Inspects the given data blob and determines how likely it is that the
+    /// file belongs to this codec.
     #[inline]
     pub fn inspect_data<R: AsRef<[u8]>>(&self, data: R) -> u32 {
+        // FIXME figure out how to interpret the u32 return value
         unsafe {
             ffi::blImageCodecInspectData(
                 self.core(),
@@ -106,7 +80,7 @@ impl ImageCodec {
         }
     }
 
-    /// Returns a static reference of the blend2d builtin codecs.
+    /// Returns the blend2d builtin codecs.
     #[inline]
     pub fn built_in_codecs() -> Array<ImageCodec> {
         let mut core = ffi::BLArrayCore {
@@ -114,6 +88,18 @@ impl ImageCodec {
         };
         unsafe { ffi::blImageCodecArrayInitBuiltInCodecs(&mut core) };
         WrappedBlCore::from_core(core)
+    }
+
+    /// Adds a codec to the built in codecs list.
+    #[inline]
+    pub fn add_to_built_in(codec: &ImageCodec) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blImageCodecAddToBuiltIn(codec.core())) }
+    }
+
+    /// Removes the codec from the built in codecs list.
+    #[inline]
+    pub fn remove_from_built_in(codec: &ImageCodec) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blImageCodecRemoveFromBuiltIn(codec.core())) }
     }
 
     /// The codec's name.
@@ -158,6 +144,7 @@ impl fmt::Debug for ImageCodec {
             .field("vendor", &self.vendor())
             .field("mime_type", &self.mime_type())
             .field("features", &self.features())
+            .field("extensions", &self.extensions().collect::<Vec<_>>())
             .finish()
     }
 }
@@ -212,6 +199,31 @@ impl ImageEncoder {
     #[inline]
     pub fn last_result(&self) -> Result<()> {
         errcode_to_result(self.impl_().lastResult)
+    }
+
+    /// The current frame index (to be decoded).
+    #[inline]
+    pub fn frame_index(&self) -> u64 {
+        self.impl_().frameIndex
+    }
+
+    /// The position in the source buffer.
+    #[inline]
+    pub fn buffer_index(&self) -> usize {
+        self.impl_().bufferIndex
+    }
+
+    #[inline]
+    pub fn write_frame(&mut self, image: &Image) -> Result<Array<u8>> {
+        unsafe {
+            let mut arr = Array::<u8>::new();
+            errcode_to_result(ffi::blImageEncoderWriteFrame(
+                self.core_mut(),
+                arr.core_mut(),
+                image.core(),
+            ))
+            .map(|_| arr)
+        }
     }
 }
 
@@ -273,6 +285,46 @@ impl ImageDecoder {
     #[inline]
     pub fn last_result(&self) -> Result<()> {
         errcode_to_result(self.impl_().lastResult)
+    }
+
+    /// The current frame index (to be decoded).
+    #[inline]
+    pub fn frame_index(&self) -> u64 {
+        self.impl_().frameIndex
+    }
+
+    /// The position in the source buffer.
+    #[inline]
+    pub fn buffer_index(&self) -> usize {
+        self.impl_().bufferIndex
+    }
+
+    #[inline]
+    pub fn read_info<R: AsRef<[u8]>>(&mut self, buf: R) -> Result<ImageInfo> {
+        unsafe {
+            let mut dst = mem::zeroed();
+            errcode_to_result(ffi::blImageDecoderReadInfo(
+                self.core_mut(),
+                &mut dst as *mut _ as *mut _,
+                buf.as_ref().as_ptr() as *const _,
+                buf.as_ref().len(),
+            ))
+            .map(|_| dst)
+        }
+    }
+
+    #[inline]
+    pub fn read_frame<R: AsRef<[u8]>>(&mut self, buf: R) -> Result<Image> {
+        unsafe {
+            let mut dst = Image::from_core(*Image::none());
+            errcode_to_result(ffi::blImageDecoderReadFrame(
+                self.core_mut(),
+                dst.core_mut(),
+                buf.as_ref().as_ptr() as *const _,
+                buf.as_ref().len(),
+            ))
+            .map(|_| dst)
+        }
     }
 }
 

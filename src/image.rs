@@ -10,7 +10,7 @@ use crate::{
     codec::ImageCodec,
     error::{errcode_to_result, Result},
     format::ImageFormat,
-    geometry::SizeI,
+    geometry::{SizeD, SizeI},
     variant::WrappedBlCore,
 };
 
@@ -42,6 +42,7 @@ bl_enum! {
     Default => Nearest
 }
 
+// FIXME merge this and ImageScaleFilter into an algebraic data type
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct ImageScaleOptions {
@@ -268,6 +269,27 @@ pub struct ImageData<'a> {
     pub size: (i32, i32),
     pub format: ImageFormat,
     pub flags: ImageInfoFlags,
+}
+
+/// Image information provided by image codecs.
+#[derive(Debug)]
+pub struct ImageInfo {
+    /// Image size.
+    pub size: SizeI,
+    /// Pixel density per one meter, can contain fractions.
+    pub density: SizeD,
+    /// Image flags.
+    pub flags: ImageInfoFlags,
+    /// Image depth.
+    pub depth: u16,
+    /// Number of planes.
+    pub plane_count: u16,
+    /// Number of frames (0 = unknown/unspecified).
+    pub frame_count: u64,
+    /// Image format (as understood by codec).
+    format: [u8; 16],
+    /// Image compression (as understood by codec).
+    compression: [u8; 16],
 }
 
 #[cfg(test)]

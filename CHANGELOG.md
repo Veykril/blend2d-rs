@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Remaining ImageDecoder and ImageEncoder functions
+- ImageInfo struct
+
+### Removed
+
+- FindByName and FindByData functions on ImageCodec, use the
+corresponding functions on Array<ImageCodec> instead
+
 ## [0.2.0] - 2018-05-11
 
 ### Changed

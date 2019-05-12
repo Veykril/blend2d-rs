@@ -26,10 +26,11 @@ fn main() {
     };
     render(ctx).expect("Rendering to context failed");
 
-    let codecs = ImageCodec::built_in_codecs();
     img.write_to_file(
         "bl-getting-started-4.bmp",
-        codecs.find_codec_by_name("BMP").unwrap(),
+        ImageCodec::built_in_codecs()
+            .find_codec_by_name("BMP")
+            .unwrap(),
     )
     .expect("Writing to file failed");
 }
