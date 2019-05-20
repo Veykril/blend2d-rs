@@ -90,8 +90,11 @@ impl Region {
 
     /// Clears the region.
     #[inline]
-    pub fn clear(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blRegionClear(self.core_mut())) }
+    pub fn clear(&mut self) {
+        unsafe {
+            errcode_to_result(ffi::blRegionClear(self.core_mut()))
+                .expect("memory allocation failed")
+        };
     }
 
     /// Reserves capacity for at least n boxes.
@@ -102,7 +105,7 @@ impl Region {
     /// [`OutOfMemory`](../error/enum.Error.html#variant.OutOfMemory) error
     #[inline]
     pub fn reserve(&mut self, n: usize) {
-        self.try_reserve(n).unwrap()
+        self.try_reserve(n).expect("memory allocation failed")
     }
 
     /// Reserves capacity for at least n boxes.
@@ -114,7 +117,10 @@ impl Region {
     /// Shrinks the region's allocated capacity down to its current length.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { errcode_to_result(ffi::blRegionShrink(self.core_mut())).unwrap() }
+        unsafe {
+            errcode_to_result(ffi::blRegionShrink(self.core_mut()))
+                .expect("memory allocation failed")
+        };
     }
 
     #[inline]

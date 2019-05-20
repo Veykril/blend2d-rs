@@ -263,7 +263,7 @@ impl<T: GradientType> Gradient<T> {
     /// [`OutOfMemory`]: ../error/enum.Error.html#variant.OutOfMemory
     #[inline]
     pub fn reserve(&mut self, n: usize) {
-        self.try_reserve(n).unwrap();
+        self.try_reserve(n).expect("memory allocation failed");
     }
 
     /// Reserves the capacity of gradient stops for at least `n` stops.
@@ -275,7 +275,10 @@ impl<T: GradientType> Gradient<T> {
     /// Shrinks the capacity of gradient stops to fit the current usage.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { errcode_to_result(ffi::blGradientShrink(self.core_mut())).unwrap() };
+        unsafe {
+            errcode_to_result(ffi::blGradientShrink(self.core_mut()))
+                .expect("memory allocation failed")
+        };
     }
 
     /// Returns the number of stops in this gradient.
@@ -385,8 +388,11 @@ impl<T: GradientType> Gradient<T> {
 
     /// Clears the stops buffer.
     #[inline]
-    pub fn reset_stops(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientResetStops(self.core_mut())) }
+    pub fn reset_stops(&mut self) {
+        unsafe {
+            errcode_to_result(ffi::blGradientResetStops(self.core_mut()))
+                .expect("memory allocation failed")
+        };
     }
 
     /// Adds a gradient stop to the buffer.

@@ -281,7 +281,9 @@ impl Path {
     /// Shrinks the path's allocated capacity down to its currently used size.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { errcode_to_result(ffi::blPathShrink(self.core_mut())).unwrap() };
+        unsafe {
+            errcode_to_result(ffi::blPathShrink(self.core_mut())).expect("memory allocation failed")
+        };
     }
 
     /// Reserves capacity for at least n items.
@@ -292,7 +294,7 @@ impl Path {
     /// [`OutOfMemory`](../error/enum.Error.html#variant.OutOfMemory) error
     #[inline]
     pub fn reserve(&mut self, n: usize) {
-        self.try_reserve(n).unwrap();
+        self.try_reserve(n).expect("memory allocation failed");
     }
 
     /// Reserves capacity for at least n items.

@@ -49,7 +49,10 @@ impl<T: ArrayType> Array<T> {
     /// Shrinks the arrays allocated capacity down to its currently used size.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe { errcode_to_result(ffi::blArrayShrink(self.core_mut())).unwrap() };
+        unsafe {
+            errcode_to_result(ffi::blArrayShrink(self.core_mut()))
+                .expect("memory allocation failed")
+        };
     }
 
     /// Reserves capacity for at least n items.
@@ -60,7 +63,7 @@ impl<T: ArrayType> Array<T> {
     /// [`OutOfMemory`](../error/enum.Error.html#variant.OutOfMemory) error
     #[inline]
     pub fn reserve(&mut self, n: usize) {
-        self.try_reserve(n).unwrap();
+        self.try_reserve(n).expect("memory allocation failed");
     }
 
     /// Reserves capacity for at least n items.
@@ -78,7 +81,7 @@ impl<T: ArrayType> Array<T> {
                 n.min(self.len()),
                 ptr::null(),
             ))
-            .unwrap()
+            .expect("memory allocation failed")
         };
     }
 
@@ -97,8 +100,8 @@ impl<T: ArrayType> Array<T> {
                 n,
                 buff.as_ptr() as *const _,
             ))
-            .unwrap()
-        }
+            .expect("memory allocation failed")
+        };
     }
 
     /// Removes the element at the given index.
@@ -149,19 +152,20 @@ where
 {
     /// Appends all items in the slice to the array.
     #[inline]
-    pub fn extend_from_slice<S: AsRef<[T]>>(&mut self, data: S) -> Result<()> {
+    pub fn extend_from_slice<S: AsRef<[T]>>(&mut self, data: S) {
         unsafe {
             errcode_to_result(ffi::blArrayAppendView(
                 self.core_mut(),
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-        }
+            .expect("memory allocation failed")
+        };
     }
 
     /// Inserts all items in the slice into the array at the given index.
     #[inline]
-    pub fn insert_from_slice<S: AsRef<[T]>>(&mut self, index: usize, data: S) -> Result<()> {
+    pub fn insert_from_slice<S: AsRef<[T]>>(&mut self, index: usize, data: S) {
         unsafe {
             errcode_to_result(ffi::blArrayInsertView(
                 self.core_mut(),
@@ -169,13 +173,14 @@ where
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-        }
+            .expect("memory allocation failed")
+        };
     }
 
     /// Replaces the elements specified by the range of indices with the given
     /// slice.
     #[inline]
-    pub fn replace_from_slice<R, S>(&mut self, range: R, data: S) -> Result<()>
+    pub fn replace_from_slice<R, S>(&mut self, range: R, data: S)
     where
         R: ops::RangeBounds<usize>,
         S: AsRef<[T]>,
@@ -187,7 +192,8 @@ where
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-        }
+            .expect("memory allocation failed")
+        };
     }
 }
 
@@ -215,17 +221,10 @@ impl<T: ArrayType> FromIterator<T> for Array<T> {
     }
 }
 
-impl<T: ArrayType> From<Vec<T>> for Array<T> {
+impl<T: ArrayType + Clone> From<Vec<T>> for Array<T> {
     fn from(v: Vec<T>) -> Self {
         let mut this = Self::with_capacity(v.len());
-        unsafe {
-            errcode_to_result(ffi::blArrayAppendView(
-                this.core_mut(),
-                v.as_ptr() as *const _,
-                v.len(),
-            ))
-            .unwrap();
-        }
+        this.extend_from_slice(&v);
         this
     }
 }
@@ -236,24 +235,15 @@ where
 {
     fn from(v: &[T]) -> Self {
         let mut this = Self::with_capacity(v.len());
-        unsafe {
-            errcode_to_result(ffi::blArrayAppendView(
-                this.core_mut(),
-                v.as_ptr() as *const _,
-                v.len(),
-            ))
-            .unwrap();
-        }
+        this.extend_from_slice(v);
         this
     }
 }
 
 impl io::Write for Array<u8> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match self.extend_from_slice(buf) {
-            Ok(_) => Ok(buf.len()),
-            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
-        }
+        self.extend_from_slice(buf);
+        Ok(buf.len())
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -346,15 +336,15 @@ where
 {
     #[inline]
     pub fn push(&mut self, item: T) {
-        unsafe { T::push(self.core_mut(), item).unwrap() }
+        unsafe { T::push(self.core_mut(), item).expect("memory allocation failed") };
     }
     #[inline]
     pub fn insert(&mut self, index: usize, item: T) {
-        unsafe { T::insert(self.core_mut(), index, item).unwrap() }
+        unsafe { T::insert(self.core_mut(), index, item).expect("memory allocation failed") };
     }
     #[inline]
     pub fn replace(&mut self, index: usize, item: T) {
-        unsafe { T::replace(self.core_mut(), index, item).unwrap() }
+        unsafe { T::replace(self.core_mut(), index, item).expect("memory allocation failed") };
     }
 }
 
@@ -378,10 +368,12 @@ pub trait ArrayType: Sized {
     #[doc(hidden)]
     const IMPL_IDX: usize;
     #[doc(hidden)]
+    #[inline]
     unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
         errcode_to_result(ffi::blArrayAppendItem(core, &item as *const _ as *const _))
     }
     #[doc(hidden)]
+    #[inline]
     unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
         errcode_to_result(ffi::blArrayInsertItem(
             core,
@@ -390,6 +382,7 @@ pub trait ArrayType: Sized {
         ))
     }
     #[doc(hidden)]
+    #[inline]
     unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
         errcode_to_result(ffi::blArrayReplaceItem(
             core,

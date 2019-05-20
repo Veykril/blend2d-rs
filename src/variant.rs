@@ -3,6 +3,7 @@ use bitflags::bitflags;
 
 use crate::{
     array::{Array, ArrayType},
+    error::errcode_to_result,
     image::Image,
     path::Path,
     pattern::Pattern,
@@ -307,7 +308,10 @@ where
     /// Returns a deeply cloned copy of the value.
     fn clone_deep(&self) -> Self {
         let mut new = Self::from_core(*Self::none());
-        unsafe { Self::ASSIGN_DEEP(new.core_mut(), self.core()) };
+        unsafe {
+            errcode_to_result(Self::ASSIGN_DEEP(new.core_mut(), self.core()))
+                .expect("memory allocation failed")
+        };
         new
     }
 }
