@@ -1,7 +1,7 @@
 language: rust
 matrix:
   include:
-    - name: "Rust: Stable"
+    - name: "Linux: Stable"
       os: linux
       dist: xenial
       rust: stable
@@ -10,7 +10,7 @@ matrix:
           sources: [ubuntu-toolchain-r-test]
           packages: [g++-4.9]
       env: BUILD_MATRIX="CC=gcc-4.9 && CXX=g++-4.9"
-    - name: "Rust: Nightly"
+    - name: "Linux: Nightly"
       os: linux
       dist: xenial
       rust: nightly
@@ -28,8 +28,8 @@ matrix:
       rust: stable
       os: windows
       env: BUILD_MATRIX="BUILD_TYPE=Debug" BUILD_TOOLCHAIN="Visual Studio 15 2017 Win64"
-    - name: "rustfmt: Nightly"
-      rust: nightly
+    - name: "rustfmt"
+      rust: stable
       before_script:
         - rustup component add rustfmt
       script:
