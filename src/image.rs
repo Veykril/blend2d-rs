@@ -181,8 +181,11 @@ impl Image {
             errcode_to_result(ffi::blImageGetData(self.core(), &mut data)).map(|_| {
                 let ffi::BLSizeI { w, h } = data.size;
                 ImageData {
-                    data: slice::from_raw_parts(data.pixelData as *mut _, (w * h) as usize),
-                    stride: data.stride,
+                    data: slice::from_raw_parts(
+                        data.pixelData as *mut _,
+                        (h as isize * data.stride) as usize,
+                    ),
+                    stride: data.stride as isize / w as isize,
                     size: (w, h),
                     format: data.format.into(),
                     flags: ImageInfoFlags::from_bits_truncate(data.flags),
@@ -309,5 +312,16 @@ mod test_codec {
         let mut image = Image::new(50, 50, Default::default()).unwrap();
         image.scale(new_size, Default::default(), None).unwrap();
         assert_eq!(image.size(), new_size);
+    }
+
+    #[test]
+    fn test_image_data() {
+        let image = Image::new(50, 50, Default::default()).unwrap();
+        let image_data = image.data().unwrap();
+        assert_eq!(image_data.stride, 4);
+        assert_eq!(
+            image_data.data.to_vec().len() as isize,
+            50 * 50 * image_data.stride
+        );
     }
 }
