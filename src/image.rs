@@ -182,7 +182,7 @@ impl Image {
                 ImageData {
                     data: slice::from_raw_parts(
                         data.pixelData as *mut _,
-                        (h as isize * data.stride) as usize
+                        (h as isize * data.stride) as usize,
                     ),
                     stride: data.stride as isize / w as isize,
                     size: (w, h),
