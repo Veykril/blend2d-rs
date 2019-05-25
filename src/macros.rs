@@ -2,7 +2,10 @@ macro_rules! bl_enum {
     (
         $(#[$meta:meta])*
         $vis:vis enum $name:ident {
-            $( $variant:ident = $value:ident, )*
+            $(
+                $(#[$meta_var:meta])*
+                $variant:ident = $value:ident,
+             )*
         }
         Default => $default:ident
     ) => {
@@ -10,6 +13,7 @@ macro_rules! bl_enum {
         #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
         $vis enum $name {
             $(
+                $(#[$meta_var])*
                 $variant = $value as _,
             )*
         }
