@@ -2,9 +2,9 @@ use core::{borrow::Borrow, fmt, iter::FromIterator, marker::PhantomData, ops, pt
 use std::io;
 
 use crate::{
-    bl_range,
     codec::ImageCodec,
     error::{errcode_to_result, Result},
+    util::range_to_tuple,
     variant::WrappedBlCore,
 };
 
@@ -113,7 +113,8 @@ impl<T: ArrayType> Array<T> {
     /// Removes the elements whose indices reside inside of the range
     #[inline]
     pub fn remove_range<R: ops::RangeBounds<usize>>(&mut self, range: R) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blArrayRemoveRange(self.core_mut(), &bl_range(range))) }
+        let (start, end) = range_to_tuple(range, || self.len());
+        unsafe { errcode_to_result(ffi::blArrayRemoveRange(self.core_mut(), start, end)) }
     }
 
     /// Returns the array as a slice.
@@ -185,10 +186,12 @@ where
         R: ops::RangeBounds<usize>,
         S: AsRef<[T]>,
     {
+        let (start, end) = range_to_tuple(range, || self.len());
         unsafe {
             errcode_to_result(ffi::blArrayReplaceView(
                 self.core_mut(),
-                &bl_range(range),
+                start,
+                end,
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))

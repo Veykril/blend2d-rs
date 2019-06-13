@@ -55,7 +55,7 @@ bitflags! {
         /// Cleanup zeroed memory pool.
         const ZEROED_POOL = BL_RUNTIME_CLEANUP_ZEROED_POOL as u32;
         /// Cleanup thread pool (would join unused threads).
-        const THREAD_POOL = BL_RUNTIME_CLEANUO_THREAD_POOL as u32;
+        const THREAD_POOL = BL_RUNTIME_CLEANUP_THREAD_POOL as u32;
     }
 }
 

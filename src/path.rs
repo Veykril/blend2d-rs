@@ -10,10 +10,10 @@ use core::{
 
 use crate::{
     array::Array,
-    bl_range,
     error::{errcode_to_result, Result},
     geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD},
     matrix::Matrix2D,
+    util::bl_range,
     variant::WrappedBlCore,
 };
 
@@ -215,10 +215,8 @@ impl StrokeOptions {
 
     #[inline]
     pub fn set_caps(&mut self, cap: StrokeCap) {
-        unsafe {
-            self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
-            self.core.__bindgen_anon_1.__bindgen_anon_1.endCap = cap as u8;
-        }
+        self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
+        self.core.__bindgen_anon_1.__bindgen_anon_1.endCap = cap as u8;
     }
 }
 

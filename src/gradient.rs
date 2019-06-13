@@ -10,9 +10,9 @@ use core::{
 use ffi::BLGradientValue::*;
 
 use crate::{
-    bl_range,
     error::{errcode_to_result, Result},
     matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
+    util::range_to_tuple,
     variant::WrappedBlCore,
     ExtendMode,
 };
@@ -320,12 +320,8 @@ impl<T: GradientType> Gradient<T> {
     /// Removes multiple stops indexed by the given range.
     #[inline]
     pub fn remove_stops<R: RangeBounds<usize>>(&mut self, range: R) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blGradientRemoveStops(
-                self.core_mut(),
-                &bl_range(range),
-            ))
-        }
+        let (start, end) = range_to_tuple(range, || self.len());
+        unsafe { errcode_to_result(ffi::blGradientRemoveStops(self.core_mut(), start, end)) }
     }
 
     /// Removes the first stop that matches the given offset.

@@ -4,7 +4,9 @@
 #[macro_use]
 mod macros;
 
+pub(in crate) mod util;
 pub(in crate) mod variant;
+
 pub use self::variant::DeepClone;
 
 pub mod array;
@@ -76,21 +78,5 @@ bitflags! {
         const READ       = BL_DATA_ACCESS_READ as u32;
         const WRITE      = BL_DATA_ACCESS_READ as u32;
         const READ_WRITE = BL_DATA_ACCESS_READ as u32;
-    }
-}
-
-use core::ops;
-pub(in crate) fn bl_range<R: ops::RangeBounds<usize>>(range: R) -> ffi::BLRange {
-    ffi::BLRange {
-        start: match range.start_bound() {
-            ops::Bound::Included(n) => *n,
-            ops::Bound::Excluded(n) => *n + 1,
-            ops::Bound::Unbounded => 0,
-        },
-        end: match range.end_bound() {
-            ops::Bound::Included(n) => *n,
-            ops::Bound::Excluded(n) => *n - 1,
-            ops::Bound::Unbounded => 0,
-        },
     }
 }
