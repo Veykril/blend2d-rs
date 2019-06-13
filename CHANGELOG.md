@@ -6,11 +6,17 @@
 
 - Remaining ImageDecoder and ImageEncoder functions
 - ImageInfo struct
+- Runtime Api
+- Implement the From trait for Region
 
 ### Removed
 
 - FindByName and FindByData functions on ImageCodec, use the
 corresponding functions on Array<ImageCodec> instead
+
+### Fixed
+
+- incorrect interpretation of image stride
 
 ## [0.2.0] - 2018-05-11
 

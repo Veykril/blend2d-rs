@@ -2,7 +2,7 @@ use core::{borrow::Borrow, fmt, slice};
 
 use crate::{
     error::{errcode_to_result, Result},
-    geometry::{BoxI, HitTest, PointI},
+    geometry::{BoxI, HitTest, PointI, RectI},
     variant::WrappedBlCore,
     BooleanOp,
 };
@@ -223,6 +223,68 @@ impl Region {
     #[inline]
     pub fn hit_test_box(&self, b: &BoxI) -> HitTest {
         unsafe { ffi::blRegionHitTestBoxI(self.core(), b as *const _ as *const _).into() }
+    }
+}
+
+impl From<BoxI> for Region {
+    #[inline]
+    fn from(b: BoxI) -> Self {
+        let mut this = Self::new();
+        unsafe {
+            errcode_to_result(ffi::blRegionAssignBoxI(
+                this.core_mut(),
+                &b as *const _ as *const _,
+            ))
+            .unwrap()
+        };
+        this
+    }
+}
+
+impl<'a> From<&'a [BoxI]> for Region {
+    #[inline]
+    fn from(b: &'a [BoxI]) -> Self {
+        let mut this = Self::new();
+        unsafe {
+            errcode_to_result(ffi::blRegionAssignBoxIArray(
+                this.core_mut(),
+                b.as_ptr() as *const _,
+                b.len(),
+            ))
+            .unwrap()
+        };
+        this
+    }
+}
+
+impl From<RectI> for Region {
+    #[inline]
+    fn from(r: RectI) -> Self {
+        let mut this = Self::new();
+        unsafe {
+            errcode_to_result(ffi::blRegionAssignRectI(
+                this.core_mut(),
+                &r as *const _ as *const _,
+            ))
+            .unwrap()
+        };
+        this
+    }
+}
+
+impl<'a> From<&'a [RectI]> for Region {
+    #[inline]
+    fn from(r: &'a [RectI]) -> Self {
+        let mut this = Self::new();
+        unsafe {
+            errcode_to_result(ffi::blRegionAssignRectIArray(
+                this.core_mut(),
+                r.as_ptr() as *const _,
+                r.len(),
+            ))
+            .unwrap()
+        };
+        this
     }
 }
 
