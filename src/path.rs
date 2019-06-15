@@ -215,8 +215,10 @@ impl StrokeOptions {
 
     #[inline]
     pub fn set_caps(&mut self, cap: StrokeCap) {
-        self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
-        self.core.__bindgen_anon_1.__bindgen_anon_1.endCap = cap as u8;
+        unsafe {
+            self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
+            self.core.__bindgen_anon_1.__bindgen_anon_1.endCap = cap as u8;
+        }
     }
 }
 
@@ -239,6 +241,7 @@ impl Drop for StrokeOptions {
     }
 }
 
+/// A 2D vector path.
 #[repr(transparent)]
 pub struct Path {
     core: ffi::BLPathCore,
@@ -318,11 +321,13 @@ impl Path {
         self.len() == 0
     }
 
+    /// Returns the path's command data.
     #[inline]
     pub fn command_data(&self) -> &[u8] {
         unsafe { slice::from_raw_parts(self.impl_().__bindgen_anon_1.view.commandData, self.len()) }
     }
 
+    /// Returns the path's vertex data.
     #[inline]
     pub fn vertex_data(&self) -> &[PointD] {
         unsafe {
@@ -368,6 +373,7 @@ impl Path {
         }
     }
 
+    /// Returns the range describing a figure at the given index.
     #[inline]
     pub fn figure_range(&self, index: usize) -> Result<Range<usize>> {
         unsafe {
@@ -417,6 +423,7 @@ impl Path {
         }
     }
 
+    /// Sets the vertex at the index to the given [`PathCommand`] and point.
     #[inline]
     #[rustfmt::skip]
     pub fn set_vertex_at(&mut self, index: usize, cmd: PathCommand, x: f64, y: f64) -> Result<()> {
@@ -427,6 +434,7 @@ impl Path {
         }
     }
 
+    /// Sets the vertex at the index to the given [`PathCommand`] and point.
     #[inline]
     #[rustfmt::skip]
     pub fn set_vertex_at_point(&mut self, index: usize, cmd: PathCommand, point: PointD) -> Result<()> {
@@ -439,26 +447,31 @@ impl Path {
 }
 
 impl Path {
+    /// Moves to the point.
     #[inline]
     pub fn move_to(&mut self, x: f64, y: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), x, y)) }
     }
 
+    /// Moves to the point.
     #[inline]
     pub fn move_to_point(&mut self, point: &PointD) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), point.x, point.y)) }
     }
 
+    /// Adds a line from the current to the given point to this path.
     #[inline]
     pub fn line_to(&mut self, x: f64, y: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), x, y)) }
     }
 
+    /// Adds a line from the current to the given point to this path.
     #[inline]
     pub fn line_to_point(&mut self, point: &PointD) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), point.x, point.y)) }
     }
 
+    /// Adds a polyline (LineTo) of the given points.
     #[inline]
     pub fn poly_to(&mut self, poly: &[PointD]) -> Result<()> {
         unsafe {
@@ -470,21 +483,37 @@ impl Path {
         }
     }
 
+    /// Adds a quadratic curve to the first and second point.
+    ///
+    /// Matches SVG 'Q' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
     pub fn quad_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
+    /// Adds a quadratic curve to the first and second point.
+    ///
+    /// Matches SVG 'Q' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
     pub fn quad_to_points(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
+    /// Adds a cubic curve to the first, second and third point.
+    ///
+    /// Matches SVG 'C' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     pub fn cubic_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathCubicTo(self.core_mut(), x1, y1, x2, y2, x3, y3)) }
     }
 
+    /// Adds a cubic curve to the first, second and third point.
+    ///
+    /// Matches SVG 'C' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     #[rustfmt::skip]
     pub fn cubic_to_points(&mut self, p1: &PointD, p2: &PointD, p3: &PointD) -> Result<()> {
@@ -495,21 +524,37 @@ impl Path {
         }
     }
 
+    /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
+    ///
+    /// Matches SVG 'T' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
     pub fn smooth_quad_to(&mut self, x2: f64, y2: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), x2, y2)) }
     }
 
+    /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
+    ///
+    /// Matches SVG 'T' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
     pub fn smooth_quad_to_point(&mut self, p2: &PointD) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), p2.x, p2.y)) }
     }
 
+    /// Adds a smooth cubic curve to the given points, calculating the first from previous points.
+    ///
+    /// Matches SVG 'S' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     pub fn smooth_cubic_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathSmoothCubicTo(self.core_mut(), x2, y2, x3, y3)) }
     }
 
+    /// Adds a smooth cubic curve to the given points, calculating the first from previous points.
+    ///
+    /// Matches SVG 'S' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     #[rustfmt::skip]
     pub fn smooth_cubic_to_points(&mut self, p2: &PointD, p3: &PointD) -> Result<()> {
@@ -518,7 +563,16 @@ impl Path {
         }
     }
 
-    //FIXME change bool to a 2-variant enum
+    /// Adds an arc to the path.
+    ///
+    /// The center of the arc is specified by `c` and radius by `r`. Both `start`
+    /// and `sweep` angles are in radians. If the last vertex doesn't match the
+    /// start of the arc then a [`Path::line_to`] would be emitted before adding the arc.
+    /// Pass `true` in `force_move_to` to always emit [`Path::move_to`] at the beginning of
+    /// the arc, which starts a new figure.
+    /// 
+    /// [`Path::line_to`](struct.Path.html#method.line_to)
+    /// [`Path::move_to`](struct.Path.html#method.move_to)
     #[inline]
     #[rustfmt::skip]
     pub fn arc_to(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64, force_move_to: bool) -> Result<()> {
@@ -529,7 +583,16 @@ impl Path {
         }
     }
 
-    //FIXME change bool to a 2-variant enum
+    /// Adds an arc to the path.
+    ///
+    /// The center of the arc is specified by `cp` and radius by `rp`. Both `start`
+    /// and `sweep` angles are in radians. If the last vertex doesn't match the
+    /// start of the arc then a [`Path::line_to`] would be emitted before adding the arc.
+    /// Pass `true` in `force_move_to` to always emit [`Path::move_to`] at the beginning of
+    /// the arc, which starts a new figure.
+    /// 
+    /// [`Path::line_to`](struct.Path.html#method.line_to)
+    /// [`Path::move_to`](struct.Path.html#method.move_to)
     #[inline]
     #[rustfmt::skip]
     pub fn arc_to_points(&mut self, cp: &PointD, rp: &PointD, start: f64, sweep: f64, force_move_to: bool) -> Result<()> {
@@ -540,11 +603,15 @@ impl Path {
         }
     }
 
+    /// Adds an arc quadrant (90deg) to the path. The first point specifies
+    /// the quadrant corner and the last point specifies the end point.
     #[inline]
     pub fn arc_quadrant_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathArcQuadrantTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
+    /// Adds an arc quadrant (90deg) to the path. The first point specifies
+    /// the quadrant corner and the last point specifies the end point.
     #[inline]
     #[rustfmt::skip]
     pub fn arc_quadrant_to_points(&mut self, p1: &PointD, p2: &PointD) -> Result<()> {
@@ -555,7 +622,10 @@ impl Path {
         }
     }
 
-    //FIXME change bools to 2-variant enums
+    /// Adds an elliptic arc to the path that follows the SVG specification.
+    ///
+    /// Matches SVG 'A' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataEllipticalArcCommands
     #[inline]
     #[rustfmt::skip]
     pub fn elliptic_arc_to(&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, x1: f64, y1: f64) -> Result<()> {
@@ -566,7 +636,10 @@ impl Path {
         }
     }
 
-    //FIXME change bools to 2-variant enums
+    /// Adds an elliptic arc to the path that follows the SVG specification.
+    ///
+    /// Matches SVG 'A' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataEllipticalArcCommands
     #[inline]
     #[rustfmt::skip]
     pub fn elliptic_arc_to_points(&mut self, rp: &PointD, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, p1: &PointD) -> Result<()> {
@@ -577,6 +650,10 @@ impl Path {
         }
     }
 
+    /// Closes the current figure.
+    ///
+    /// Matches SVG 'Z' path command:
+    ///   - https://www.w3.org/TR/SVG/paths.html#PathDataClosePathCommand
     #[inline]
     pub fn close(&mut self) -> Result<()> {
         unsafe { errcode_to_result(ffi::blPathClose(self.core_mut())) }
@@ -584,6 +661,7 @@ impl Path {
 }
 
 impl Path {
+    /// Adds a [`Geometry`] to the path.
     #[inline]
     pub fn add_geometry<T: Geometry + ?Sized>(
         &mut self,
@@ -602,6 +680,7 @@ impl Path {
         }
     }
 
+    /// Adds a polygon.
     #[inline]
     pub fn add_polygon<R, P>(
         &mut self,
@@ -624,6 +703,7 @@ impl Path {
         }
     }
 
+    /// Adds a polyline.
     #[inline]
     pub fn add_polyline<R, P>(
         &mut self,
@@ -646,6 +726,7 @@ impl Path {
         }
     }
 
+    /// Adds another path.
     #[inline]
     pub fn add_path(&mut self, other: &Path) -> Result<()> {
         unsafe {
@@ -657,6 +738,7 @@ impl Path {
         }
     }
 
+    /// Adds a part of another path.
     #[inline]
     pub fn add_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
@@ -672,6 +754,7 @@ impl Path {
         }
     }
 
+    /// Adds a translated path.
     #[inline]
     pub fn add_translated_path(&mut self, other: &Path, p: &PointD) -> Result<()> {
         unsafe {
@@ -684,6 +767,7 @@ impl Path {
         }
     }
 
+    /// Adds a translated part of another path.
     #[inline]
     pub fn add_translated_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
@@ -701,6 +785,7 @@ impl Path {
         }
     }
 
+    /// Adds a transformed path.
     #[inline]
     pub fn add_transformed_path(&mut self, other: &Path, m: &Matrix2D) -> Result<()> {
         unsafe {
@@ -713,6 +798,7 @@ impl Path {
         }
     }
 
+    /// Adds a transformed part of another path.
     #[inline]
     pub fn add_transformed_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
@@ -730,6 +816,7 @@ impl Path {
         }
     }
 
+    /// Adds a reversed path.
     #[inline]
     pub fn add_reversed_path(&mut self, other: &Path, mode: PathReverseMode) -> Result<()> {
         unsafe {
@@ -742,6 +829,7 @@ impl Path {
         }
     }
 
+    /// Adds a reversed part of another path.
     #[inline]
     pub fn add_reversed_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
@@ -759,6 +847,7 @@ impl Path {
         }
     }
 
+    /// Adds a stroked path.
     #[inline]
     pub fn add_stroked_path(
         &mut self,
@@ -777,6 +866,7 @@ impl Path {
         }
     }
 
+    /// Adds a stroked part of another path.
     #[inline]
     pub fn add_stroked_path_range<R: ops::RangeBounds<usize>>(
         &mut self,
@@ -855,7 +945,7 @@ impl Path {
     }
 
     /// Fits the whole path into the given rect by taking into account fit flags
-    /// passed by [`FitFlags`].
+    /// passed by [`PathFitFlags`].
     #[inline]
     pub fn fit_to(&mut self, rect: &RectD, flags: PathFitFlags) -> Result<()> {
         unsafe {
@@ -869,7 +959,7 @@ impl Path {
     }
 
     /// Fits a part of the path specified by the given range into the given rect
-    /// by taking into account the given [`FitFlags`].
+    /// by taking into account the given [`PathFitFlags`].
     #[inline]
     pub fn fit_to_range<R: ops::RangeBounds<usize>>(
         &mut self,
