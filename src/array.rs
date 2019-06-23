@@ -277,6 +277,18 @@ impl<T: ArrayType> ops::Deref for Array<T> {
     }
 }
 
+impl<T: ArrayType> ops::DerefMut for Array<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe {
+            let mut data_ptr = ptr::null_mut();
+            errcode_to_result(ffi::blArrayMakeMutable(self.core_mut(), &mut data_ptr))
+                .expect("memory allocation failed");
+            slice::from_raw_parts_mut(data_ptr as _, self.len())
+        }
+    }
+}
+
 impl<T, I> ops::Index<I> for Array<T>
 where
     T: ArrayType,
@@ -556,10 +568,9 @@ mod test_array {
             Image::new(5, 5, Default::default()).unwrap(),
         ];
         let mut arr = Array::<Image>::new();
-        arr.push(img[0].clone());
-        arr.push(img[1].clone());
-        arr.push(img[2].clone());
-        arr.push(img[3].clone());
+        for img in img.iter().take(4) {
+            arr.push(img.clone());
+        }
         arr.remove(2).unwrap();
         arr.insert(1, img[4].clone());
         assert_eq!(
@@ -571,5 +582,16 @@ mod test_array {
             ][..],
             &*arr
         );
+    }
+
+    #[test]
+    fn test_array_deref_mut() {
+        let data = [0, 1, 2, 3, 4, 5];
+        let mut arr = Array::<i32>::from(&data[..]);
+        assert_eq!(&data, &*arr);
+        for i in 0..data.len() / 2 {
+            arr.swap(i, data.len() - 1 - i);
+        }
+        assert_eq!(&[5, 4, 3, 2, 1, 0], &*arr);
     }
 }

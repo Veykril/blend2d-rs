@@ -4,6 +4,7 @@
 
 ### Added
 
+- DerefMut for Image and Array
 - Remaining ImageDecoder and ImageEncoder functions
 - ImageInfo struct
 - Runtime Api

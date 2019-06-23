@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::{fmt, ptr, slice};
+use core::{fmt, ops, ptr, slice};
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -242,6 +242,40 @@ impl fmt::Debug for Image {
             .field("size", &self.size())
             .field("format", &self.format())
             .finish()
+    }
+}
+
+impl ops::Deref for Image {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            let mut data = std::mem::zeroed();
+            errcode_to_result(ffi::blImageGetData(self.core(), &mut data))
+                .map(|_| {
+                    slice::from_raw_parts(
+                        data.pixelData as *const _,
+                        (data.size.h as isize * data.stride) as usize,
+                    )
+                })
+                .expect("memory allocation failed")
+        }
+    }
+}
+
+impl ops::DerefMut for Image {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe {
+            let mut data = std::mem::zeroed();
+            errcode_to_result(ffi::blImageMakeMutable(self.core_mut(), &mut data))
+                .map(|_| {
+                    slice::from_raw_parts_mut(
+                        data.pixelData as *mut _,
+                        (data.size.h as isize * data.stride) as usize,
+                    )
+                })
+                .expect("memory allocation failed")
+        }
     }
 }
 
