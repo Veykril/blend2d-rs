@@ -6,16 +6,46 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[inline]
 pub(in crate) fn errcode_to_result(code: u32) -> Result<()> {
-    if code == 0 {
-        Ok(())
-    } else {
-        Err(Error::from(code))
+    match code as _ {
+        0 => Ok(()),
+        #[cold]
+        BLResultCode::BL_ERROR_OUT_OF_MEMORY => panic!("memory allocation failed"),
+        _ => Err(Error::from_errcode(code)),
+    }
+}
+
+#[inline]
+pub(in crate) fn expect_mem_err(code: u32) {
+    match code as _ {
+        #[cold]
+        BLResultCode::BL_ERROR_OUT_OF_MEMORY => panic!("memory allocation failed"),
+        _ => (),
+    };
+}
+
+#[derive(Debug)]
+pub struct OutOfMemory;
+
+impl OutOfMemory {
+    pub(in crate) fn from_errcode(code: u32) -> std::result::Result<(), Self> {
+        if code == 0 {
+            Ok(())
+        } else {
+            #[cold]
+            Err(Self)
+        }
+    }
+}
+
+impl error::Error for OutOfMemory {}
+impl fmt::Display for OutOfMemory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
 #[derive(Debug)]
 pub enum Error {
-    OutOfMemory,
     InvalidValue,
     InvalidState,
     InvalidHandle,
@@ -92,9 +122,8 @@ pub enum Error {
 }
 
 impl Error {
-    fn from(errcode: u32) -> Self {
+    pub(super) fn from_errcode(errcode: u32) -> Self {
         match errcode as ffi::BLResultCode::Type {
-            BLResultCode::BL_ERROR_OUT_OF_MEMORY => Error::OutOfMemory,
             BLResultCode::BL_ERROR_INVALID_VALUE => Error::InvalidValue,
             BLResultCode::BL_ERROR_INVALID_STATE => Error::InvalidState,
             BLResultCode::BL_ERROR_INVALID_HANDLE => Error::InvalidHandle,

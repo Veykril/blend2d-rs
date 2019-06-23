@@ -1,7 +1,7 @@
 use core::{fmt, ptr};
 
 use crate::{
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, Result},
     geometry::RectI,
     image::Image,
     matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
@@ -101,8 +101,8 @@ impl Pattern {
 
     /// Resets the clipping area to zero.
     #[inline]
-    pub fn reset_area(&mut self) -> Result<()> {
-        self.set_area(&RectI::default())
+    pub fn reset_area(&mut self) {
+        let _ = self.set_area(&RectI::default());
     }
 
     /// The pattern's [`ExtendMode`].
@@ -113,14 +113,14 @@ impl Pattern {
 
     /// Sets the pattern's [`ExtendMode`].
     #[inline]
-    pub fn set_extend_mode(&mut self, mode: ExtendMode) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPatternSetExtendMode(self.core_mut(), mode.into())) }
+    pub fn set_extend_mode(&mut self, mode: ExtendMode) {
+        unsafe { expect_mem_err(ffi::blPatternSetExtendMode(self.core_mut(), mode.into())) };
     }
 
     /// Resets the pattern's [`ExtendMode`] to the default.
     #[inline]
-    pub fn reset_extend_mode(&mut self) -> Result<()> {
-        self.set_extend_mode(Default::default())
+    pub fn reset_extend_mode(&mut self) {
+        self.set_extend_mode(Default::default());
     }
 
     /// SThe pattern's [`Matrix2D`]
@@ -133,14 +133,14 @@ impl Pattern {
 impl MatrixTransform for Pattern {
     #[inline]
     #[doc(hidden)]
-    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) {
         unsafe {
-            errcode_to_result(ffi::blPatternApplyMatrixOp(
+            expect_mem_err(ffi::blPatternApplyMatrixOp(
                 self.core_mut(),
                 op as u32,
                 data.as_ptr() as *const _,
             ))
-        }
+        };
     }
 }
 

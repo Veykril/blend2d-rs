@@ -1,7 +1,7 @@
 use core::{fmt, ptr};
 
 use crate::{
-    error::{errcode_to_result, Result},
+    error::expect_mem_err,
     font_defs::{GlyphRun, GlyphRunFlags},
 };
 
@@ -38,9 +38,10 @@ impl GlyphBuffer {
 
     /// Creates a new [`GlyphBuffer`] initialized with the given text.
     #[inline]
-    pub fn from_utf8_text(text: &str) -> Result<Self> {
+    pub fn from_utf8_text(text: &str) -> Self {
         let mut this = Self::new();
-        this.set_utf8_text(text).map(|_| this)
+        this.set_utf8_text(text);
+        this
     }
 
     #[inline]
@@ -110,15 +111,21 @@ impl GlyphBuffer {
 
     /// Sets text content of this [`GlyphBuffer`].
     #[inline]
-    pub fn set_utf8_text(&mut self, text: &str) -> Result<()> {
+    pub fn set_utf8_text(&mut self, text: &str) {
         unsafe {
-            errcode_to_result(ffi::blGlyphBufferSetText(
+            expect_mem_err(ffi::blGlyphBufferSetText(
                 &mut self.core,
                 text.as_bytes().as_ptr() as *const _,
                 text.len(),
                 ffi::BLTextEncoding::BL_TEXT_ENCODING_UTF8 as u32,
             ))
-        }
+        };
+    }
+}
+
+impl From<&'_ str> for GlyphBuffer {
+    fn from(text: &str) -> Self {
+        Self::from_utf8_text(text)
     }
 }
 

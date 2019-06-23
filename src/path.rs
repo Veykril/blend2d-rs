@@ -10,7 +10,7 @@ use core::{
 
 use crate::{
     array::Array,
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, OutOfMemory},
     geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD},
     matrix::Matrix2D,
     util::bl_range,
@@ -282,9 +282,7 @@ impl Path {
     /// Shrinks the path's allocated capacity down to its currently used size.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe {
-            errcode_to_result(ffi::blPathShrink(self.core_mut())).expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(ffi::blPathShrink(self.core_mut())) };
     }
 
     /// Reserves capacity for at least n items.
@@ -299,8 +297,8 @@ impl Path {
     }
 
     /// Reserves capacity for at least n items.
-    pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathReserve(self.core_mut(), n)) }
+    pub fn try_reserve(&mut self, n: usize) -> std::result::Result<(), OutOfMemory> {
+        unsafe { OutOfMemory::from_errcode(ffi::blPathReserve(self.core_mut(), n)) }
     }
 
     /// Returns the current number of vertices in the path.
@@ -338,18 +336,20 @@ impl Path {
         }
     }
 
+    /// Returns this path's flags, or `None` if its geometry is invalid.
     #[inline]
-    pub fn info_flags(&self) -> Result<PathFlags> {
+    pub fn info_flags(&self) -> Option<PathFlags> {
         unsafe {
             let mut flags = 0;
             errcode_to_result(ffi::blPathGetInfoFlags(self.core(), &mut flags))
                 .map(|_| PathFlags::from_bits_truncate(flags))
+                .ok()
         }
     }
 
     /// Retrieves a bounding box of all vertices and control points.
     #[inline]
-    pub fn control_box(&self) -> Result<BoxD> {
+    pub fn control_box(&self) -> Option<BoxD> {
         unsafe {
             let mut box2d = BoxD::default();
             errcode_to_result(ffi::blPathGetControlBox(
@@ -357,12 +357,13 @@ impl Path {
                 &mut box2d as *mut _ as *mut _,
             ))
             .map(|_| box2d)
+            .ok()
         }
     }
 
     /// Retrieves a bounding box of all on-path vertices and curve extremas.
     #[inline]
-    pub fn bounding_box(&self) -> Result<BoxD> {
+    pub fn bounding_box(&self) -> Option<BoxD> {
         unsafe {
             let mut box2d = BoxD::default();
             errcode_to_result(ffi::blPathGetBoundingBox(
@@ -370,25 +371,26 @@ impl Path {
                 &mut box2d as *mut _ as *mut _,
             ))
             .map(|_| box2d)
+            .ok()
         }
     }
 
     /// Returns the range describing a figure at the given index.
     #[inline]
-    pub fn figure_range(&self, index: usize) -> Result<Range<usize>> {
+    pub fn figure_range(&self, index: usize) -> Option<Range<usize>> {
         unsafe {
             let mut range = ffi::BLRange { start: 0, end: 0 };
-            errcode_to_result(ffi::blPathGetFigureRange(self.core(), index, &mut range)).map(|_| {
-                Range {
+            errcode_to_result(ffi::blPathGetFigureRange(self.core(), index, &mut range))
+                .map(|_| Range {
                     start: range.start,
                     end: range.end,
-                }
-            })
+                })
+                .ok()
         }
     }
 
     #[inline]
-    pub fn last_vertex(&self) -> Result<PointD> {
+    pub fn last_vertex(&self) -> Option<PointD> {
         unsafe {
             let mut point = PointD::default();
             errcode_to_result(ffi::blPathGetLastVertex(
@@ -396,11 +398,12 @@ impl Path {
                 &mut point as *mut _ as *mut _,
             ))
             .map(|_| point)
+            .ok()
         }
     }
 
     #[inline]
-    pub fn closest_vertex(&self, p: &PointD, max_distance: f64) -> Result<(usize, f64)> {
+    pub fn closest_vertex(&self, p: &PointD, max_distance: f64) -> Option<(usize, f64)> {
         unsafe {
             let mut idx = 0;
             let mut dout = 0.0;
@@ -412,6 +415,7 @@ impl Path {
                 &mut dout,
             ))
             .map(|_| (idx, dout))
+            .ok()
         }
     }
 
@@ -425,62 +429,52 @@ impl Path {
 
     /// Sets the vertex at the index to the given [`PathCommand`] and point.
     #[inline]
-    #[rustfmt::skip]
-    pub fn set_vertex_at(&mut self, index: usize, cmd: PathCommand, x: f64, y: f64) -> Result<()> {
-        unsafe {
-            errcode_to_result(
-                ffi::blPathSetVertexAt(self.core_mut(), index, cmd as u32, x, y)
-            )
-        }
+    pub fn set_vertex_at(&mut self, index: usize, cmd: PathCommand, x: f64, y: f64) {
+        unsafe { ffi::blPathSetVertexAt(self.core_mut(), index, cmd as u32, x, y) };
     }
 
     /// Sets the vertex at the index to the given [`PathCommand`] and point.
     #[inline]
-    #[rustfmt::skip]
-    pub fn set_vertex_at_point(&mut self, index: usize, cmd: PathCommand, point: PointD) -> Result<()> {
-        unsafe {
-            errcode_to_result(
-                ffi::blPathSetVertexAt(self.core_mut(), index, cmd as u32, point.x, point.y)
-            )
-        }
+    pub fn set_vertex_at_point(&mut self, index: usize, cmd: PathCommand, point: PointD) {
+        unsafe { ffi::blPathSetVertexAt(self.core_mut(), index, cmd as u32, point.x, point.y) };
     }
 }
 
 impl Path {
     /// Moves to the point.
     #[inline]
-    pub fn move_to(&mut self, x: f64, y: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), x, y)) }
+    pub fn move_to(&mut self, x: f64, y: f64) {
+        unsafe { expect_mem_err(ffi::blPathMoveTo(self.core_mut(), x, y)) };
     }
 
     /// Moves to the point.
     #[inline]
-    pub fn move_to_point(&mut self, point: &PointD) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathMoveTo(self.core_mut(), point.x, point.y)) }
+    pub fn move_to_point(&mut self, point: &PointD) {
+        unsafe { expect_mem_err(ffi::blPathMoveTo(self.core_mut(), point.x, point.y)) };
     }
 
     /// Adds a line from the current to the given point to this path.
     #[inline]
-    pub fn line_to(&mut self, x: f64, y: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), x, y)) }
+    pub fn line_to(&mut self, x: f64, y: f64) {
+        unsafe { expect_mem_err(ffi::blPathLineTo(self.core_mut(), x, y)) };
     }
 
     /// Adds a line from the current to the given point to this path.
     #[inline]
-    pub fn line_to_point(&mut self, point: &PointD) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathLineTo(self.core_mut(), point.x, point.y)) }
+    pub fn line_to_point(&mut self, point: &PointD) {
+        unsafe { expect_mem_err(ffi::blPathLineTo(self.core_mut(), point.x, point.y)) };
     }
 
     /// Adds a polyline (LineTo) of the given points.
     #[inline]
-    pub fn poly_to(&mut self, poly: &[PointD]) -> Result<()> {
+    pub fn poly_to(&mut self, poly: &[PointD]) {
         unsafe {
-            errcode_to_result(ffi::blPathPolyTo(
+            expect_mem_err(ffi::blPathPolyTo(
                 self.core_mut(),
                 poly.as_ptr() as *const _,
                 poly.len(),
             ))
-        }
+        };
     }
 
     /// Adds a quadratic curve to the first and second point.
@@ -488,8 +482,8 @@ impl Path {
     /// Matches SVG 'Q' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
-    pub fn quad_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
+    pub fn quad_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) {
+        unsafe { expect_mem_err(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) };
     }
 
     /// Adds a quadratic curve to the first and second point.
@@ -497,8 +491,8 @@ impl Path {
     /// Matches SVG 'Q' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
-    pub fn quad_to_points(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) }
+    pub fn quad_to_points(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) {
+        unsafe { expect_mem_err(ffi::blPathQuadTo(self.core_mut(), x1, y1, x2, y2)) };
     }
 
     /// Adds a cubic curve to the first, second and third point.
@@ -506,8 +500,8 @@ impl Path {
     /// Matches SVG 'C' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
-    pub fn cubic_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathCubicTo(self.core_mut(), x1, y1, x2, y2, x3, y3)) }
+    pub fn cubic_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
+        unsafe { expect_mem_err(ffi::blPathCubicTo(self.core_mut(), x1, y1, x2, y2, x3, y3)) };
     }
 
     /// Adds a cubic curve to the first, second and third point.
@@ -516,12 +510,12 @@ impl Path {
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     #[rustfmt::skip]
-    pub fn cubic_to_points(&mut self, p1: &PointD, p2: &PointD, p3: &PointD) -> Result<()> {
+    pub fn cubic_to_points(&mut self, p1: &PointD, p2: &PointD, p3: &PointD) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathCubicTo(self.core_mut(), p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
             )
-        }
+        };
     }
 
     /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
@@ -529,8 +523,8 @@ impl Path {
     /// Matches SVG 'T' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
-    pub fn smooth_quad_to(&mut self, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), x2, y2)) }
+    pub fn smooth_quad_to(&mut self, x2: f64, y2: f64) {
+        unsafe { expect_mem_err(ffi::blPathSmoothQuadTo(self.core_mut(), x2, y2)) };
     }
 
     /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
@@ -538,8 +532,8 @@ impl Path {
     /// Matches SVG 'T' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
     #[inline]
-    pub fn smooth_quad_to_point(&mut self, p2: &PointD) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothQuadTo(self.core_mut(), p2.x, p2.y)) }
+    pub fn smooth_quad_to_point(&mut self, p2: &PointD) {
+        unsafe { expect_mem_err(ffi::blPathSmoothQuadTo(self.core_mut(), p2.x, p2.y)) };
     }
 
     /// Adds a smooth cubic curve to the given points, calculating the first from previous points.
@@ -547,8 +541,8 @@ impl Path {
     /// Matches SVG 'S' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
-    pub fn smooth_cubic_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathSmoothCubicTo(self.core_mut(), x2, y2, x3, y3)) }
+    pub fn smooth_cubic_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64) {
+        unsafe { expect_mem_err(ffi::blPathSmoothCubicTo(self.core_mut(), x2, y2, x3, y3)) };
     }
 
     /// Adds a smooth cubic curve to the given points, calculating the first from previous points.
@@ -557,10 +551,10 @@ impl Path {
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
     #[inline]
     #[rustfmt::skip]
-    pub fn smooth_cubic_to_points(&mut self, p2: &PointD, p3: &PointD) -> Result<()> {
+    pub fn smooth_cubic_to_points(&mut self, p2: &PointD, p3: &PointD) {
         unsafe {
-            errcode_to_result(ffi::blPathSmoothCubicTo(self.core_mut(), p2.x, p2.y, p3.x, p3.y))
-        }
+            expect_mem_err(ffi::blPathSmoothCubicTo(self.core_mut(), p2.x, p2.y, p3.x, p3.y))
+        };
     }
 
     /// Adds an arc to the path.
@@ -575,12 +569,12 @@ impl Path {
     /// [`Path::move_to`](struct.Path.html#method.move_to)
     #[inline]
     #[rustfmt::skip]
-    pub fn arc_to(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64, force_move_to: bool) -> Result<()> {
+    pub fn arc_to(&mut self, cx: f64, cy: f64, rx: f64, ry: f64, start: f64, sweep: f64, force_move_to: bool) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathArcTo(self.core_mut(), cx, cy, rx, ry, start, sweep, force_move_to)
             )
-        }
+        };
     }
 
     /// Adds an arc to the path.
@@ -595,31 +589,31 @@ impl Path {
     /// [`Path::move_to`](struct.Path.html#method.move_to)
     #[inline]
     #[rustfmt::skip]
-    pub fn arc_to_points(&mut self, cp: &PointD, rp: &PointD, start: f64, sweep: f64, force_move_to: bool) -> Result<()> {
+    pub fn arc_to_points(&mut self, cp: &PointD, rp: &PointD, start: f64, sweep: f64, force_move_to: bool) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathArcTo(self.core_mut(), cp.x, cp.y, rp.x, rp.y, start, sweep, force_move_to)
             )
-        }
+        };
     }
 
     /// Adds an arc quadrant (90deg) to the path. The first point specifies
     /// the quadrant corner and the last point specifies the end point.
     #[inline]
-    pub fn arc_quadrant_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathArcQuadrantTo(self.core_mut(), x1, y1, x2, y2)) }
+    pub fn arc_quadrant_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64) {
+        unsafe { expect_mem_err(ffi::blPathArcQuadrantTo(self.core_mut(), x1, y1, x2, y2)) }
     }
 
     /// Adds an arc quadrant (90deg) to the path. The first point specifies
     /// the quadrant corner and the last point specifies the end point.
     #[inline]
     #[rustfmt::skip]
-    pub fn arc_quadrant_to_points(&mut self, p1: &PointD, p2: &PointD) -> Result<()> {
+    pub fn arc_quadrant_to_points(&mut self, p1: &PointD, p2: &PointD) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathArcQuadrantTo(self.core_mut(), p1.x, p1.y, p2.x, p2.y)
             )
-        }
+        };
     }
 
     /// Adds an elliptic arc to the path that follows the SVG specification.
@@ -628,12 +622,12 @@ impl Path {
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataEllipticalArcCommands
     #[inline]
     #[rustfmt::skip]
-    pub fn elliptic_arc_to(&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, x1: f64, y1: f64) -> Result<()> {
+    pub fn elliptic_arc_to(&mut self, rx: f64, ry: f64, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, x1: f64, y1: f64) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathEllipticArcTo(self.core_mut(), rx, ry, x_axis_rotation, large_arc_flag, sweep_flag, x1, y1)
             )
-        }
+        };
     }
 
     /// Adds an elliptic arc to the path that follows the SVG specification.
@@ -642,12 +636,12 @@ impl Path {
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataEllipticalArcCommands
     #[inline]
     #[rustfmt::skip]
-    pub fn elliptic_arc_to_points(&mut self, rp: &PointD, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, p1: &PointD) -> Result<()> {
+    pub fn elliptic_arc_to_points(&mut self, rp: &PointD, x_axis_rotation: f64, large_arc_flag: bool, sweep_flag: bool, p1: &PointD) {
         unsafe {
-            errcode_to_result(
+            expect_mem_err(
                 ffi::blPathEllipticArcTo(self.core_mut(), rp.x, rp.y, x_axis_rotation, large_arc_flag, sweep_flag, p1.x, p1.y)
             )
-        }
+        };
     }
 
     /// Closes the current figure.
@@ -655,8 +649,8 @@ impl Path {
     /// Matches SVG 'Z' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataClosePathCommand
     #[inline]
-    pub fn close(&mut self) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blPathClose(self.core_mut())) }
+    pub fn close(&mut self) {
+        unsafe { expect_mem_err(ffi::blPathClose(self.core_mut())) };
     }
 }
 
@@ -668,103 +662,89 @@ impl Path {
         g: &T,
         matrix: Option<&Matrix2D>,
         dir: GeometryDirection,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddGeometry(
+            expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 T::GEO_TYPE,
                 g as *const _ as *const _,
                 matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
-        }
+        };
     }
 
     /// Adds a polygon.
     #[inline]
-    pub fn add_polygon<R, P>(
-        &mut self,
-        p: R,
-        matrix: Option<&Matrix2D>,
-        dir: GeometryDirection,
-    ) -> Result<()>
+    pub fn add_polygon<R, P>(&mut self, p: R, matrix: Option<&Matrix2D>, dir: GeometryDirection)
     where
         R: AsRef<[P]>,
         P: Point + Geometry,
     {
         unsafe {
-            errcode_to_result(ffi::blPathAddGeometry(
+            expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 P::GEO_TYPE,
                 p.as_ref().as_ptr() as *const _,
                 matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
-        }
+        };
     }
 
     /// Adds a polyline.
     #[inline]
-    pub fn add_polyline<R, P>(
-        &mut self,
-        p: R,
-        matrix: Option<&Matrix2D>,
-        dir: GeometryDirection,
-    ) -> Result<()>
+    pub fn add_polyline<R, P>(&mut self, p: R, matrix: Option<&Matrix2D>, dir: GeometryDirection)
     where
         R: AsRef<[P]>,
         P: Point,
     {
         unsafe {
-            errcode_to_result(ffi::blPathAddGeometry(
+            expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 P::POLYLINE_TYPE,
                 p.as_ref().as_ptr() as *const _,
                 matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
-        }
+        };
     }
 
     /// Adds another path.
     #[inline]
-    pub fn add_path(&mut self, other: &Path) -> Result<()> {
+    pub fn add_path(&mut self, other: &Path) {
         unsafe {
-            errcode_to_result(ffi::blPathAddPath(
+            expect_mem_err(ffi::blPathAddPath(
                 self.core_mut(),
                 other.core(),
                 ptr::null(),
             ))
-        }
+        };
     }
 
     /// Adds a part of another path.
     #[inline]
-    pub fn add_path_range<R: ops::RangeBounds<usize>>(
-        &mut self,
-        other: &Path,
-        range: R,
-    ) -> Result<()> {
+    pub fn add_path_range<R: ops::RangeBounds<usize>>(&mut self, other: &Path, range: R) {
         unsafe {
-            errcode_to_result(ffi::blPathAddPath(
+            expect_mem_err(ffi::blPathAddPath(
                 self.core_mut(),
                 other.core(),
                 &bl_range(range),
             ))
-        }
+        };
     }
 
     /// Adds a translated path.
     #[inline]
-    pub fn add_translated_path(&mut self, other: &Path, p: &PointD) -> Result<()> {
+    pub fn add_translated_path(&mut self, other: &Path, p: &PointD) {
         unsafe {
-            errcode_to_result(ffi::blPathAddTranslatedPath(
+            expect_mem_err(ffi::blPathAddTranslatedPath(
                 self.core_mut(),
                 other.core(),
                 ptr::null(),
                 p as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Adds a translated part of another path.
@@ -774,28 +754,28 @@ impl Path {
         other: &Path,
         range: R,
         p: &PointD,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddTranslatedPath(
+            expect_mem_err(ffi::blPathAddTranslatedPath(
                 self.core_mut(),
                 other.core(),
                 &bl_range(range),
                 p as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Adds a transformed path.
     #[inline]
-    pub fn add_transformed_path(&mut self, other: &Path, m: &Matrix2D) -> Result<()> {
+    pub fn add_transformed_path(&mut self, other: &Path, m: &Matrix2D) {
         unsafe {
-            errcode_to_result(ffi::blPathAddTransformedPath(
+            expect_mem_err(ffi::blPathAddTransformedPath(
                 self.core_mut(),
                 other.core(),
                 ptr::null(),
                 m as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Adds a transformed part of another path.
@@ -805,28 +785,28 @@ impl Path {
         other: &Path,
         range: R,
         m: &Matrix2D,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddTransformedPath(
+            expect_mem_err(ffi::blPathAddTransformedPath(
                 self.core_mut(),
                 other.core(),
                 &bl_range(range),
                 m as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Adds a reversed path.
     #[inline]
-    pub fn add_reversed_path(&mut self, other: &Path, mode: PathReverseMode) -> Result<()> {
+    pub fn add_reversed_path(&mut self, other: &Path, mode: PathReverseMode) {
         unsafe {
-            errcode_to_result(ffi::blPathAddReversedPath(
+            expect_mem_err(ffi::blPathAddReversedPath(
                 self.core_mut(),
                 other.core(),
                 ptr::null(),
                 mode.into(),
             ))
-        }
+        };
     }
 
     /// Adds a reversed part of another path.
@@ -836,15 +816,15 @@ impl Path {
         other: &Path,
         range: R,
         mode: PathReverseMode,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddReversedPath(
+            expect_mem_err(ffi::blPathAddReversedPath(
                 self.core_mut(),
                 other.core(),
                 &bl_range(range),
                 mode.into(),
             ))
-        }
+        };
     }
 
     /// Adds a stroked path.
@@ -854,16 +834,16 @@ impl Path {
         other: &Path,
         options: &StrokeOptions,
         approx: &ApproximationOptions,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddStrokedPath(
+            expect_mem_err(ffi::blPathAddStrokedPath(
                 self.core_mut(),
                 other.core(),
                 ptr::null(),
                 options as *const _ as *const _,
                 approx as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Adds a stroked part of another path.
@@ -874,9 +854,9 @@ impl Path {
         range: R,
         options: &StrokeOptions,
         approx: &ApproximationOptions,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathAddStrokedPath(
+            expect_mem_err(ffi::blPathAddStrokedPath(
                 self.core_mut(),
                 other.core(),
                 &bl_range(range),
@@ -890,72 +870,64 @@ impl Path {
 impl Path {
     /// Translates the whole path by the given point.
     #[inline]
-    pub fn translate(&mut self, p: &PointD) -> Result<()> {
+    pub fn translate(&mut self, p: &PointD) {
         unsafe {
-            errcode_to_result(ffi::blPathTranslate(
+            expect_mem_err(ffi::blPathTranslate(
                 self.core_mut(),
                 ptr::null(),
                 p as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Translates a part of the path by the given point.
     #[inline]
-    pub fn translate_range<R: ops::RangeBounds<usize>>(
-        &mut self,
-        range: R,
-        p: &PointD,
-    ) -> Result<()> {
+    pub fn translate_range<R: ops::RangeBounds<usize>>(&mut self, range: R, p: &PointD) {
         unsafe {
-            errcode_to_result(ffi::blPathTranslate(
+            expect_mem_err(ffi::blPathTranslate(
                 self.core_mut(),
                 &bl_range(range),
                 p as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Transforms the whole path by the given transformation matrix.
     #[inline]
-    pub fn transform(&mut self, m: &Matrix2D) -> Result<()> {
+    pub fn transform(&mut self, m: &Matrix2D) {
         unsafe {
-            errcode_to_result(ffi::blPathTransform(
+            expect_mem_err(ffi::blPathTransform(
                 self.core_mut(),
                 ptr::null(),
                 m as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Transforms a part of the path by the given transformation matrix.
     #[inline]
-    pub fn transform_range<R: ops::RangeBounds<usize>>(
-        &mut self,
-        range: R,
-        m: &Matrix2D,
-    ) -> Result<()> {
+    pub fn transform_range<R: ops::RangeBounds<usize>>(&mut self, range: R, m: &Matrix2D) {
         unsafe {
-            errcode_to_result(ffi::blPathTransform(
+            expect_mem_err(ffi::blPathTransform(
                 self.core_mut(),
                 &bl_range(range),
                 m as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Fits the whole path into the given rect by taking into account fit flags
     /// passed by [`PathFitFlags`].
     #[inline]
-    pub fn fit_to(&mut self, rect: &RectD, flags: PathFitFlags) -> Result<()> {
+    pub fn fit_to(&mut self, rect: &RectD, flags: PathFitFlags) {
         unsafe {
-            errcode_to_result(ffi::blPathFitTo(
+            expect_mem_err(ffi::blPathFitTo(
                 self.core_mut(),
                 ptr::null(),
                 rect as *const _ as *const _,
                 flags.bits(),
             ))
-        }
+        };
     }
 
     /// Fits a part of the path specified by the given range into the given rect
@@ -966,15 +938,15 @@ impl Path {
         range: R,
         rect: &RectD,
         flags: PathFitFlags,
-    ) -> Result<()> {
+    ) {
         unsafe {
-            errcode_to_result(ffi::blPathFitTo(
+            expect_mem_err(ffi::blPathFitTo(
                 self.core_mut(),
                 &bl_range(range),
                 rect as *const _ as *const _,
                 flags.bits(),
             ))
-        }
+        };
     }
 }
 

@@ -8,7 +8,7 @@ use ffi::{self, BLImageCore};
 use crate::{
     array::Array,
     codec::ImageCodec,
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, Result},
     format::ImageFormat,
     geometry::{SizeD, SizeI},
     variant::WrappedBlCore,
@@ -175,22 +175,21 @@ impl Image {
         self.size().h
     }
 
-    pub fn data(&self) -> Result<ImageData<'_>> {
+    pub fn data(&self) -> ImageData<'_> {
         unsafe {
             let mut data = std::mem::zeroed();
-            errcode_to_result(ffi::blImageGetData(self.core(), &mut data)).map(|_| {
-                let ffi::BLSizeI { w, h } = data.size;
-                ImageData {
-                    data: slice::from_raw_parts(
-                        data.pixelData as *mut _,
-                        (h as isize * data.stride) as usize,
-                    ),
-                    stride: data.stride as isize / w as isize,
-                    size: (w, h),
-                    format: data.format.into(),
-                    flags: ImageInfoFlags::from_bits_truncate(data.flags),
-                }
-            })
+            ffi::blImageGetData(self.core(), &mut data);
+            let ffi::BLSizeI { w, h } = data.size;
+            ImageData {
+                data: slice::from_raw_parts(
+                    data.pixelData as *mut _,
+                    (h as isize * data.stride) as usize,
+                ),
+                stride: data.stride as isize / w as isize,
+                size: (w, h),
+                format: data.format.into(),
+                flags: ImageInfoFlags::from_bits_truncate(data.flags),
+            }
         }
     }
 
@@ -251,14 +250,11 @@ impl ops::Deref for Image {
     fn deref(&self) -> &Self::Target {
         unsafe {
             let mut data = std::mem::zeroed();
-            errcode_to_result(ffi::blImageGetData(self.core(), &mut data))
-                .map(|_| {
-                    slice::from_raw_parts(
-                        data.pixelData as *const _,
-                        (data.size.h as isize * data.stride) as usize,
-                    )
-                })
-                .expect("memory allocation failed")
+            expect_mem_err(ffi::blImageGetData(self.core(), &mut data));
+            slice::from_raw_parts(
+                data.pixelData as *const _,
+                (data.size.h as isize * data.stride) as usize,
+            )
         }
     }
 }
@@ -267,14 +263,11 @@ impl ops::DerefMut for Image {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             let mut data = std::mem::zeroed();
-            errcode_to_result(ffi::blImageMakeMutable(self.core_mut(), &mut data))
-                .map(|_| {
-                    slice::from_raw_parts_mut(
-                        data.pixelData as *mut _,
-                        (data.size.h as isize * data.stride) as usize,
-                    )
-                })
-                .expect("memory allocation failed")
+            expect_mem_err(ffi::blImageMakeMutable(self.core_mut(), &mut data));
+            slice::from_raw_parts_mut(
+                data.pixelData as *mut _,
+                (data.size.h as isize * data.stride) as usize,
+            )
         }
     }
 }
@@ -351,7 +344,7 @@ mod test_codec {
     #[test]
     fn test_image_data() {
         let image = Image::new(50, 50, Default::default()).unwrap();
-        let image_data = image.data().unwrap();
+        let image_data = image.data();
         assert_eq!(image_data.stride, 4);
         assert_eq!(
             image_data.data.to_vec().len() as isize,

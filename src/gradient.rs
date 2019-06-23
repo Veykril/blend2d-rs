@@ -10,7 +10,7 @@ use core::{
 use ffi::BLGradientValue::*;
 
 use crate::{
-    error::{errcode_to_result, Result},
+    error::{expect_mem_err, OutOfMemory},
     matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
     util::range_to_tuple,
     variant::WrappedBlCore,
@@ -215,15 +215,15 @@ impl<T: GradientType> Gradient<T> {
 
     /// Sets the value struct of this gradient.
     #[inline]
-    pub fn set_values(&mut self, values: &T::ValuesType) -> Result<()> {
+    pub fn set_values(&mut self, values: &T::ValuesType) {
         unsafe {
-            errcode_to_result(ffi::blGradientSetValues(
+            expect_mem_err(ffi::blGradientSetValues(
                 self.core_mut(),
                 0,
                 values as *const _ as *const _,
                 mem::size_of::<T::ValuesType>() / mem::size_of::<f64>(),
             ))
-        }
+        };
     }
 
     #[inline]
@@ -268,17 +268,14 @@ impl<T: GradientType> Gradient<T> {
 
     /// Reserves the capacity of gradient stops for at least `n` stops.
     #[inline]
-    pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientReserve(self.core_mut(), n)) }
+    pub fn try_reserve(&mut self, n: usize) -> std::result::Result<(), OutOfMemory> {
+        unsafe { OutOfMemory::from_errcode(ffi::blGradientReserve(self.core_mut(), n)) }
     }
 
     /// Shrinks the capacity of gradient stops to fit the current usage.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe {
-            errcode_to_result(ffi::blGradientShrink(self.core_mut()))
-                .expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(ffi::blGradientShrink(self.core_mut())) };
     }
 
     /// Returns the number of stops in this gradient.
@@ -313,36 +310,36 @@ impl<T: GradientType> Gradient<T> {
 
     /// Removes the stop at the specified index.
     #[inline]
-    pub fn remove_stop(&mut self, index: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientRemoveStop(self.core_mut(), index)) }
+    pub fn remove_stop(&mut self, index: usize) {
+        unsafe { expect_mem_err(ffi::blGradientRemoveStop(self.core_mut(), index)) }
     }
 
     /// Removes multiple stops indexed by the given range.
     #[inline]
-    pub fn remove_stops<R: RangeBounds<usize>>(&mut self, range: R) -> Result<()> {
+    pub fn remove_stops<R: RangeBounds<usize>>(&mut self, range: R) {
         let (start, end) = range_to_tuple(range, || self.len());
-        unsafe { errcode_to_result(ffi::blGradientRemoveStops(self.core_mut(), start, end)) }
+        unsafe { expect_mem_err(ffi::blGradientRemoveStops(self.core_mut(), start, end)) };
     }
 
     /// Removes the first stop that matches the given offset.
     #[inline]
-    pub fn remove_stop_by_offset(&mut self, offset: f64) -> Result<()> {
+    pub fn remove_stop_by_offset(&mut self, offset: f64) {
         unsafe {
-            errcode_to_result(ffi::blGradientRemoveStopByOffset(
+            expect_mem_err(ffi::blGradientRemoveStopByOffset(
                 self.core_mut(),
                 offset,
                 false as _,
             ))
-        }
+        };
     }
 
     /// Removes a range of stops that lie inside of the given range.
     ///
     /// The range specified will always include its upper bound.
     #[inline]
-    pub fn remove_stops_in_range<R: ops::RangeBounds<f64>>(&mut self, range: R) -> Result<()> {
+    pub fn remove_stops_in_range<R: ops::RangeBounds<f64>>(&mut self, range: R) {
         unsafe {
-            errcode_to_result(ffi::blGradientRemoveStopsFromTo(
+            expect_mem_err(ffi::blGradientRemoveStopsFromTo(
                 self.core_mut(),
                 match range.start_bound() {
                     ops::Bound::Included(n) | ops::Bound::Excluded(n) => *n,
@@ -353,19 +350,19 @@ impl<T: GradientType> Gradient<T> {
                     ops::Bound::Unbounded => 1.0,
                 },
             ))
-        }
+        };
     }
 
     /// Removes all stops matching the given offset.
     #[inline]
-    pub fn remove_all_stops_by_offset(&mut self, offset: f64) -> Result<()> {
+    pub fn remove_all_stops_by_offset(&mut self, offset: f64) {
         unsafe {
-            errcode_to_result(ffi::blGradientRemoveStopByOffset(
+            expect_mem_err(ffi::blGradientRemoveStopByOffset(
                 self.core_mut(),
                 offset,
                 true as _,
             ))
-        }
+        };
     }
 
     /// Returns the index of of the stop with with the given offset, or None if
@@ -385,34 +382,31 @@ impl<T: GradientType> Gradient<T> {
     /// Clears the stops buffer.
     #[inline]
     pub fn reset_stops(&mut self) {
+        unsafe { expect_mem_err(ffi::blGradientResetStops(self.core_mut())) };
+    }
+
+    /// Adds a gradient stop to the buffer.
+    #[inline]
+    pub fn add_stop(&mut self, stop: GradientStop) {
         unsafe {
-            errcode_to_result(ffi::blGradientResetStops(self.core_mut()))
-                .expect("memory allocation failed")
+            expect_mem_err(ffi::blGradientAddStopRgba64(
+                self.core_mut(),
+                stop.offset,
+                stop.rgba,
+            ))
         };
     }
 
     /// Adds a gradient stop to the buffer.
     #[inline]
-    pub fn add_stop(&mut self, stop: GradientStop) -> Result<()> {
-        unsafe {
-            errcode_to_result(ffi::blGradientAddStopRgba64(
-                self.core_mut(),
-                stop.offset,
-                stop.rgba,
-            ))
-        }
+    pub fn add_stop32(&mut self, offset: f64, rgba: u32) {
+        unsafe { expect_mem_err(ffi::blGradientAddStopRgba32(self.core_mut(), offset, rgba)) };
     }
 
     /// Adds a gradient stop to the buffer.
     #[inline]
-    pub fn add_stop32(&mut self, offset: f64, rgba: u32) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientAddStopRgba32(self.core_mut(), offset, rgba)) }
-    }
-
-    /// Adds a gradient stop to the buffer.
-    #[inline]
-    pub fn add_stop64(&mut self, offset: f64, rgba: u64) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blGradientAddStopRgba64(self.core_mut(), offset, rgba)) }
+    pub fn add_stop64(&mut self, offset: f64, rgba: u64) {
+        unsafe { expect_mem_err(ffi::blGradientAddStopRgba64(self.core_mut(), offset, rgba)) };
     }
 }
 
@@ -522,14 +516,14 @@ impl<'a, T: GradientType> From<&'a T::ValuesType> for Gradient<T> {
 impl<T: GradientType> MatrixTransform for Gradient<T> {
     #[inline]
     #[doc(hidden)]
-    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) {
         unsafe {
-            errcode_to_result(ffi::blGradientApplyMatrixOp(
+            expect_mem_err(ffi::blGradientApplyMatrixOp(
                 self.core_mut(),
                 op as u32,
                 data.as_ptr() as *const _,
             ))
-        }
+        };
     }
 }
 
@@ -689,9 +683,9 @@ mod test_gradient {
 
         let gradient = Gradient::<Linear>::new(&values, ExtendMode::PadXPadY, &stops, Some(&mat));
         let mut default = Gradient::<Linear>::default();
-        default.set_values(&values).unwrap();
-        default.add_stop(stops[0]).unwrap();
-        default.set_matrix(&mat).unwrap();
+        default.set_values(&values);
+        default.add_stop(stops[0]);
+        default.set_matrix(&mat);
 
         assert_eq!(gradient, default);
     }

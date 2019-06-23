@@ -3,7 +3,7 @@ use std::io;
 
 use crate::{
     codec::ImageCodec,
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, OutOfMemory, Result},
     util::range_to_tuple,
     variant::WrappedBlCore,
 };
@@ -49,10 +49,7 @@ impl<T: ArrayType> Array<T> {
     /// Shrinks the arrays allocated capacity down to its currently used size.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe {
-            errcode_to_result(ffi::blArrayShrink(self.core_mut()))
-                .expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(ffi::blArrayShrink(self.core_mut())) };
     }
 
     /// Reserves capacity for at least n items.
@@ -68,20 +65,19 @@ impl<T: ArrayType> Array<T> {
 
     /// Reserves capacity for at least n items.
     #[inline]
-    pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blArrayReserve(self.core_mut(), n)) }
+    pub fn try_reserve(&mut self, n: usize) -> std::result::Result<(), OutOfMemory> {
+        unsafe { OutOfMemory::from_errcode(ffi::blArrayReserve(self.core_mut(), n)) }
     }
 
     /// Truncates the array down to n elements.
     #[inline]
     pub fn truncate(&mut self, n: usize) {
         unsafe {
-            errcode_to_result(ffi::blArrayResize(
+            expect_mem_err(ffi::blArrayResize(
                 self.core_mut(),
                 n.min(self.len()),
                 ptr::null(),
             ))
-            .expect("memory allocation failed")
         };
     }
 
@@ -95,12 +91,11 @@ impl<T: ArrayType> Array<T> {
         unsafe {
             let diff = n.checked_sub(self.len()).unwrap_or_default();
             let buff = vec![fill; diff];
-            errcode_to_result(ffi::blArrayResize(
+            expect_mem_err(ffi::blArrayResize(
                 self.core_mut(),
                 n,
                 buff.as_ptr() as *const _,
             ))
-            .expect("memory allocation failed")
         };
     }
 
@@ -155,12 +150,11 @@ where
     #[inline]
     pub fn extend_from_slice<S: AsRef<[T]>>(&mut self, data: S) {
         unsafe {
-            errcode_to_result(ffi::blArrayAppendView(
+            expect_mem_err(ffi::blArrayAppendView(
                 self.core_mut(),
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-            .expect("memory allocation failed")
         };
     }
 
@@ -168,13 +162,12 @@ where
     #[inline]
     pub fn insert_from_slice<S: AsRef<[T]>>(&mut self, index: usize, data: S) {
         unsafe {
-            errcode_to_result(ffi::blArrayInsertView(
+            expect_mem_err(ffi::blArrayInsertView(
                 self.core_mut(),
                 index,
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-            .expect("memory allocation failed")
         };
     }
 
@@ -188,14 +181,13 @@ where
     {
         let (start, end) = range_to_tuple(range, || self.len());
         unsafe {
-            errcode_to_result(ffi::blArrayReplaceView(
+            expect_mem_err(ffi::blArrayReplaceView(
                 self.core_mut(),
                 start,
                 end,
                 data.as_ref().as_ptr() as *const _,
                 data.as_ref().len(),
             ))
-            .expect("memory allocation failed")
         };
     }
 }
@@ -282,8 +274,7 @@ impl<T: ArrayType> ops::DerefMut for Array<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             let mut data_ptr = ptr::null_mut();
-            errcode_to_result(ffi::blArrayMakeMutable(self.core_mut(), &mut data_ptr))
-                .expect("memory allocation failed");
+            expect_mem_err(ffi::blArrayMakeMutable(self.core_mut(), &mut data_ptr));
             slice::from_raw_parts_mut(data_ptr as _, self.len())
         }
     }
@@ -351,15 +342,15 @@ where
 {
     #[inline]
     pub fn push(&mut self, item: T) {
-        unsafe { T::push(self.core_mut(), item).expect("memory allocation failed") };
+        unsafe { T::push(self.core_mut(), item) };
     }
     #[inline]
     pub fn insert(&mut self, index: usize, item: T) {
-        unsafe { T::insert(self.core_mut(), index, item).expect("memory allocation failed") };
+        unsafe { T::insert(self.core_mut(), index, item) };
     }
     #[inline]
     pub fn replace(&mut self, index: usize, item: T) {
-        unsafe { T::replace(self.core_mut(), index, item).expect("memory allocation failed") };
+        unsafe { T::replace(self.core_mut(), index, item) };
     }
 }
 
@@ -379,31 +370,32 @@ impl Array<ImageCodec> {
 }
 
 use crate::variant::ImplType;
+
 pub trait ArrayType: Sized {
     #[doc(hidden)]
     const IMPL_IDX: usize;
     #[doc(hidden)]
     #[inline]
-    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayAppendItem(core, &item as *const _ as *const _))
+    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) {
+        expect_mem_err(ffi::blArrayAppendItem(core, &item as *const _ as *const _));
     }
     #[doc(hidden)]
     #[inline]
-    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayInsertItem(
+    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        expect_mem_err(ffi::blArrayInsertItem(
             core,
             index,
             &item as *const _ as *const _,
-        ))
+        ));
     }
     #[doc(hidden)]
     #[inline]
-    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayReplaceItem(
+    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        expect_mem_err(ffi::blArrayReplaceItem(
             core,
             index,
             &item as *const _ as *const _,
-        ))
+        ));
     }
 }
 
@@ -413,59 +405,59 @@ where
 {
     const IMPL_IDX: usize = ImplType::ArrayVar as usize;
     #[inline]
-    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayAppendItem(
+    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) {
+        expect_mem_err(ffi::blArrayAppendItem(
             core,
             item.core() as *const _ as *const _,
-        ))
+        ));
     }
     #[inline]
-    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayInsertItem(
+    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        expect_mem_err(ffi::blArrayInsertItem(
             core,
             index,
             item.core() as *const _ as *const _,
-        ))
+        ));
     }
     #[inline]
-    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        errcode_to_result(ffi::blArrayReplaceItem(
+    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        expect_mem_err(ffi::blArrayReplaceItem(
             core,
             index,
             item.core() as *const _ as *const _,
-        ))
+        ));
     }
 }
 
 impl<T> ArrayType for *const T {
     const IMPL_IDX: usize = usize::IMPL_IDX;
     #[inline]
-    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
-        usize::push(core, item as usize)
+    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) {
+        usize::push(core, item as usize);
     }
     #[inline]
-    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        usize::insert(core, index, item as usize)
+    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        usize::insert(core, index, item as usize);
     }
     #[inline]
-    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        usize::insert(core, index, item as usize)
+    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        usize::insert(core, index, item as usize);
     }
 }
 
 impl<T> ArrayType for *mut T {
     const IMPL_IDX: usize = usize::IMPL_IDX;
     #[inline]
-    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
-        usize::push(core, item as usize)
+    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) {
+        usize::push(core, item as usize);
     }
     #[inline]
-    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        usize::insert(core, index, item as usize)
+    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        usize::insert(core, index, item as usize);
     }
     #[inline]
-    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-        usize::insert(core, index, item as usize)
+    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+        usize::insert(core, index, item as usize);
     }
 }
 
@@ -478,16 +470,16 @@ macro_rules! impl_array_type {
                 impl ArrayType for $ty {
                     const IMPL_IDX: usize = $idx as usize;
                     #[inline]
-                    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) -> Result<()> {
-                        errcode_to_result(ffi::$append(core, item as _))
+                    unsafe fn push(core: &mut ffi::BLArrayCore, item: Self) {
+                        expect_mem_err(ffi::$append(core, item as _))
                     }
                     #[inline]
-                    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-                        errcode_to_result(ffi::$insert(core, index, item as _))
+                    unsafe fn insert(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+                        expect_mem_err(ffi::$insert(core, index, item as _))
                     }
                     #[inline]
-                    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) -> Result<()> {
-                        errcode_to_result(ffi::$replace(core, index, item as _))
+                    unsafe fn replace(core: &mut ffi::BLArrayCore, index: usize, item: Self) {
+                        expect_mem_err(ffi::$replace(core, index, item as _))
                     }
                 }
             )+
@@ -540,7 +532,7 @@ mod test_array {
         assert_eq!(&[32; 10][..], &*arr);
 
         let mut path = Path::new();
-        path.move_to(1.0, 2.0).unwrap();
+        path.move_to(1.0, 2.0);
         let mut arr = Array::<Path>::new();
         arr.resize(10, path.clone());
         assert_eq!(&vec![path; 10][..], &*arr);

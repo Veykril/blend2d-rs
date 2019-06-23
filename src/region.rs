@@ -1,7 +1,7 @@
 use core::{borrow::Borrow, fmt, slice};
 
 use crate::{
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, OutOfMemory},
     geometry::{BoxI, HitTest, PointI, RectI},
     variant::WrappedBlCore,
     BooleanOp,
@@ -91,10 +91,7 @@ impl Region {
     /// Clears the region.
     #[inline]
     pub fn clear(&mut self) {
-        unsafe {
-            errcode_to_result(ffi::blRegionClear(self.core_mut()))
-                .expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(ffi::blRegionClear(self.core_mut())) };
     }
 
     /// Reserves capacity for at least n boxes.
@@ -110,65 +107,62 @@ impl Region {
 
     /// Reserves capacity for at least n boxes.
     #[inline]
-    pub fn try_reserve(&mut self, n: usize) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blRegionReserve(self.core_mut(), n)) }
+    pub fn try_reserve(&mut self, n: usize) -> std::result::Result<(), OutOfMemory> {
+        unsafe { OutOfMemory::from_errcode(ffi::blRegionReserve(self.core_mut(), n)) }
     }
 
     /// Shrinks the region's allocated capacity down to its current length.
     #[inline]
     pub fn shrink_to_fit(&mut self) {
-        unsafe {
-            errcode_to_result(ffi::blRegionShrink(self.core_mut()))
-                .expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(ffi::blRegionShrink(self.core_mut())) };
     }
 
     #[inline]
-    pub fn combine(&mut self, other: &Self, op: BooleanOp) -> Result<()> {
+    pub fn combine(&mut self, other: &Self, op: BooleanOp) {
         unsafe {
-            errcode_to_result(ffi::blRegionCombine(
+            expect_mem_err(ffi::blRegionCombine(
                 self.core_mut(),
                 self.core(),
                 other.core(),
                 op.into(),
-            ))
+            ));
         }
     }
 
     #[inline]
-    pub fn combine_rb(&mut self, b: &BoxI, op: BooleanOp) -> Result<()> {
+    pub fn combine_rb(&mut self, b: &BoxI, op: BooleanOp) {
         unsafe {
-            errcode_to_result(ffi::blRegionCombineRB(
+            expect_mem_err(ffi::blRegionCombineRB(
                 self.core_mut(),
                 self.core(),
                 &b as *const _ as *const _,
                 op.into(),
             ))
-        }
+        };
     }
 
     #[inline]
-    pub fn combine_br(&mut self, b: &BoxI, op: BooleanOp) -> Result<()> {
+    pub fn combine_br(&mut self, b: &BoxI, op: BooleanOp) {
         unsafe {
-            errcode_to_result(ffi::blRegionCombineBR(
+            expect_mem_err(ffi::blRegionCombineBR(
                 self.core_mut(),
                 &b as *const _ as *const _,
                 self.core(),
                 op.into(),
             ))
-        }
+        };
     }
 
     #[inline]
-    pub fn combine_bb(&mut self, b: &BoxI, b2: &BoxI, op: BooleanOp) -> Result<()> {
+    pub fn combine_bb(&mut self, b: &BoxI, b2: &BoxI, op: BooleanOp) {
         unsafe {
-            errcode_to_result(ffi::blRegionCombineBB(
+            expect_mem_err(ffi::blRegionCombineBB(
                 self.core_mut(),
                 &b as *const _ as *const _,
                 &b2 as *const _ as *const _,
                 op.into(),
             ))
-        }
+        };
     }
 
     /// Translates the region by the given [`PointI`].
@@ -176,41 +170,41 @@ impl Region {
     /// boundary, so the final region could be smaller than the region before
     /// translation.
     #[inline]
-    pub fn translate(&mut self, p: PointI) -> Result<()> {
+    pub fn translate(&mut self, p: PointI) {
         unsafe {
-            errcode_to_result(ffi::blRegionTranslate(
+            expect_mem_err(ffi::blRegionTranslate(
                 self.core_mut(),
                 self.core(),
                 &p as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Translates the region by the given [`PointI`] and clips it to the given
     /// `[BoxI]`.
     #[inline]
-    pub fn translate_and_clip(&mut self, p: PointI, clip: &BoxI) -> Result<()> {
+    pub fn translate_and_clip(&mut self, p: PointI, clip: &BoxI) {
         unsafe {
-            errcode_to_result(ffi::blRegionTranslateAndClip(
+            expect_mem_err(ffi::blRegionTranslateAndClip(
                 self.core_mut(),
                 self.core(),
                 &p as *const _ as *const _,
                 clip as *const _ as *const _,
             ))
-        }
+        };
     }
     /// Translates the region by the given region and clips it to the given
     /// `[BoxI]`.
     #[inline]
-    pub fn intersect_and_clip(&mut self, region: &Region, clip: &BoxI) -> Result<()> {
+    pub fn intersect_and_clip(&mut self, region: &Region, clip: &BoxI) {
         unsafe {
-            errcode_to_result(ffi::blRegionIntersectAndClip(
+            expect_mem_err(ffi::blRegionIntersectAndClip(
                 self.core_mut(),
                 self.core(),
                 region.core(),
                 clip as *const _ as *const _,
             ))
-        }
+        };
     }
 
     /// Tests if a given [`PointI`] is in the region.

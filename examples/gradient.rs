@@ -10,7 +10,7 @@ fn main() {
     // Attach a rendering context into `img`.
     let ctx = Context::new(&mut img).expect("Unable to attach rendering context");
     let render = |mut ctx: Context| {
-        ctx.set_comp_op(CompOp::SrcCopy)?;
+        ctx.set_comp_op(CompOp::SrcCopy);
         ctx.fill_all()?;
 
         // Coordinates can be specified now or changed later.
@@ -27,14 +27,14 @@ fn main() {
         );
 
         // Color stops can be added in any order.
-        linear.add_stop32(0.0, 0xFFFFFFFF)?;
-        linear.add_stop32(0.5, 0xFF5FAFDF)?;
-        linear.add_stop32(1.0, 0xFF2F5FDF)?;
+        linear.add_stop32(0.0, 0xFFFFFFFF);
+        linear.add_stop32(0.5, 0xFF5FAFDF);
+        linear.add_stop32(1.0, 0xFF2F5FDF);
 
         // `setFillStyle()` can be used for both colors and styles.
-        ctx.set_fill_style_gradient(&linear)?;
+        ctx.set_fill_style_gradient(&linear);
 
-        ctx.set_comp_op(CompOp::SrcOver)?;
+        ctx.set_comp_op(CompOp::SrcOver);
         ctx.fill_round_rect(40.0, 40.0, 400.0, 400.0, 45.5, 45.5)?;
         ctx.end()
     };

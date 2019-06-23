@@ -1,9 +1,6 @@
-use crate::{
-    error::{errcode_to_result, Result},
-    geometry::Point,
-};
-use ffi::BLMatrix2DOp::*;
+use crate::{error::expect_mem_err, geometry::Point};
 
+use ffi::BLMatrix2DOp::*;
 bl_enum! {
     #[doc(hidden)]
     pub enum Matrix2DOp {
@@ -168,130 +165,130 @@ impl Matrix2D {
 impl MatrixTransform for Matrix2D {
     #[inline]
     #[doc(hidden)]
-    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()> {
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) {
         unsafe {
-            errcode_to_result(ffi::blMatrix2DApplyOp(
+            expect_mem_err(ffi::blMatrix2DApplyOp(
                 self as *mut _ as *mut _,
                 op as u32,
                 data.as_ptr() as *const _,
             ))
-        }
+        };
     }
 }
 
 pub trait MatrixTransform {
     #[doc(hidden)]
-    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]) -> Result<()>;
+    fn apply_matrix_op(&mut self, op: Matrix2DOp, data: &[f64]);
 
     #[inline]
-    fn set_matrix(&mut self, m: &Matrix2D) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Assign, &m.0)
+    fn set_matrix(&mut self, m: &Matrix2D) {
+        self.apply_matrix_op(Matrix2DOp::Assign, &m.0);
     }
 
     #[inline]
-    fn reset_matrix(&mut self) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Reset, &[])
+    fn reset_matrix(&mut self) {
+        self.apply_matrix_op(Matrix2DOp::Reset, &[]);
     }
 
     #[inline]
-    fn translate(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Translate, &[x, y])
+    fn translate(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::Translate, &[x, y]);
     }
 
     #[inline]
-    fn translate_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Translate, &p.into_f64())
+    fn translate_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::Translate, &p.into_f64());
     }
 
     #[inline]
-    fn scale(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Scale, &[x, y])
+    fn scale(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::Scale, &[x, y]);
     }
 
     #[inline]
-    fn scale_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Scale, &p.into_f64())
+    fn scale_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::Scale, &p.into_f64());
     }
 
     #[inline]
-    fn skew(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Skew, &[x, y])
+    fn skew(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::Skew, &[x, y]);
     }
 
     #[inline]
-    fn skew_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Skew, &p.into_f64())
+    fn skew_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::Skew, &p.into_f64());
     }
 
     #[inline]
-    fn rotate(&mut self, angle: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Rotate, &[angle])
+    fn rotate(&mut self, angle: f64) {
+        self.apply_matrix_op(Matrix2DOp::Rotate, &[angle]);
     }
 
     #[inline]
-    fn rotate_around(&mut self, angle: f64, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::RotatePoint, &[angle, x, y])
+    fn rotate_around(&mut self, angle: f64, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::RotatePoint, &[angle, x, y]);
     }
 
     #[inline]
-    fn rotate_around_point<P: Point>(&mut self, angle: f64, p: &P) -> Result<()> {
+    fn rotate_around_point<P: Point>(&mut self, angle: f64, p: &P) {
         let arr = p.into_f64();
-        self.apply_matrix_op(Matrix2DOp::RotatePoint, &[angle, arr[0], arr[1]])
+        self.apply_matrix_op(Matrix2DOp::RotatePoint, &[angle, arr[0], arr[1]]);
     }
 
     #[inline]
-    fn transform(&mut self, mat: &Matrix2D) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::Transform, &mat.0)
+    fn transform(&mut self, mat: &Matrix2D) {
+        self.apply_matrix_op(Matrix2DOp::Transform, &mat.0);
     }
 
     #[inline]
-    fn post_translate(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostTranslate, &[x, y])
+    fn post_translate(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::PostTranslate, &[x, y]);
     }
 
     #[inline]
-    fn post_translate_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostTranslate, &p.into_f64())
+    fn post_translate_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::PostTranslate, &p.into_f64());
     }
 
     #[inline]
-    fn post_scale(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostScale, &[x, y])
+    fn post_scale(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::PostScale, &[x, y]);
     }
 
     #[inline]
-    fn post_scale_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostScale, &p.into_f64())
+    fn post_scale_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::PostScale, &p.into_f64());
     }
 
     #[inline]
-    fn post_skew(&mut self, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostSkew, &[x, y])
+    fn post_skew(&mut self, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::PostSkew, &[x, y]);
     }
 
     #[inline]
-    fn post_skew_point<P: Point>(&mut self, p: &P) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostSkew, &p.into_f64())
+    fn post_skew_point<P: Point>(&mut self, p: &P) {
+        self.apply_matrix_op(Matrix2DOp::PostSkew, &p.into_f64());
     }
 
     #[inline]
-    fn post_rotate(&mut self, angle: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostRotate, &[angle])
+    fn post_rotate(&mut self, angle: f64) {
+        self.apply_matrix_op(Matrix2DOp::PostRotate, &[angle]);
     }
 
     #[inline]
-    fn post_rotate_around(&mut self, angle: f64, x: f64, y: f64) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostRotatePoint, &[angle, x, y])
+    fn post_rotate_around(&mut self, angle: f64, x: f64, y: f64) {
+        self.apply_matrix_op(Matrix2DOp::PostRotatePoint, &[angle, x, y]);
     }
 
     #[inline]
-    fn post_rotate_around_point<P: Point>(&mut self, angle: f64, p: &P) -> Result<()> {
+    fn post_rotate_around_point<P: Point>(&mut self, angle: f64, p: &P) {
         let arr = p.into_f64();
-        self.apply_matrix_op(Matrix2DOp::PostRotatePoint, &[angle, arr[0], arr[1]])
+        self.apply_matrix_op(Matrix2DOp::PostRotatePoint, &[angle, arr[0], arr[1]]);
     }
 
     #[inline]
-    fn post_transform(&mut self, mat: &Matrix2D) -> Result<()> {
-        self.apply_matrix_op(Matrix2DOp::PostTransform, &mat.0)
+    fn post_transform(&mut self, mat: &Matrix2D) {
+        self.apply_matrix_op(Matrix2DOp::PostTransform, &mat.0);
     }
 }

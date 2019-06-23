@@ -5,7 +5,7 @@ use ffi::BLImageCodecFeatures::*;
 
 use crate::{
     array::Array,
-    error::{errcode_to_result, Result},
+    error::{errcode_to_result, expect_mem_err, Result},
     image::{Image, ImageInfo},
     variant::WrappedBlCore,
 };
@@ -42,27 +42,27 @@ unsafe impl WrappedBlCore for ImageCodec {
 impl ImageCodec {
     /// Creates an [`ImageDecoder`] for this codec.
     #[inline]
-    pub fn create_decoder(&self) -> Result<ImageDecoder> {
+    pub fn create_decoder(&self) -> ImageDecoder {
         unsafe {
             let mut decoder = ImageDecoder::from_core(*ImageDecoder::none());
-            errcode_to_result(ffi::blImageCodecCreateDecoder(
+            expect_mem_err(ffi::blImageCodecCreateDecoder(
                 self.core(),
                 decoder.core_mut(),
-            ))
-            .map(|_| decoder)
+            ));
+            decoder
         }
     }
 
     /// Creates an [`ImageEncoder`] for this codec.
     #[inline]
-    pub fn create_encoder(&self) -> Result<ImageEncoder> {
+    pub fn create_encoder(&self) -> ImageEncoder {
         unsafe {
             let mut encoder = ImageEncoder::from_core(*ImageEncoder::none());
-            errcode_to_result(ffi::blImageCodecCreateEncoder(
+            expect_mem_err(ffi::blImageCodecCreateEncoder(
                 self.core(),
                 encoder.core_mut(),
-            ))
-            .map(|_| encoder)
+            ));
+            encoder
         }
     }
 
@@ -92,14 +92,14 @@ impl ImageCodec {
 
     /// Adds a codec to the built in codecs list.
     #[inline]
-    pub fn add_to_built_in(codec: &ImageCodec) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blImageCodecAddToBuiltIn(codec.core())) }
+    pub fn add_to_built_in(codec: &ImageCodec) {
+        unsafe { expect_mem_err(ffi::blImageCodecAddToBuiltIn(codec.core())) };
     }
 
     /// Removes the codec from the built in codecs list.
     #[inline]
-    pub fn remove_from_built_in(codec: &ImageCodec) -> Result<()> {
-        unsafe { errcode_to_result(ffi::blImageCodecRemoveFromBuiltIn(codec.core())) }
+    pub fn remove_from_built_in(codec: &ImageCodec) {
+        unsafe { ffi::blImageCodecRemoveFromBuiltIn(codec.core()) };
     }
 
     /// The codec's name.
@@ -368,7 +368,7 @@ mod test_codec {
     fn test_encoder_creation() {
         let codecs = ImageCodec::built_in_codecs();
         let codec = codecs.first().unwrap();
-        let encoder = codec.create_encoder().unwrap();
+        let encoder = codec.create_encoder();
         assert_eq!(codec, encoder.codec());
     }
 
@@ -376,7 +376,7 @@ mod test_codec {
     fn test_decoder_creation() {
         let codecs = ImageCodec::built_in_codecs();
         let codec = codecs.first().unwrap();
-        let decoder = codec.create_decoder().unwrap();
+        let decoder = codec.create_decoder();
         assert_eq!(codec, decoder.codec());
     }
 }

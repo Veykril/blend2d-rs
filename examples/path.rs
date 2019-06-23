@@ -8,17 +8,17 @@ fn main() {
     // The closure here just acts as a `try` block to catch possible errors
     let render = |mut ctx: Context| {
         // Clear the image.
-        ctx.set_comp_op(CompOp::SrcCopy)?;
+        ctx.set_comp_op(CompOp::SrcCopy);
         ctx.fill_all()?;
 
         // Fill some path.
         let mut path = Path::new();
-        path.move_to(26.0, 31.0)?;
-        path.cubic_to(642.0, 132.0, 587.0, -136.0, 25.0, 464.0)?;
-        path.cubic_to(882.0, 404.0, 144.0, 267.0, 27.0, 31.0)?;
+        path.move_to(26.0, 31.0);
+        path.cubic_to(642.0, 132.0, 587.0, -136.0, 25.0, 464.0);
+        path.cubic_to(882.0, 404.0, 144.0, 267.0, 27.0, 31.0);
 
-        ctx.set_comp_op(CompOp::SrcOver)?;
-        ctx.set_fill_style_rgba32(0xFFFFFFFF)?;
+        ctx.set_comp_op(CompOp::SrcOver);
+        ctx.set_fill_style_rgba32(0xFFFFFFFF);
         ctx.fill_geometry(&path)?;
 
         // Detach the rendering context from `img`.

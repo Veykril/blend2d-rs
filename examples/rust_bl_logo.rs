@@ -17,7 +17,7 @@ fn main() {
     let ctx = Context::new(&mut img).expect("Unable to attach rendering context");
     let render = |mut ctx: Context| {
         // Clear the image.
-        ctx.set_comp_op(CompOp::SrcCopy)?;
+        ctx.set_comp_op(CompOp::SrcCopy);
         ctx.fill_all()?;
 
         // Draw a circle with a red-white radial gradient.
@@ -42,8 +42,8 @@ fn main() {
             ],
             None,
         );
-        ctx.set_comp_op(CompOp::SrcOver)?;
-        ctx.set_fill_style_gradient(&radial)?;
+        ctx.set_comp_op(CompOp::SrcOver);
+        ctx.set_fill_style_gradient(&radial);
         ctx.fill_circle(c_x, c_y, c_r)?;
 
         // Multiply a circle with our logo scaled to the radius of the circle on top of
@@ -66,8 +66,8 @@ fn main() {
             Default::default(),
             Some(&Matrix2D::translation(20.0, 20.0)),
         );
-        ctx.set_comp_op(CompOp::Multiply)?;
-        ctx.set_fill_style_pattern(&pattern)?;
+        ctx.set_comp_op(CompOp::Multiply);
+        ctx.set_fill_style_pattern(&pattern);
         ctx.fill_circle(c_x, c_y, c_r)?;
 
         // Draw the difference of a square with a blue-white linear gradient to the
@@ -92,8 +92,8 @@ fn main() {
             ],
             None,
         );
-        ctx.set_comp_op(CompOp::Difference)?;
-        ctx.set_fill_style_gradient(&linear)?;
+        ctx.set_comp_op(CompOp::Difference);
+        ctx.set_fill_style_gradient(&linear);
         ctx.fill_round_rect(195.0, 195.0, 270.0, 270.0, 25.0, 25.0)?;
         ctx.end()
     };

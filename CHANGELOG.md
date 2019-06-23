@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- OutOfMemory errors now panic, unless returned by allocating `try_*` functions
+- Various functions now return T instead of Result<T>
+
 ### Added
 
 - DerefMut for Image and Array

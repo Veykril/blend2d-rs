@@ -3,12 +3,13 @@ use bitflags::bitflags;
 
 use crate::{
     array::{Array, ArrayType},
-    error::errcode_to_result,
+    error::expect_mem_err,
     image::Image,
     path::Path,
     pattern::Pattern,
     region::Region,
 };
+
 use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
@@ -308,10 +309,7 @@ where
     /// Returns a deeply cloned copy of the value.
     fn clone_deep(&self) -> Self {
         let mut new = Self::from_core(*Self::none());
-        unsafe {
-            errcode_to_result(Self::ASSIGN_DEEP(new.core_mut(), self.core()))
-                .expect("memory allocation failed")
-        };
+        unsafe { expect_mem_err(Self::ASSIGN_DEEP(new.core_mut(), self.core())) };
         new
     }
 }
