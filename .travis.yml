@@ -39,5 +39,3 @@ cache: cargo
 branches:
   only:
     - master
-    - staging
-    - trying
