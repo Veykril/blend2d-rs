@@ -272,6 +272,18 @@ impl ops::DerefMut for Image {
     }
 }
 
+impl AsRef<[u8]> for Image {
+    fn as_ref(&self) -> &[u8] {
+        self
+    }
+}
+
+impl AsMut<[u8]> for Image {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self
+    }
+}
+
 impl PartialEq for Image {
     #[inline]
     fn eq(&self, other: &Self) -> bool {

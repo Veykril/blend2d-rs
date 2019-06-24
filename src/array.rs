@@ -253,6 +253,13 @@ impl<T: ArrayType> AsRef<[T]> for Array<T> {
     }
 }
 
+impl<T: ArrayType> AsMut<[T]> for Array<T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut [T] {
+        self
+    }
+}
+
 impl<T: ArrayType> Borrow<[T]> for Array<T> {
     #[inline]
     fn borrow(&self) -> &[T] {
