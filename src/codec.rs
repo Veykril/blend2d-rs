@@ -383,7 +383,9 @@ mod test_codec {
     fn test_encoder_creation() {
         let codecs = ImageCodec::built_in_codecs();
         let codec = codecs.first().unwrap();
-        let encoder = codec.create_encoder();
+        let encoder = codec
+            .create_encoder()
+            .expect("codec does not support encoding");
         assert_eq!(codec, encoder.codec());
     }
 
@@ -391,7 +393,9 @@ mod test_codec {
     fn test_decoder_creation() {
         let codecs = ImageCodec::built_in_codecs();
         let codec = codecs.first().unwrap();
-        let decoder = codec.create_decoder();
+        let decoder = codec
+            .create_decoder()
+            .expect("codec does not support decoding");
         assert_eq!(codec, decoder.codec());
     }
 }
