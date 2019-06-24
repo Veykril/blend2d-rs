@@ -1,3 +1,11 @@
+//! Various geometry structures and objects.
+//!
+//! A module for various geometry structures and objects that can be used with either [`Path`] for
+//! path building or [`Context`] for rendering.
+//!
+//! [`Path`]: ../path/struct.Path.html
+//! [`Context`]: ../context/struct.Context.html
+
 mod private {
     use super::*;
     use crate::array::ArrayType;
@@ -23,6 +31,7 @@ mod private {
     impl<T: ArrayType> Sealed for Array<T> where [T]: Sealed {}
 }
 
+/// A template trait to allow being generic over geometry types.
 pub trait Geometry: private::Sealed {
     #[doc(hidden)]
     const GEO_TYPE: u32;
@@ -66,7 +75,7 @@ where
     const GEO_TYPE: u32 = <[T]>::GEO_TYPE;
 }
 
-// trait for overloading
+/// A template trait to allow being generic over geometry types regarding slices.
 pub trait GeoViewArray: private::Sealed {}
 impl GeoViewArray for BoxD {}
 impl GeoViewArray for BoxI {}
@@ -93,7 +102,8 @@ type ContextGlyphRunFn<T> = unsafe extern "C" fn(
     *const ffi::BLFontCore,
     *const ffi::BLGlyphRun,
 ) -> ffi::BLResult;
-// trait for overloading
+
+/// A template trait to allow being generic over points.
 pub trait Point: private::Sealed + Copy {
     #[doc(hidden)]
     type FfiType;
@@ -155,7 +165,8 @@ impl Point for PointD {
 
 type ClipToRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
 type ClearRectFn<T> = unsafe extern "C" fn(*mut ffi::BLContextCore, *const T) -> ffi::BLResult;
-// trait for overloading
+
+/// A template trait to allow being generic over rectangles.
 pub trait Rect: private::Sealed {
     #[doc(hidden)]
     type FfiType;
@@ -191,9 +202,13 @@ impl Rect for RectD {
 
 use ffi::BLGeometryDirection::*;
 bl_enum! {
+    /// Direction of a geometry used by geometric primitives and paths.
     pub enum GeometryDirection {
+        /// No direction specified.
         None             = BL_GEOMETRY_DIRECTION_NONE,
+        /// Clockwise direction.
         Clockwise        = BL_GEOMETRY_DIRECTION_CW,
+        /// Counter-clockwise direction.
         CounterClockwise = BL_GEOMETRY_DIRECTION_CCW,
     }
     Default => None
@@ -231,8 +246,11 @@ bl_enum! {
 
 use ffi::BLFillRule::*;
 bl_enum! {
+    /// Fill rule.
     pub enum FillRule {
+        /// Non-zero fill-rule.
         NonZero = BL_FILL_RULE_NON_ZERO,
+        /// Even-odd fill-rule.
         EvenOdd = BL_FILL_RULE_EVEN_ODD,
     }
     Default => NonZero
@@ -240,9 +258,13 @@ bl_enum! {
 
 use ffi::BLHitTest::*;
 bl_enum! {
+    /// Hit-test result.
     pub enum HitTest {
+        /// Fully in. Partially in/out.
         In = BL_HIT_TEST_IN,
+        /// Fully out.
         Part = BL_HIT_TEST_PART,
+        /// Hit test failed (invalid argument, NaNs, etc).
         Out = BL_HIT_TEST_OUT,
     }
     Default => In

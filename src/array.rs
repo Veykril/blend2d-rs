@@ -1,3 +1,4 @@
+//! A contiguous growable array for use with the blend2d api.
 use core::{borrow::Borrow, fmt, iter::FromIterator, marker::PhantomData, ops, ptr, slice};
 use std::io;
 
@@ -8,6 +9,11 @@ use crate::{
     variant::WrappedBlCore,
 };
 
+/// A contiguous growable array for use with the blend2d api.
+/// This is an array managed by blend2d, unless required one should use [`Vec`] instead.
+/// Its api tries to mimic [`Vec`] as close as possible.
+///
+/// [`String`]: std/vec/struct.Vec.html
 #[repr(transparent)]
 pub struct Array<T: ArrayType> {
     core: ffi::BLArrayCore,
@@ -378,6 +384,10 @@ impl Array<ImageCodec> {
 
 use crate::variant::ImplType;
 
+/// A marker trait for types that can be used for a blend2d [`Array`].
+/// This trait is also implemented for all blend2d core types.
+///
+/// [`Array`]: ./struct.Array.html
 pub trait ArrayType: Sized {
     #[doc(hidden)]
     const IMPL_IDX: usize;
@@ -406,6 +416,7 @@ pub trait ArrayType: Sized {
     }
 }
 
+#[doc(hidden)]
 impl<T> ArrayType for T
 where
     T: WrappedBlCore,

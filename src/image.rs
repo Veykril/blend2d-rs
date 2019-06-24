@@ -1,3 +1,4 @@
+//! Image loading and handling.
 use bitflags::bitflags;
 
 use core::{fmt, ops, ptr, slice};
@@ -9,34 +10,91 @@ use crate::{
     array::Array,
     codec::ImageCodec,
     error::{errcode_to_result, expect_mem_err, Result},
-    format::ImageFormat,
     geometry::{SizeD, SizeI},
     variant::WrappedBlCore,
 };
 
+use ffi::BLFormat::*;
+bl_enum! {
+    /// Pixel format.
+    pub enum ImageFormat {
+        /// 32-bit premultiplied ARGB pixel format (8-bit components).
+        PRgb32 = BL_FORMAT_PRGB32,
+        /// 32-bit (X)RGB pixel format (8-bit components, alpha ignored).
+        XRgb32 = BL_FORMAT_XRGB32,
+        /// 8-bit alpha-only pixel format.
+        A8     = BL_FORMAT_A8,
+    }
+    Default => PRgb32
+}
+
+use ffi::BLFormatFlags;
+bitflags! {
+    /// Pixel format flags.
+    pub struct FormatFlags: u32 {
+        /// Pixel format provides RGB components.
+        const RGB = BLFormatFlags::BL_FORMAT_FLAG_RGB as u32;
+        /// Pixel format provides only alpha component.
+        const ALPHA = BLFormatFlags::BL_FORMAT_FLAG_ALPHA as u32;
+        /// A combination of RGB | ALPHA.
+        const RGBA = BLFormatFlags::BL_FORMAT_FLAG_RGBA as u32;
+        /// Pixel format provides LUM component (and not RGB components).
+        const LUM = BLFormatFlags::BL_FORMAT_FLAG_LUM as u32;
+        /// A combination of BL_FORMAT_FLAG_LUM | BL_FORMAT_FLAG_ALPHA.
+        const LUMA = BLFormatFlags::BL_FORMAT_FLAG_LUMA as u32;
+        /// Indexed pixel format the requres a palette (I/O only).
+        const INDEXED = BLFormatFlags::BL_FORMAT_FLAG_INDEXED as u32;
+        /// RGB components are premultiplied by alpha component.
+        const PREMULTIPLIED = BLFormatFlags::BL_FORMAT_FLAG_PREMULTIPLIED as u32;
+        /// Pixel format doesn't use native byte-order (I/O only).
+        const BYTE_SWAP = BLFormatFlags::BL_FORMAT_FLAG_BYTE_SWAP as u32;
+        /// Pixel components are byte aligned (all 8bpp).
+        const BYTE_ALIGNED = BLFormatFlags::BL_FORMAT_FLAG_BYTE_ALIGNED as u32;
+    }
+}
+
 use ffi::BLImageInfoFlags::*;
 bitflags! {
+    /// Flags used by [`ImageInfo`].
     pub struct ImageInfoFlags: u32 {
+        /// rogressive mode.
         const PROGRESSIVE = BL_IMAGE_INFO_FLAG_PROGRESSIVE as u32;
     }
 }
 
 use ffi::BLImageScaleFilter::*;
 bl_enum! {
+    /// Filter type used by [`Image::scale`].
+    ///
+    /// [`Image::scale`]: struct.Image.html#method.scale
     pub enum ImageScaleFilter {
+        /// Nearest neighbor filter (radius 1.0).
         Nearest  = BL_IMAGE_SCALE_FILTER_NEAREST,
+        /// Bilinear filter (radius 1.0).
         Bilinear = BL_IMAGE_SCALE_FILTER_BILINEAR,
+        /// Bicubic filter (radius 2.0).
         Bicubic  = BL_IMAGE_SCALE_FILTER_BICUBIC,
+        /// Bell filter (radius 1.5).
         Bell     = BL_IMAGE_SCALE_FILTER_BELL,
+        /// Gauss filter (radius 2.0).
         Gauss    = BL_IMAGE_SCALE_FILTER_GAUSS,
+        /// Hermite filter (radius 1.0).
         Hermite  = BL_IMAGE_SCALE_FILTER_HERMITE,
+        /// Hanning filter (radius 1.0).
         Hanning  = BL_IMAGE_SCALE_FILTER_HANNING,
+        /// Catrom filter (radius 2.0).
         Catrom   = BL_IMAGE_SCALE_FILTER_CATROM,
+        /// Bessel filter (radius 3.2383).
         Bessel   = BL_IMAGE_SCALE_FILTER_BESSEL,
+        /// Sinc filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
         Sinc     = BL_IMAGE_SCALE_FILTER_SINC,
+        /// Blackman filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
         Lanczos  = BL_IMAGE_SCALE_FILTER_LANCZOS,
+        /// Lanczos filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
         Blackman = BL_IMAGE_SCALE_FILTER_BLACKMAN,
+        /// Mitchell filter (radius 2.0, parameters 'b' and 'c' passed through [`ImageScaleOptions`]).
         Mitchell = BL_IMAGE_SCALE_FILTER_MITCHELL,
+        /// Filter using a user-function, must be passed through BLImageScaleOptions.
         User     = BL_IMAGE_SCALE_FILTER_USER,
     }
     Default => Nearest
@@ -67,6 +125,7 @@ impl Default for ImageScaleOptions {
     }
 }
 
+/// A 2D raster image.
 #[repr(transparent)]
 pub struct Image {
     core: BLImageCore,
@@ -83,6 +142,7 @@ unsafe impl WrappedBlCore for Image {
 }
 
 impl Image {
+    /// Creates a new empty image with the specified dimensions and image format.
     #[inline]
     pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Image> {
         unsafe {
@@ -122,6 +182,8 @@ impl Image {
         }
     }*/
 
+    /// Attempts to create a new image with the specified dimensions and image format by decoding
+    /// the data with the given codec.
     pub fn from_data<R: AsRef<[u8]>>(
         width: i32,
         height: i32,
@@ -154,27 +216,32 @@ impl Image {
         }
     }
 
+    /// This image's format.
     #[inline]
     pub fn format(&self) -> ImageFormat {
         (self.impl_().format as u32).into()
     }
 
+    /// This image's dimensions.
     #[inline]
     pub fn size(&self) -> SizeI {
         let ffi::BLSizeI { w, h } = self.impl_().size;
         SizeI { w, h }
     }
 
+    /// This image's width.
     #[inline]
     pub fn width(&self) -> i32 {
         self.size().w
     }
 
+    /// This image's height.
     #[inline]
     pub fn height(&self) -> i32 {
         self.size().h
     }
 
+    /// Returns an [`ImageData`] instance containing most of this image's information.
     pub fn data(&self) -> ImageData<'_> {
         unsafe {
             let mut data = std::mem::zeroed();
@@ -211,6 +278,7 @@ impl Image {
         }
     }
 
+    /// Writes the image to the file at the given path.
     pub fn write_to_file<P: AsRef<Path>>(&self, path: P, codec: &ImageCodec) -> Result<()> {
         unsafe {
             let path =
@@ -223,6 +291,7 @@ impl Image {
         }
     }
 
+    /// Writes the image to the given [`Array`].
     #[inline]
     pub fn write_to_data(&self, dst: &mut Array<u8>, codec: &ImageCodec) -> Result<()> {
         unsafe {
@@ -304,6 +373,7 @@ impl Drop for Image {
     }
 }
 
+/// A struct containing information about an image.
 #[derive(Debug)]
 pub struct ImageData<'a> {
     pub data: &'a [u8],

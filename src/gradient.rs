@@ -1,3 +1,5 @@
+//! Linear, Radial and Conical Gradients.
+
 use core::{
     borrow::Borrow,
     fmt,
@@ -24,12 +26,14 @@ mod private {
     impl Sealed for super::Conical {}
 }
 
+/// The type of the gradient.
 pub trait GradientType: private::Sealed {
     type ValuesType;
     #[doc(hidden)]
     const BL_TYPE: u32;
 }
 
+/// Template type that marks a gradient as being a linear one.
 #[derive(Debug)]
 pub enum Linear {}
 impl GradientType for Linear {
@@ -37,6 +41,7 @@ impl GradientType for Linear {
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_LINEAR as u32;
 }
+/// Template type that marks a gradient as being a radial one.
 #[derive(Debug)]
 pub enum Radial {}
 impl GradientType for Radial {
@@ -44,6 +49,8 @@ impl GradientType for Radial {
     #[doc(hidden)]
     const BL_TYPE: u32 = ffi::BLGradientType::BL_GRADIENT_TYPE_RADIAL as u32;
 }
+
+/// Template type that marks a gradient as being a conical one.
 #[derive(Debug)]
 pub enum Conical {}
 impl GradientType for Conical {
@@ -226,21 +233,25 @@ impl<T: GradientType> Gradient<T> {
         };
     }
 
+    /// Returns the x0 value of this gradient.
     #[inline]
     pub fn x0(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_X0 as usize)
     }
 
+    /// Returns the y0 value of this gradient.
     #[inline]
     pub fn y0(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_Y0 as usize)
     }
 
+    /// Sets the x0 value of this gradient.
     #[inline]
     pub fn set_x0(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_X0 as usize, val)
     }
 
+    /// Sets the y0 value of this gradient.
     #[inline]
     pub fn set_y0(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_Y0 as usize, val)
@@ -421,21 +432,25 @@ impl Gradient<Linear> {
         Self::new(values, extend_mode, stops, m)
     }
 
+    /// Returns the x1 value of this gradient.
     #[inline]
     pub fn x1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_X1 as usize)
     }
 
+    /// Returns the y1 value of this gradient.
     #[inline]
     pub fn y1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_Y1 as usize)
     }
 
+    /// Sets the x1 value of this gradient.
     #[inline]
     pub fn set_x1(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_X1 as usize, val)
     }
 
+    /// Sets the y1 value of this gradient.
     #[inline]
     pub fn set_y1(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_Y1 as usize, val)
@@ -453,31 +468,37 @@ impl Gradient<Radial> {
         Self::new(values, extend_mode, stops, m)
     }
 
+    /// Returns the x1 value of this gradient.
     #[inline]
     pub fn x1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_X1 as usize)
     }
 
+    /// Returns the y1 value of this gradient.
     #[inline]
     pub fn y1(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_COMMON_Y1 as usize)
     }
 
+    /// Returns the r0 value of this gradient.
     #[inline]
     pub fn r0(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_RADIAL_R0 as usize)
     }
 
+    /// Sets the x1 value of this gradient.
     #[inline]
     pub fn set_x1(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_X1 as usize, val)
     }
 
+    /// Sets the y1 value of this gradient.
     #[inline]
     pub fn set_y1(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_COMMON_Y1 as usize, val)
     }
 
+    /// Sets the r0 value of this gradient.
     #[inline]
     pub fn set_r0(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_RADIAL_R0 as usize, val)
@@ -495,11 +516,13 @@ impl Gradient<Conical> {
         Self::new(values, extend_mode, stops, m)
     }
 
+    /// Returns the angle of this gradient.
     #[inline]
     pub fn angle(&self) -> f64 {
         self.value(BL_GRADIENT_VALUE_CONICAL_ANGLE as usize)
     }
 
+    /// Sets the angle of this gradient.
     #[inline]
     pub fn set_angle(&mut self, val: f64) {
         self.set_value(BL_GRADIENT_VALUE_CONICAL_ANGLE as usize, val)

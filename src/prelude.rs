@@ -2,8 +2,7 @@ pub use crate::{
     array::{Array, ArrayType},
     codec::{ImageCodec, ImageCodecFeatures},
     context::{ClipMode, CompOp, Context, ContextCreateInfo},
-    format::ImageFormat,
-    image::Image,
+    image::{Image, ImageFormat},
     matrix::MatrixTransform,
     DataAccessFlags, DeepClone,
 };

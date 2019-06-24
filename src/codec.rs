@@ -1,3 +1,4 @@
+//! Functionality for decoding and encoding images.
 use core::{fmt, mem, ptr, str};
 use std::ffi::CStr;
 
@@ -11,19 +12,29 @@ use crate::{
 };
 
 bl_enum! {
+    /// Image codec feature bits.
     pub enum ImageCodecFeatures {
+        /// Image codec supports reading images (can create BLImageDecoder).
         Read       = BL_IMAGE_CODEC_FEATURE_READ,
+        /// Image codec supports writing images (can create BLImageEncoder).
         Write      = BL_IMAGE_CODEC_FEATURE_WRITE,
+        /// Image codec supports lossless compression.
         Lossless   = BL_IMAGE_CODEC_FEATURE_LOSSLESS,
+        /// Image codec supports loosy compression.
         Lossy      = BL_IMAGE_CODEC_FEATURE_LOSSY,
+        /// Image codec supports writing multiple frames (GIF).
         MultiFrame = BL_IMAGE_CODEC_FEATURE_MULTI_FRAME,
+        /// Image codec supports IPTC metadata.
         Iptc       = BL_IMAGE_CODEC_FEATURE_IPTC,
+        /// Image codec supports EXIF metadata.
         Exif       = BL_IMAGE_CODEC_FEATURE_EXIF,
+        /// Image codec supports XMP metadata.
         Xmp        = BL_IMAGE_CODEC_FEATURE_XMP,
     }
     Default => Read
 }
 
+/// Provides a unified interface for inspecting image data and creating image decoders & encoders.
 #[repr(transparent)]
 pub struct ImageCodec {
     core: ffi::BLImageCodecCore,
@@ -42,27 +53,29 @@ unsafe impl WrappedBlCore for ImageCodec {
 impl ImageCodec {
     /// Creates an [`ImageDecoder`] for this codec.
     #[inline]
-    pub fn create_decoder(&self) -> ImageDecoder {
+    pub fn create_decoder(&self) -> Option<ImageDecoder> {
         unsafe {
             let mut decoder = ImageDecoder::from_core(*ImageDecoder::none());
-            expect_mem_err(ffi::blImageCodecCreateDecoder(
+            errcode_to_result(ffi::blImageCodecCreateDecoder(
                 self.core(),
                 decoder.core_mut(),
-            ));
-            decoder
+            ))
+            .map(|_| decoder)
+            .ok()
         }
     }
 
     /// Creates an [`ImageEncoder`] for this codec.
     #[inline]
-    pub fn create_encoder(&self) -> ImageEncoder {
+    pub fn create_encoder(&self) -> Option<ImageEncoder> {
         unsafe {
             let mut encoder = ImageEncoder::from_core(*ImageEncoder::none());
-            expect_mem_err(ffi::blImageCodecCreateEncoder(
+            errcode_to_result(ffi::blImageCodecCreateEncoder(
                 self.core(),
                 encoder.core_mut(),
-            ));
-            encoder
+            ))
+            .map(|_| encoder)
+            .ok()
         }
     }
 
@@ -168,6 +181,7 @@ impl Drop for ImageCodec {
     }
 }
 
+/// An image encoder belonging to a certain [`ImageCodec`].
 #[repr(transparent)]
 pub struct ImageEncoder {
     core: ffi::BLImageEncoderCore,
@@ -254,6 +268,7 @@ impl Drop for ImageEncoder {
     }
 }
 
+/// An image decoder belonging to a certain [`ImageCodec`].
 #[repr(transparent)]
 pub struct ImageDecoder {
     core: ffi::BLImageDecoderCore,

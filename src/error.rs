@@ -23,6 +23,8 @@ pub(in crate) fn expect_mem_err(code: u32) {
     };
 }
 
+/// An error returned by a function if it was unable to succeed due to not being able to allocate
+/// enough memory.
 #[derive(Debug)]
 pub struct OutOfMemory;
 
@@ -44,6 +46,7 @@ impl fmt::Display for OutOfMemory {
     }
 }
 
+/// An error returned by blend2d.
 #[derive(Debug)]
 pub enum Error {
     InvalidValue,
