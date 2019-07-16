@@ -213,6 +213,7 @@ pub struct GlyphItem {
     pub glyph_id: u16,
 }
 
+#[allow(dead_code)]
 #[repr(C)]
 #[derive(Debug)]
 pub(in crate) struct GlyphInfo {
@@ -220,6 +221,7 @@ pub(in crate) struct GlyphInfo {
     reserved: [u32; 2],
 }
 
+#[allow(dead_code)]
 #[repr(C)]
 #[derive(Debug)]
 pub(in crate) struct GlyphPlacement {
@@ -245,6 +247,7 @@ impl GlyphMappingState {
     }
 }
 
+#[allow(dead_code)]
 #[repr(C)]
 #[derive(Debug)]
 pub(in crate) struct GlyphOutlineSinkInfo {
@@ -274,6 +277,7 @@ pub struct FontFaceInfo {
     pub diag_flags: FontFaceDiagFlags,
 }
 
+#[allow(dead_code)]
 #[repr(C)]
 #[derive(Debug)]
 pub(in crate) struct FontTable {

@@ -1,14 +1,7 @@
 ///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
-use crate::{
-    array::{Array, ArrayType},
-    error::expect_mem_err,
-    image::Image,
-    path::Path,
-    pattern::Pattern,
-    region::Region,
-};
+use crate::{error::expect_mem_err, image::Image, path::Path, pattern::Pattern, region::Region};
 
 use ffi::BLImplType::*;
 bl_enum! {

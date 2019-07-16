@@ -21,7 +21,6 @@ I'm a simple multiline text example
 that uses GlyphBuffer and fillGlyphRun!"#;
 
         for line in text.lines() {
-            println!("{}", line);
             gb.set_utf8_text(line);
             font.shape(&mut gb)?;
             let tm = font.get_text_metrics(&mut gb)?;

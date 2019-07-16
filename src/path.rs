@@ -215,6 +215,7 @@ impl StrokeOptions {
 
     #[inline]
     pub fn set_caps(&mut self, cap: StrokeCap) {
+        #[allow(unused_unsafe)] // nightly has no problem with copy-union writes, stable does though
         unsafe {
             self.core.__bindgen_anon_1.__bindgen_anon_1.startCap = cap as u8;
             self.core.__bindgen_anon_1.__bindgen_anon_1.endCap = cap as u8;

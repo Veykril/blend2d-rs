@@ -1,6 +1,6 @@
 [package]
 name = "blend2d-sys"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Lukas Wirth <lukastw97@gmail.com>"]
 edition = "2018"
 description = "Raw ffi bindings for blend2d"
@@ -11,6 +11,16 @@ categories = ["external-ffi-bindings"]
 build = "build.rs"
 links = "blend2d"
 
+[features]
+default = ["sse2", "sse3", "ssse3", "sse4_1", "sse4_2", "avx", "avx2"]
+sse2 = []
+sse3 = []
+ssse3 = []
+sse4_1 = []
+sse4_2 = []
+avx = []
+avx2 = []
+
 [build-dependencies]
-cmake = "0.1"
 bindgen = "0.49"
+cc = "1.0"
