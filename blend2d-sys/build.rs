@@ -42,6 +42,7 @@ fn main() -> io::Result<()> {
     add_source(&mut cfg, BLEND2D_SOURCE_PATH)?;
     add_source(&mut cfg, ASMJIT_SOURCE_PATH)?;
     cfg.cpp(true)
+        .warnings(false)
         .flag_if_supported("-static")
         .flag_if_supported("-std=c++17")
         .flag_if_supported("/std:c++latest")
