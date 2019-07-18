@@ -169,6 +169,7 @@ unsafe impl WrappedBlCore for Image {
 
 impl Image {
     /// Creates a new empty image with the specified dimensions and image format.
+    /// Note: The pixel data of the newly created image is uninitialized.
     #[inline]
     pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Image> {
         unsafe {
@@ -289,14 +290,13 @@ impl Image {
     #[inline]
     pub fn scale(&mut self, size: SizeI, filter: ImageScaleFilter) -> Result<()> {
         unsafe {
+            let opts = filter.into_options();
             errcode_to_result(ffi::blImageScale(
                 self.core_mut(),
                 self.core(),
                 &size as *const _ as *const _,
                 filter.filter(),
-                filter
-                    .into_options()
-                    .map_or(ptr::null(), |opt| &opt as *const _),
+                opts.as_ref().map_or(ptr::null(), |opt| opt as *const _),
             ))
         }
     }
@@ -311,7 +311,7 @@ impl Image {
             dst: *mut f64,
             t_array: *const f64,
             n: usize,
-            func: *mut F,
+            func: *const F,
         ) -> ffi::BLResult
         where
             F: for<'a> Fn(&'a mut [f64], &'a [f64]),
