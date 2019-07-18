@@ -58,7 +58,6 @@ fn main() {
                 h: 2 * c_r as i32,
             },
             ImageScaleFilter::Bell,
-            None,
         )?;
         let pattern = Pattern::new(
             &logo,

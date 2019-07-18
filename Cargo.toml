@@ -14,30 +14,3 @@ exclude = ["assets/*", "examples/*"]
 [dependencies]
 ffi = { package = "blend2d-sys", version = "0.3.0", path = "blend2d-sys" }
 bitflags = "1.0.4"
-
-[[example]]
-name = "path"
-
-[[example]]
-name = "gradient"
-
-[[example]]
-name = "pattern"
-
-[[example]]
-name = "stroking"
-
-[[example]]
-name = "composition"
-
-[[example]]
-name = "transformation"
-
-[[example]]
-name = "text_rendering"
-
-[[example]]
-name = "glyph_buffer"
-
-[[example]]
-name = "rust_bl_logo"

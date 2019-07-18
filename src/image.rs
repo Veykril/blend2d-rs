@@ -1,7 +1,7 @@
 //! Image loading and handling.
 use bitflags::bitflags;
 
-use core::{fmt, ops, ptr, slice};
+use core::{fmt, mem, ops, ptr, slice};
 use std::{ffi::CString, path::Path};
 
 use ffi::{self, BLImageCore};
@@ -12,6 +12,15 @@ use crate::{
     error::{errcode_to_result, expect_mem_err, Result},
     geometry::{SizeD, SizeI},
     variant::WrappedBlCore,
+};
+
+const IMAGE_SCALE_OPTIONS_ZEROED: ffi::BLImageScaleOptions = ffi::BLImageScaleOptions {
+    userFunc: None,
+    userData: ptr::null_mut(),
+    radius: 0.0,
+    __bindgen_anon_1: ffi::BLImageScaleOptions__bindgen_ty_1 {
+        data: [0.0, 0.0, 0.0],
+    },
 };
 
 use ffi::BLFormat::*;
@@ -33,23 +42,23 @@ bitflags! {
     /// Pixel format flags.
     pub struct FormatFlags: u32 {
         /// Pixel format provides RGB components.
-        const RGB = BLFormatFlags::BL_FORMAT_FLAG_RGB as u32;
+        const RGB           = BLFormatFlags::BL_FORMAT_FLAG_RGB as u32;
         /// Pixel format provides only alpha component.
-        const ALPHA = BLFormatFlags::BL_FORMAT_FLAG_ALPHA as u32;
+        const ALPHA         = BLFormatFlags::BL_FORMAT_FLAG_ALPHA as u32;
         /// A combination of RGB | ALPHA.
-        const RGBA = BLFormatFlags::BL_FORMAT_FLAG_RGBA as u32;
+        const RGBA          = BLFormatFlags::BL_FORMAT_FLAG_RGBA as u32;
         /// Pixel format provides LUM component (and not RGB components).
-        const LUM = BLFormatFlags::BL_FORMAT_FLAG_LUM as u32;
+        const LUM           = BLFormatFlags::BL_FORMAT_FLAG_LUM as u32;
         /// A combination of BL_FORMAT_FLAG_LUM | BL_FORMAT_FLAG_ALPHA.
-        const LUMA = BLFormatFlags::BL_FORMAT_FLAG_LUMA as u32;
+        const LUMA          = BLFormatFlags::BL_FORMAT_FLAG_LUMA as u32;
         /// Indexed pixel format the requres a palette (I/O only).
-        const INDEXED = BLFormatFlags::BL_FORMAT_FLAG_INDEXED as u32;
+        const INDEXED       = BLFormatFlags::BL_FORMAT_FLAG_INDEXED as u32;
         /// RGB components are premultiplied by alpha component.
         const PREMULTIPLIED = BLFormatFlags::BL_FORMAT_FLAG_PREMULTIPLIED as u32;
         /// Pixel format doesn't use native byte-order (I/O only).
-        const BYTE_SWAP = BLFormatFlags::BL_FORMAT_FLAG_BYTE_SWAP as u32;
+        const BYTE_SWAP     = BLFormatFlags::BL_FORMAT_FLAG_BYTE_SWAP as u32;
         /// Pixel components are byte aligned (all 8bpp).
-        const BYTE_ALIGNED = BLFormatFlags::BL_FORMAT_FLAG_BYTE_ALIGNED as u32;
+        const BYTE_ALIGNED  = BLFormatFlags::BL_FORMAT_FLAG_BYTE_ALIGNED as u32;
     }
 }
 
@@ -57,70 +66,87 @@ use ffi::BLImageInfoFlags::*;
 bitflags! {
     /// Flags used by [`ImageInfo`].
     pub struct ImageInfoFlags: u32 {
-        /// rogressive mode.
+        /// progressive mode.
         const PROGRESSIVE = BL_IMAGE_INFO_FLAG_PROGRESSIVE as u32;
     }
 }
 
-use ffi::BLImageScaleFilter::*;
-bl_enum! {
-    /// Filter type used by [`Image::scale`].
-    ///
-    /// [`Image::scale`]: struct.Image.html#method.scale
-    pub enum ImageScaleFilter {
-        /// Nearest neighbor filter (radius 1.0).
-        Nearest  = BL_IMAGE_SCALE_FILTER_NEAREST,
-        /// Bilinear filter (radius 1.0).
-        Bilinear = BL_IMAGE_SCALE_FILTER_BILINEAR,
-        /// Bicubic filter (radius 2.0).
-        Bicubic  = BL_IMAGE_SCALE_FILTER_BICUBIC,
-        /// Bell filter (radius 1.5).
-        Bell     = BL_IMAGE_SCALE_FILTER_BELL,
-        /// Gauss filter (radius 2.0).
-        Gauss    = BL_IMAGE_SCALE_FILTER_GAUSS,
-        /// Hermite filter (radius 1.0).
-        Hermite  = BL_IMAGE_SCALE_FILTER_HERMITE,
-        /// Hanning filter (radius 1.0).
-        Hanning  = BL_IMAGE_SCALE_FILTER_HANNING,
-        /// Catrom filter (radius 2.0).
-        Catrom   = BL_IMAGE_SCALE_FILTER_CATROM,
-        /// Bessel filter (radius 3.2383).
-        Bessel   = BL_IMAGE_SCALE_FILTER_BESSEL,
-        /// Sinc filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
-        Sinc     = BL_IMAGE_SCALE_FILTER_SINC,
-        /// Blackman filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
-        Lanczos  = BL_IMAGE_SCALE_FILTER_LANCZOS,
-        /// Lanczos filter (radius 2.0, adjustable through [`ImageScaleOptions`]).
-        Blackman = BL_IMAGE_SCALE_FILTER_BLACKMAN,
-        /// Mitchell filter (radius 2.0, parameters 'b' and 'c' passed through [`ImageScaleOptions`]).
-        Mitchell = BL_IMAGE_SCALE_FILTER_MITCHELL,
-        /// Filter using a user-function, must be passed through BLImageScaleOptions.
-        User     = BL_IMAGE_SCALE_FILTER_USER,
-    }
-    Default => Nearest
-}
-
-// FIXME merge this and ImageScaleFilter into an algebraic data type
-#[repr(C)]
+/// Filter type used by [`Image::scale`].
+///
+/// [`Image::scale`]: struct.Image.html#method.scale
 #[derive(Copy, Clone, Debug)]
-pub struct ImageScaleOptions {
-    user_func: ffi::BLImageScaleUserFunc,
-    user_data: *mut std::os::raw::c_void,
-    pub radius: f64,
-    pub b: f64,
-    pub c: f64,
-    _data: f64,
+pub enum ImageScaleFilter {
+    /// Nearest neighbor filter (radius 1.0).
+    Nearest,
+    /// Bilinear filter (radius 1.0).
+    Bilinear,
+    /// Bicubic filter (radius 2.0).
+    Bicubic,
+    /// Bell filter (radius 1.5).
+    Bell,
+    /// Gauss filter (radius 2.0).
+    Gauss,
+    /// Hermite filter (radius 1.0).
+    Hermite,
+    /// Hanning filter (radius 1.0).
+    Hanning,
+    /// Catrom filter (radius 2.0).
+    Catrom,
+    /// Bessel filter (radius 3.2383).
+    Bessel,
+    /// Sinc filter (default radius 2.0).
+    Sinc { radius: f64 },
+    /// Lanczos filter (default radius 2.0).
+    Lanczos { radius: f64 },
+    /// Blackman filter (default radius 2.0).
+    Blackman { radius: f64 },
+    /// Mitchell filter (radius 2.0).
+    Mitchell { b: f64, c: f64 },
 }
 
-impl Default for ImageScaleOptions {
-    fn default() -> Self {
-        ImageScaleOptions {
-            user_func: None,
-            user_data: ptr::null_mut(),
-            radius: 2.0,
-            b: 1.0 / 3.0,
-            c: 1.0 / 3.0,
-            _data: 0.0,
+impl ImageScaleFilter {
+    #[inline]
+    fn filter(&self) -> u32 {
+        use ffi::BLImageScaleFilter::*;
+        (match self {
+            ImageScaleFilter::Nearest => BL_IMAGE_SCALE_FILTER_NEAREST,
+            ImageScaleFilter::Bilinear => BL_IMAGE_SCALE_FILTER_BILINEAR,
+            ImageScaleFilter::Bicubic => BL_IMAGE_SCALE_FILTER_BICUBIC,
+            ImageScaleFilter::Bell => BL_IMAGE_SCALE_FILTER_BELL,
+            ImageScaleFilter::Gauss => BL_IMAGE_SCALE_FILTER_GAUSS,
+            ImageScaleFilter::Hermite => BL_IMAGE_SCALE_FILTER_HERMITE,
+            ImageScaleFilter::Hanning => BL_IMAGE_SCALE_FILTER_HANNING,
+            ImageScaleFilter::Catrom => BL_IMAGE_SCALE_FILTER_CATROM,
+            ImageScaleFilter::Bessel => BL_IMAGE_SCALE_FILTER_BESSEL,
+            ImageScaleFilter::Sinc { .. } => BL_IMAGE_SCALE_FILTER_SINC,
+            ImageScaleFilter::Lanczos { .. } => BL_IMAGE_SCALE_FILTER_LANCZOS,
+            ImageScaleFilter::Blackman { .. } => BL_IMAGE_SCALE_FILTER_BLACKMAN,
+            ImageScaleFilter::Mitchell { .. } => BL_IMAGE_SCALE_FILTER_MITCHELL,
+        }) as u32
+    }
+
+    #[inline]
+    fn into_options(self) -> Option<ffi::BLImageScaleOptions> {
+        match self {
+            ImageScaleFilter::Nearest
+            | ImageScaleFilter::Bilinear
+            | ImageScaleFilter::Bicubic
+            | ImageScaleFilter::Bell
+            | ImageScaleFilter::Gauss
+            | ImageScaleFilter::Hermite
+            | ImageScaleFilter::Hanning
+            | ImageScaleFilter::Catrom
+            | ImageScaleFilter::Bessel => None,
+            ImageScaleFilter::Sinc { radius }
+            | ImageScaleFilter::Lanczos { radius }
+            | ImageScaleFilter::Blackman { radius } => Some(ffi::BLImageScaleOptions {
+                radius,
+                ..IMAGE_SCALE_OPTIONS_ZEROED
+            }),
+            ImageScaleFilter::Mitchell { b, c } => Some(ffi::BLImageScaleOptions {
+                __bindgen_anon_1: ffi::BLImageScaleOptions__bindgen_ty_1 { data: [b, c, 0.0] },
+                ..IMAGE_SCALE_OPTIONS_ZEROED
+            }),
         }
     }
 }
@@ -261,19 +287,55 @@ impl Image {
     }
 
     #[inline]
-    pub fn scale(
-        &mut self,
-        size: SizeI,
-        filter: ImageScaleFilter,
-        options: Option<&ImageScaleOptions>,
-    ) -> Result<()> {
+    pub fn scale(&mut self, size: SizeI, filter: ImageScaleFilter) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blImageScale(
                 self.core_mut(),
                 self.core(),
                 &size as *const _ as *const _,
-                filter as u32,
-                options.map_or(ptr::null(), |opt| opt as *const _ as *const _),
+                filter.filter(),
+                filter
+                    .into_options()
+                    .map_or(ptr::null(), |opt| &opt as *const _),
+            ))
+        }
+    }
+
+    // FIXME: Allow the closure to return an error
+    #[inline]
+    pub fn scale_user<F>(&mut self, size: SizeI, radius: f64, mut filter: F) -> Result<()>
+    where
+        F: for<'a> Fn(&'a mut [f64], &'a [f64]),
+    {
+        unsafe extern "C" fn user_func_callback<F>(
+            dst: *mut f64,
+            t_array: *const f64,
+            n: usize,
+            func: *mut F,
+        ) -> ffi::BLResult
+        where
+            F: for<'a> Fn(&'a mut [f64], &'a [f64]),
+        {
+            (&*func)(
+                slice::from_raw_parts_mut(dst, n),
+                slice::from_raw_parts(t_array, n),
+            );
+            0
+        }
+        unsafe {
+            errcode_to_result(ffi::blImageScale(
+                self.core_mut(),
+                self.core(),
+                &size as *const _ as *const _,
+                ffi::BLImageScaleFilter::BL_IMAGE_SCALE_FILTER_USER as u32,
+                &ffi::BLImageScaleOptions {
+                    radius,
+                    userFunc: Some(mem::transmute::<*const (), _>(
+                        user_func_callback::<F> as *const (),
+                    )),
+                    userData: &mut filter as *mut _ as *mut _,
+                    ..IMAGE_SCALE_OPTIONS_ZEROED
+                },
             ))
         }
     }
@@ -374,7 +436,7 @@ impl Drop for Image {
 }
 
 /// A struct containing information about an image.
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct ImageData<'a> {
     pub data: &'a [u8],
     pub stride: isize,
@@ -406,7 +468,8 @@ pub struct ImageInfo {
 
 #[cfg(test)]
 mod test_codec {
-    use crate::{geometry::SizeI, image::Image};
+    use crate::image::ImageScaleFilter;
+    use crate::{geometry::SizeI, image::Image, DeepClone};
 
     #[test]
     fn test_image_err_on_zero_size() {
@@ -419,8 +482,27 @@ mod test_codec {
     fn test_image_scale() {
         let new_size = SizeI { w: 100, h: 100 };
         let mut image = Image::new(50, 50, Default::default()).unwrap();
-        image.scale(new_size, Default::default(), None).unwrap();
+        image
+            .scale(new_size, ImageScaleFilter::Blackman { radius: 2.0 })
+            .unwrap();
         assert_eq!(image.size(), new_size);
+    }
+
+    #[test]
+    fn test_image_scale_user_func() {
+        let new_size = SizeI { w: 100, h: 100 };
+        let mut image = Image::new(50, 50, Default::default()).unwrap();
+        let mut image2 = image.clone_deep();
+        // nearest filter, but in RUST
+        image
+            .scale_user(new_size, 1.0, |dst, t_array| {
+                for (dst, t) in dst.iter_mut().zip(t_array.iter().copied()) {
+                    *dst = if t <= 0.5 { 1.0 } else { 0.0 };
+                }
+            })
+            .unwrap();
+        image2.scale(new_size, ImageScaleFilter::Nearest).unwrap();
+        assert_eq!(image, image2);
     }
 
     #[test]
