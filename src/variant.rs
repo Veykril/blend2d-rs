@@ -3,6 +3,7 @@ use bitflags::bitflags;
 
 use crate::{error::expect_mem_err, image::Image, path::Path, pattern::Pattern, region::Region};
 
+use crate::array::{Array, ArrayType};
 use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
@@ -314,17 +315,20 @@ impl DeepClone for Path {
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blPathAssignDeep;
 }
 
-// Fails to compile on rust stable but works fine on nightly(E0277). I believe
-// this might be related to https://github.com/rust-lang/rust/issues/24159,
-// but im unsure as to how one could circumvent it
-/*impl<T> DeepClone for Array<T>
+impl<T> DeepClone for Array<T>
 where
     T: ArrayType,
     Array<T>: WrappedBlCore,
     <Array<T> as WrappedBlCore>::Core: Copy + 'static,
 {
-    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blArrayAssignDeep;
-}*/
+    const ASSIGN_DEEP: BlAssignDeep<Self::Core> = blArrayAssignDeep;
+}
+
+#[allow(non_snake_case)]
+#[inline]
+unsafe extern "C" fn blArrayAssignDeep<C>(dst: *mut C, src: *const C) -> ffi::BLResult {
+    ffi::blArrayAssignDeep(dst as _, src as _)
+}
 
 impl DeepClone for Region {
     const ASSIGN_DEEP: BlAssignDeep<Self::Core> = ffi::blRegionAssignDeep;
