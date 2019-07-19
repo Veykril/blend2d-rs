@@ -53,32 +53,27 @@ impl Pattern {
         unsafe { &*(&self.impl_().image as *const _ as *const _) }
     }
 
-    /// Returns this pattern with a new [`Image`].
-    ///
-    /// There is no set function because such a function would not be able to
-    /// change the pattern's lifetime.
+    /// Replaces this pattern's image.
     #[inline]
-    pub fn with_new_image(mut self, image: &Image) -> Result<Pattern> {
+    pub fn set_image(&mut self, image: &Image) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 ptr::null(),
             ))
-            .map(|_| Pattern { core: self.core })
         }
     }
 
-    /// Returns this pattern with a new clipped [`Image`].
+    /// Replaces this pattern's [`Image`] with an [`Image`] clipped by the given [`RectI`].
     #[inline]
-    pub fn with_new_image_clipped(mut self, image: &Image, area: &RectI) -> Result<Pattern> {
+    pub fn set_image_clipped(&mut self, image: &Image, area: &RectI) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blPatternSetImage(
                 self.core_mut(),
                 image.core(),
                 area as *const _ as *const _,
             ))
-            .map(|_| Pattern { core: self.core })
         }
     }
 
@@ -123,7 +118,7 @@ impl Pattern {
         self.set_extend_mode(Default::default());
     }
 
-    /// SThe pattern's [`Matrix2D`]
+    /// The pattern's [`Matrix2D`].
     #[inline]
     pub fn matrix(&self) -> &Matrix2D {
         unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
