@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Png, Jpeg and Font errors have been grouped into their own error enums
+- ImageScaleFilter has been reworked into an ADT
+
 ## [0.3.0] - 2019-07-16
 
 ### Changed
