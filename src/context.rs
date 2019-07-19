@@ -194,13 +194,13 @@ impl Context {
 
     /// Creates a new context with optional creation info that renders to the
     /// given [`Image`].
-    pub fn new_with_options(
-        target: &mut Image,
-        info: Option<ContextCreateInfo>,
-    ) -> Result<Context> {
+    pub fn new_with_options<C>(target: &mut Image, info: C) -> Result<Context>
+    where
+        C: Into<Option<ContextCreateInfo>>,
+    {
         unsafe {
             let mut this = Context::from_core(*Self::none());
-            let info = info.map(|info| ffi::BLContextCreateInfo {
+            let info = info.into().map(|info| ffi::BLContextCreateInfo {
                 flags: info.flags.bits(),
                 threadCount: info.thread_count,
                 cpuFeatures: info.cpu_features,
@@ -683,35 +683,37 @@ impl Context {
     }
 
     #[inline]
-    pub fn blit_image<P: Point>(
-        &mut self,
-        dst: &P,
-        src: &Image,
-        src_area: Option<&RectI>,
-    ) -> Result<()> {
+    pub fn blit_image<'r, P, RI>(&mut self, dst: &P, src: &Image, src_area: RI) -> Result<()>
+    where
+        P: Point,
+        RI: Into<Option<&'r RectI>>,
+    {
         unsafe {
             errcode_to_result(P::BLIT_IMAGE(
                 self.core_mut(),
                 dst as *const _ as *const _,
                 src.core(),
-                src_area.map_or(ptr::null(), |r| r as *const _ as *const _),
+                src_area
+                    .into()
+                    .map_or(ptr::null(), |r| r as *const _ as *const _),
             ))
         }
     }
 
     #[inline]
-    pub fn blit_scaled_image<R: Rect>(
-        &mut self,
-        dst: &R,
-        src: &Image,
-        src_area: Option<&RectI>,
-    ) -> Result<()> {
+    pub fn blit_scaled_image<'r, R, RI>(&mut self, dst: &R, src: &Image, src_area: RI) -> Result<()>
+    where
+        R: Rect,
+        RI: Into<Option<&'r RectI>>,
+    {
         unsafe {
             errcode_to_result(R::BLIT_SCALED_IMAGE(
                 self.core_mut(),
                 dst as *const _ as *const _,
                 src.core(),
-                src_area.map_or(ptr::null(), |r| r as *const _ as *const _),
+                src_area
+                    .into()
+                    .map_or(ptr::null(), |r| r as *const _ as *const _),
             ))
         }
     }

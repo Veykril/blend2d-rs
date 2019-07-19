@@ -6,6 +6,8 @@
 
 - Png, Jpeg and Font errors have been grouped into their own error enums
 - ImageScaleFilter has been reworked into an ADT
+- Make functions that take Options as arguments generic over `Into<Option<T>>`
+ to allow passing a value without wrapping it.
 
 ## [0.3.0] - 2019-07-16
 

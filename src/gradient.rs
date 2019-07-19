@@ -154,12 +154,11 @@ impl<T: GradientType> Gradient<T> {
     /// Creates a new gradient with optional initial stops and an optional
     /// transformation [`Matrix2D`].
     #[inline]
-    pub fn new<R: AsRef<[GradientStop]>>(
-        values: &T::ValuesType,
-        extend_mode: ExtendMode,
-        stops: R,
-        m: Option<&Matrix2D>,
-    ) -> Self {
+    pub fn new<'m, R, M>(values: &T::ValuesType, extend_mode: ExtendMode, stops: R, m: M) -> Self
+    where
+        R: AsRef<[GradientStop]>,
+        M: Into<Option<&'m Matrix2D>>,
+    {
         let mut this = Gradient::from_core(*Self::none());
         unsafe {
             ffi::blGradientInitAs(
@@ -169,7 +168,8 @@ impl<T: GradientType> Gradient<T> {
                 extend_mode as u32,
                 stops.as_ref().as_ptr() as *const _ as *const _,
                 stops.as_ref().len(),
-                m.map_or(ptr::null_mut(), |m| m as *const _ as *const _),
+                m.into()
+                    .map_or(ptr::null_mut(), |m| m as *const _ as *const _),
             )
         };
         this
@@ -177,12 +177,16 @@ impl<T: GradientType> Gradient<T> {
 
     /// Creates a new gradient from an iterator of [`GradientStop`]s and an
     /// optional transformation [`Matrix2D`].
-    pub fn new_from_iter<I: IntoIterator<Item = GradientStop>>(
+    pub fn new_from_iter<'m, I, M>(
         values: &T::ValuesType,
         extend_mode: ExtendMode,
         stops: I,
-        m: Option<&Matrix2D>,
-    ) -> Self {
+        m: M,
+    ) -> Self
+    where
+        I: IntoIterator<Item = GradientStop>,
+        M: Into<Option<&'m Matrix2D>>,
+    {
         let mut this = Self::new(values, extend_mode, &[], m);
         let stops = stops.into_iter();
         let len = stops.size_hint().1.unwrap_or(stops.size_hint().0);
@@ -423,12 +427,15 @@ impl<T: GradientType> Gradient<T> {
 
 impl Gradient<Linear> {
     #[inline]
-    pub fn new_linear(
+    pub fn new_linear<'m, M>(
         values: &LinearGradientValues,
         extend_mode: ExtendMode,
         stops: &[GradientStop],
-        m: Option<&Matrix2D>,
-    ) -> Self {
+        m: M,
+    ) -> Self
+    where
+        M: Into<Option<&'m Matrix2D>>,
+    {
         Self::new(values, extend_mode, stops, m)
     }
 
@@ -459,12 +466,15 @@ impl Gradient<Linear> {
 
 impl Gradient<Radial> {
     #[inline]
-    pub fn new_radial(
+    pub fn new_radial<'m, M>(
         values: &RadialGradientValues,
         extend_mode: ExtendMode,
         stops: &[GradientStop],
-        m: Option<&Matrix2D>,
-    ) -> Self {
+        m: M,
+    ) -> Self
+    where
+        M: Into<Option<&'m Matrix2D>>,
+    {
         Self::new(values, extend_mode, stops, m)
     }
 
@@ -507,12 +517,15 @@ impl Gradient<Radial> {
 
 impl Gradient<Conical> {
     #[inline]
-    pub fn new_conical(
+    pub fn new_conical<'m, M>(
         values: &ConicalGradientValues,
         extend_mode: ExtendMode,
         stops: &[GradientStop],
-        m: Option<&Matrix2D>,
-    ) -> Self {
+        m: M,
+    ) -> Self
+    where
+        M: Into<Option<&'m Matrix2D>>,
+    {
         Self::new(values, extend_mode, stops, m)
     }
 

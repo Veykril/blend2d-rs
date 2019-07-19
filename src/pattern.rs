@@ -28,20 +28,22 @@ impl Pattern {
     /// Creates a new pattern that borrows the given [`Image`] immutably for its
     /// lifetime.
     #[inline]
-    pub fn new(
-        image: &Image,
-        area: Option<&RectI>,
-        extend_mode: ExtendMode,
-        matrix: Option<&Matrix2D>,
-    ) -> Pattern {
+    pub fn new<'r, 'm, R, M>(image: &Image, area: R, extend_mode: ExtendMode, matrix: M) -> Pattern
+    where
+        R: Into<Option<&'r RectI>>,
+        M: Into<Option<&'m Matrix2D>>,
+    {
         let mut this = Pattern::from_core(*Self::none());
         unsafe {
             ffi::blPatternInitAs(
                 this.core_mut(),
                 image.core(),
-                area.map_or(ptr::null(), |a| a as *const _ as *const _),
+                area.into()
+                    .map_or(ptr::null(), |a| a as *const _ as *const _),
                 extend_mode.into(),
-                matrix.map_or(ptr::null(), |a| a as *const _ as *const _),
+                matrix
+                    .into()
+                    .map_or(ptr::null(), |a| a as *const _ as *const _),
             );
         }
         this

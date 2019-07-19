@@ -658,18 +658,19 @@ impl Path {
 impl Path {
     /// Adds a [`Geometry`] to the path.
     #[inline]
-    pub fn add_geometry<T: Geometry + ?Sized>(
-        &mut self,
-        g: &T,
-        matrix: Option<&Matrix2D>,
-        dir: GeometryDirection,
-    ) {
+    pub fn add_geometry<'m, T, M>(&mut self, g: &T, matrix: M, dir: GeometryDirection)
+    where
+        T: Geometry + ?Sized,
+        M: Into<Option<&'m Matrix2D>>,
+    {
         unsafe {
             expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 T::GEO_TYPE,
                 g as *const _ as *const _,
-                matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
+                matrix
+                    .into()
+                    .map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
         };
@@ -677,17 +678,20 @@ impl Path {
 
     /// Adds a polygon.
     #[inline]
-    pub fn add_polygon<R, P>(&mut self, p: R, matrix: Option<&Matrix2D>, dir: GeometryDirection)
+    pub fn add_polygon<'m, R, P, M>(&mut self, p: R, matrix: M, dir: GeometryDirection)
     where
         R: AsRef<[P]>,
         P: Point + Geometry,
+        M: Into<Option<&'m Matrix2D>>,
     {
         unsafe {
             expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 P::GEO_TYPE,
                 p.as_ref().as_ptr() as *const _,
-                matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
+                matrix
+                    .into()
+                    .map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
         };
@@ -695,17 +699,20 @@ impl Path {
 
     /// Adds a polyline.
     #[inline]
-    pub fn add_polyline<R, P>(&mut self, p: R, matrix: Option<&Matrix2D>, dir: GeometryDirection)
+    pub fn add_polyline<'m, R, P, M>(&mut self, p: R, matrix: M, dir: GeometryDirection)
     where
         R: AsRef<[P]>,
         P: Point,
+        M: Into<Option<&'m Matrix2D>>,
     {
         unsafe {
             expect_mem_err(ffi::blPathAddGeometry(
                 self.core_mut(),
                 P::POLYLINE_TYPE,
                 p.as_ref().as_ptr() as *const _,
-                matrix.map_or(ptr::null(), |m| m as *const _ as *const _),
+                matrix
+                    .into()
+                    .map_or(ptr::null(), |m| m as *const _ as *const _),
                 dir.into(),
             ))
         };

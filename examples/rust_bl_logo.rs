@@ -63,7 +63,7 @@ fn main() {
             &logo,
             None,
             Default::default(),
-            Some(&Matrix2D::translation(20.0, 20.0)),
+            &Matrix2D::translation(20.0, 20.0),
         );
         ctx.set_comp_op(CompOp::Multiply);
         ctx.set_fill_style_pattern(&pattern);
