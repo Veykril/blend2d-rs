@@ -1,11 +1,10 @@
-use core::{borrow::Borrow, fmt, slice};
+use std::borrow::Borrow;
+use std::{fmt, slice};
 
-use crate::{
-    error::{errcode_to_result, expect_mem_err, OutOfMemory},
-    geometry::{BoxI, HitTest, PointI, RectI},
-    variant::WrappedBlCore,
-    BooleanOp,
-};
+use crate::error::{errcode_to_result, expect_mem_err, OutOfMemory};
+use crate::geometry::{BoxI, HitTest, PointI, RectI};
+use crate::variant::WrappedBlCore;
+use crate::BooleanOp;
 
 use ffi::BLRegionType::*;
 bl_enum! {

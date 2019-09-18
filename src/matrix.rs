@@ -1,5 +1,6 @@
 //! 2DMatrix and transforms.
-use crate::{error::expect_mem_err, geometry::Point};
+use crate::error::expect_mem_err;
+use crate::geometry::Point;
 
 pub(in crate) use self::private::Matrix2DOp;
 mod private {

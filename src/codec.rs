@@ -1,15 +1,13 @@
 //! Functionality for decoding and encoding images.
-use core::{fmt, mem, ptr, str};
 use std::ffi::CStr;
+use std::{fmt, mem, ptr, str};
 
 use ffi::BLImageCodecFeatures::*;
 
-use crate::{
-    array::Array,
-    error::{errcode_to_result, expect_mem_err, Result},
-    image::{Image, ImageInfo},
-    variant::WrappedBlCore,
-};
+use crate::array::Array;
+use crate::error::{errcode_to_result, expect_mem_err, Result};
+use crate::image::{Image, ImageInfo};
+use crate::variant::WrappedBlCore;
 
 bl_enum! {
     /// Image codec feature bits.
@@ -34,7 +32,8 @@ bl_enum! {
     Default => Read
 }
 
-/// Provides a unified interface for inspecting image data and creating image decoders & encoders.
+/// Provides a unified interface for inspecting image data and creating image
+/// decoders & encoders.
 #[repr(transparent)]
 pub struct ImageCodec {
     core: ffi::BLImageCodecCore,

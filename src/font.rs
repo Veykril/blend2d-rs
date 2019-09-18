@@ -1,14 +1,14 @@
-use core::{fmt, slice, str};
 use std::{ffi::CString, path::Path};
+use std::{fmt, slice, str};
 
-use crate::{
-    array::Array,
-    error::{errcode_to_result, Result},
-    font_defs::*,
-    glyph_buffer::GlyphBuffer,
-    variant::{BlVariantImpl, WrappedBlCore},
-    DataAccessFlags, Tag,
-};
+use crate::array::Array;
+use crate::error::{errcode_to_result, Result};
+use crate::font_defs::*;
+use crate::glyph_buffer::GlyphBuffer;
+use crate::variant::{BlVariantImpl, WrappedBlCore};
+use crate::DataAccessFlags;
+use crate::Tag;
+
 /// Font Data
 #[repr(transparent)]
 pub struct FontData {
@@ -150,7 +150,7 @@ impl FontLoader {
     /// [`FontFace::from_loader`](struct.FontFace.html#method.from_loader).
     #[inline]
     pub fn face_type(&self) -> FontFaceType {
-        (self.impl_().faceType as u32).into()
+        u32::from(self.impl_().faceType).into()
     }
 
     /// Returns the number of faces this loader provides.
@@ -301,19 +301,19 @@ impl FontFace {
     /// Returns the [`FontWeight`].
     #[inline]
     pub fn weight(&self) -> FontWeight {
-        (self.impl_().weight as u32).into()
+        u32::from(self.impl_().weight).into()
     }
 
     /// Returns the [`FontStretch`].
     #[inline]
     pub fn stretch(&self) -> FontStretch {
-        (self.impl_().stretch as u32).into()
+        u32::from(self.impl_().stretch).into()
     }
 
     /// Returns the [`FontStyle`].
     #[inline]
     pub fn style(&self) -> FontStyle {
-        (self.impl_().style as u32).into()
+        u32::from(self.impl_().style).into()
     }
 
     /// Returns the [`FontData`] associated with this font-face.
@@ -476,19 +476,19 @@ impl Font {
     /// Returns the weight of the font.
     #[inline]
     pub fn weight(&self) -> FontWeight {
-        (self.impl_().weight as u32).into()
+        u32::from(self.impl_().weight).into()
     }
 
     /// Returns the stretch of the font.
     #[inline]
     pub fn stretch(&self) -> FontStretch {
-        (self.impl_().stretch as u32).into()
+        u32::from(self.impl_().stretch).into()
     }
 
     /// Returns the style of the font.
     #[inline]
     pub fn style(&self) -> FontStyle {
-        (self.impl_().style as u32).into()
+        u32::from(self.impl_().style).into()
     }
 
     /// Returns a 2x2 matrix of the font.

@@ -1,18 +1,17 @@
 //! Image loading and handling.
 use bitflags::bitflags;
 
-use core::{fmt, mem, ops, ptr, slice};
-use std::{ffi::CString, path::Path};
+use std::ffi::CString;
+use std::path::Path;
+use std::{fmt, mem, ops, ptr, slice};
 
 use ffi::{self, BLImageCore};
 
-use crate::{
-    array::Array,
-    codec::ImageCodec,
-    error::{errcode_to_result, expect_mem_err, Result},
-    geometry::{SizeD, SizeI},
-    variant::WrappedBlCore,
-};
+use crate::array::Array;
+use crate::codec::ImageCodec;
+use crate::error::{errcode_to_result, expect_mem_err, Result};
+use crate::geometry::{SizeD, SizeI};
+use crate::variant::WrappedBlCore;
 
 const IMAGE_SCALE_OPTIONS_ZEROED: ffi::BLImageScaleOptions = ffi::BLImageScaleOptions {
     userFunc: None,
@@ -168,8 +167,9 @@ unsafe impl WrappedBlCore for Image {
 }
 
 impl Image {
-    /// Creates a new empty image with the specified dimensions and image format.
-    /// Note: The pixel data of the newly created image is uninitialized.
+    /// Creates a new empty image with the specified dimensions and image
+    /// format. Note: The pixel data of the newly created image is
+    /// uninitialized.
     #[inline]
     pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Image> {
         unsafe {
@@ -209,8 +209,8 @@ impl Image {
         }
     }*/
 
-    /// Attempts to create a new image with the specified dimensions and image format by decoding
-    /// the data with the given codec.
+    /// Attempts to create a new image with the specified dimensions and image
+    /// format by decoding the data with the given codec.
     pub fn from_data<R: AsRef<[u8]>>(
         width: i32,
         height: i32,
@@ -246,7 +246,7 @@ impl Image {
     /// This image's format.
     #[inline]
     pub fn format(&self) -> ImageFormat {
-        (self.impl_().format as u32).into()
+        u32::from(self.impl_().format).into()
     }
 
     /// This image's dimensions.
@@ -268,7 +268,8 @@ impl Image {
         self.size().h
     }
 
-    /// Returns an [`ImageData`] instance containing most of this image's information.
+    /// Returns an [`ImageData`] instance containing most of this image's
+    /// information.
     pub fn data(&self) -> ImageData<'_> {
         unsafe {
             let mut data = std::mem::zeroed();

@@ -1,17 +1,17 @@
 //! A contiguous growable array for use with the blend2d api.
-use core::{borrow::Borrow, fmt, iter::FromIterator, marker::PhantomData, ops, ptr, slice};
-use std::io;
+use std::borrow::Borrow;
+use std::iter::FromIterator;
+use std::marker::PhantomData;
+use std::{fmt, io, ops, ptr, slice};
 
-use crate::{
-    codec::ImageCodec,
-    error::{errcode_to_result, expect_mem_err, OutOfMemory, Result},
-    util::range_to_tuple,
-    variant::WrappedBlCore,
-};
+use crate::codec::ImageCodec;
+use crate::error::{errcode_to_result, expect_mem_err, OutOfMemory, Result};
+use crate::util::range_to_tuple;
+use crate::variant::WrappedBlCore;
 
 /// A contiguous growable array for use with the blend2d api.
-/// This is an array managed by blend2d, unless required one should use [`Vec`] instead.
-/// Its api tries to mimic [`Vec`] as close as possible.
+/// This is an array managed by blend2d, unless required one should use [`Vec`]
+/// instead. Its api tries to mimic [`Vec`] as close as possible.
 ///
 /// [`String`]: std/vec/struct.Vec.html
 #[repr(transparent)]

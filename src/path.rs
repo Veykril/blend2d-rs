@@ -1,21 +1,16 @@
 #![allow(clippy::too_many_arguments)]
 use bitflags::bitflags;
 
-use core::{
-    borrow::Borrow,
-    fmt, mem,
-    ops::{self, Range},
-    ptr, slice,
-};
+use std::borrow::Borrow;
+use std::ops::{self, Range};
+use std::{fmt, mem, ptr, slice};
 
-use crate::{
-    array::Array,
-    error::{errcode_to_result, expect_mem_err, OutOfMemory},
-    geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD},
-    matrix::Matrix2D,
-    util::bl_range,
-    variant::WrappedBlCore,
-};
+use crate::array::Array;
+use crate::error::{errcode_to_result, expect_mem_err, OutOfMemory};
+use crate::geometry::{BoxD, FillRule, Geometry, GeometryDirection, HitTest, Point, PointD, RectD};
+use crate::matrix::Matrix2D;
+use crate::util::bl_range;
+use crate::variant::WrappedBlCore;
 
 use ffi::BLPathCmd::*;
 bl_enum! {
@@ -137,7 +132,7 @@ impl ApproximationOptions {
 
     #[inline]
     pub fn flatten_mode(&self) -> FlattenMode {
-        (self.flatten_mode as u32).into()
+        u32::from(self.flatten_mode).into()
     }
 
     #[inline]
@@ -147,7 +142,7 @@ impl ApproximationOptions {
 
     #[inline]
     pub fn offset_mode(&self) -> OffsetMode {
-        (self.offset_mode as u32).into()
+        u32::from(self.offset_mode).into()
     }
 }
 
@@ -185,7 +180,7 @@ impl StrokeOptions {
 
     #[inline]
     pub fn join(&self) -> StrokeJoin {
-        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.join as u32).into() }
+        unsafe { u32::from(self.core.__bindgen_anon_1.__bindgen_anon_1.join).into() }
     }
 
     #[inline]
@@ -195,12 +190,12 @@ impl StrokeOptions {
 
     #[inline]
     pub fn start_cap(&self) -> StrokeCap {
-        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.startCap as u32).into() }
+        unsafe { u32::from(self.core.__bindgen_anon_1.__bindgen_anon_1.startCap).into() }
     }
 
     #[inline]
     pub fn end_cap(&self) -> StrokeCap {
-        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.endCap as u32).into() }
+        unsafe { u32::from(self.core.__bindgen_anon_1.__bindgen_anon_1.endCap).into() }
     }
 
     #[inline]
@@ -210,7 +205,7 @@ impl StrokeOptions {
 
     #[inline]
     pub fn transform_order(&self) -> StrokeTransformOrder {
-        unsafe { (self.core.__bindgen_anon_1.__bindgen_anon_1.transformOrder as u32).into() }
+        unsafe { u32::from(self.core.__bindgen_anon_1.__bindgen_anon_1.transformOrder).into() }
     }
 
     #[inline]
@@ -519,7 +514,8 @@ impl Path {
         };
     }
 
-    /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
+    /// Adds a smooth quadratic curve to the given point, calculating the first
+    /// from previous points.
     ///
     /// Matches SVG 'T' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
@@ -528,7 +524,8 @@ impl Path {
         unsafe { expect_mem_err(ffi::blPathSmoothQuadTo(self.core_mut(), x2, y2)) };
     }
 
-    /// Adds a smooth quadratic curve to the given point, calculating the first from previous points.
+    /// Adds a smooth quadratic curve to the given point, calculating the first
+    /// from previous points.
     ///
     /// Matches SVG 'T' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataQuadraticBezierCommands
@@ -537,7 +534,8 @@ impl Path {
         unsafe { expect_mem_err(ffi::blPathSmoothQuadTo(self.core_mut(), p2.x, p2.y)) };
     }
 
-    /// Adds a smooth cubic curve to the given points, calculating the first from previous points.
+    /// Adds a smooth cubic curve to the given points, calculating the first
+    /// from previous points.
     ///
     /// Matches SVG 'S' path command:
     ///   - https://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands

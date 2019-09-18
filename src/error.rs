@@ -20,11 +20,11 @@ pub(in crate) fn expect_mem_err(code: u32) {
         #[cold]
         BLResultCode::BL_ERROR_OUT_OF_MEMORY => panic!("memory allocation failed"),
         _ => (),
-    };
+    }
 }
 
-/// An error returned by a function if it was unable to succeed due to not being able to allocate
-/// enough memory.
+/// An error returned by a function if it was unable to succeed due to not being
+/// able to allocate enough memory.
 #[derive(Debug)]
 pub struct OutOfMemory;
 

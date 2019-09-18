@@ -1,9 +1,13 @@
 ///! The contents of this module imitate the internal BLVariant structure
 use bitflags::bitflags;
 
-use crate::{error::expect_mem_err, image::Image, path::Path, pattern::Pattern, region::Region};
-
 use crate::array::{Array, ArrayType};
+use crate::error::expect_mem_err;
+use crate::image::Image;
+use crate::path::Path;
+use crate::pattern::Pattern;
+use crate::region::Region;
+
 use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
@@ -91,7 +95,7 @@ pub unsafe trait BlVariantImpl: Sized {
 
     #[inline]
     fn impl_type(&self) -> ImplType {
-        (self.as_variant_impl().implType as u32).into()
+        u32::from(self.as_variant_impl().implType).into()
     }
 
     #[inline]

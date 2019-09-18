@@ -59,7 +59,8 @@ bitflags! {
     }
 }
 
-/// Tell the runtime to clean up resources according to the specified [`CleanupFlags`].
+/// Tell the runtime to clean up resources according to the specified
+/// [`CleanupFlags`].
 pub fn cleanup(flags: CleanupFlags) -> Result<()> {
     unsafe { errcode_to_result(ffi::blRuntimeCleanup(flags.bits())) }
 }
@@ -84,15 +85,16 @@ pub struct BuildInfo {
     pub baseline_cpu_features: CpuFeatures,
     /// Supported CPU features, see [`CpuFeatures`].
     ///
-    /// These features do not represent the features that the host CPU must support,
-    /// instead, they represent all features that Blend2D can take advantage of in
-    /// C++ code that uses instruction intrinsics. For example if AVX2 is part of
-    /// `supportedCpuFeatures` it means that Blend2D can take advantage of it if
-    /// there is a separate code-path.
+    /// These features do not represent the features that the host CPU must
+    /// support, instead, they represent all features that Blend2D can take
+    /// advantage of in C++ code that uses instruction intrinsics. For
+    /// example if AVX2 is part of `supportedCpuFeatures` it means that
+    /// Blend2D can take advantage of it if there is a separate code-path.
     pub supported_cpu_features: CpuFeatures,
     /// Maximum size of an image (both width and height).
     pub max_image_size: u32,
-    /// Maximum number of threads for asynchronous operations, including rendering.
+    /// Maximum number of threads for asynchronous operations, including
+    /// rendering.
     pub max_thread_count: u32,
     /// Reserved, must be zero.
     reserved: [u32; 2],

@@ -1,6 +1,5 @@
 edition = "2018"
 use_field_init_shorthand = true
 reorder_imports = true
-#match_block_trailing_comma = true
-#merge_imports = true
-#wrap_comments = true
+match_block_trailing_comma = true
+wrap_comments = true

@@ -1,4 +1,4 @@
-use core::ops;
+use std::ops;
 
 #[inline]
 pub(in crate) fn bl_range<R: ops::RangeBounds<usize>>(range: R) -> ffi::BLRange {
@@ -7,7 +7,7 @@ pub(in crate) fn bl_range<R: ops::RangeBounds<usize>>(range: R) -> ffi::BLRange 
             ops::Bound::Included(n) => *n,
             ops::Bound::Excluded(_) => {
                 unreachable!("start_bound of a range cannot be an excluded bound")
-            }
+            },
             ops::Bound::Unbounded => 0,
         },
         end: match range.end_bound() {
@@ -29,7 +29,7 @@ where
             ops::Bound::Included(n) => *n,
             ops::Bound::Excluded(_) => {
                 unreachable!("start_bound of a range cannot be an excluded bound")
-            }
+            },
             ops::Bound::Unbounded => 0,
         },
         match range.end_bound() {

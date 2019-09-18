@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use core::fmt;
+use std::fmt;
 
 use crate::{
     geometry::{BoxD, PointD, PointI},

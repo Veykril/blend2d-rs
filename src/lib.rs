@@ -1,5 +1,5 @@
 #![deny(rust_2018_idioms, missing_debug_implementations)]
-#![allow(clippy::cast_lossless)]
+#![warn(clippy::correctness, clippy::complexity)]
 
 #[macro_use]
 mod macros;

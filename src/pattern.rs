@@ -1,13 +1,11 @@
-use core::{fmt, ptr};
+use std::{fmt, ptr};
 
-use crate::{
-    error::{errcode_to_result, expect_mem_err, Result},
-    geometry::RectI,
-    image::Image,
-    matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
-    variant::WrappedBlCore,
-    ExtendMode,
-};
+use crate::error::{errcode_to_result, expect_mem_err, Result};
+use crate::geometry::RectI;
+use crate::image::Image;
+use crate::matrix::{Matrix2D, Matrix2DOp, MatrixTransform};
+use crate::variant::WrappedBlCore;
+use crate::ExtendMode;
 
 #[repr(transparent)]
 pub struct Pattern {
@@ -67,7 +65,8 @@ impl Pattern {
         }
     }
 
-    /// Replaces this pattern's [`Image`] with an [`Image`] clipped by the given [`RectI`].
+    /// Replaces this pattern's [`Image`] with an [`Image`] clipped by the given
+    /// [`RectI`].
     #[inline]
     pub fn set_image_clipped(&mut self, image: &Image, area: &RectI) -> Result<()> {
         unsafe {
@@ -105,7 +104,7 @@ impl Pattern {
     /// The pattern's [`ExtendMode`].
     #[inline]
     pub fn extend_mode(&self) -> ExtendMode {
-        (self.impl_().extendMode as u32).into()
+        u32::from(self.impl_().extendMode).into()
     }
 
     /// Sets the pattern's [`ExtendMode`].

@@ -1,27 +1,25 @@
 use bitflags::bitflags;
 
-use core::{fmt, ptr};
+use std::{fmt, ptr};
 
-use crate::{
-    array::Array,
-    error::{errcode_to_result, expect_mem_err, Result},
-    font::Font,
-    font_defs::GlyphRun,
-    geometry::{
-        Arc, BoxD, Chord, Circle, Ellipse, FillRule, GeoViewArray, Geometry, Line, Pie, Point,
-        Rect, RectD, RectI, RoundRect, SizeD, Triangle,
-    },
-    gradient::{Gradient, GradientType},
-    image::Image,
-    matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
-    path::{
-        ApproximationOptions, FlattenMode, Path, StrokeCap, StrokeCapPosition, StrokeJoin,
-        StrokeOptions, StrokeTransformOrder,
-    },
-    pattern::Pattern,
-    variant::{BlVariantCore, BlVariantImpl, WrappedBlCore},
-    StyleType,
+use crate::array::Array;
+use crate::error::{errcode_to_result, expect_mem_err, Result};
+use crate::font::Font;
+use crate::font_defs::GlyphRun;
+use crate::geometry::{
+    Arc, BoxD, Chord, Circle, Ellipse, FillRule, GeoViewArray, Geometry, Line, Pie, Point, Rect,
+    RectD, RectI, RoundRect, SizeD, Triangle,
 };
+use crate::gradient::{Gradient, GradientType};
+use crate::image::Image;
+use crate::matrix::{Matrix2D, Matrix2DOp, MatrixTransform};
+use crate::path::{
+    ApproximationOptions, FlattenMode, Path, StrokeCap, StrokeCapPosition, StrokeJoin,
+    StrokeOptions, StrokeTransformOrder,
+};
+use crate::pattern::Pattern;
+use crate::variant::{BlVariantCore, BlVariantImpl, WrappedBlCore};
+use crate::StyleType;
 
 use ffi::BLContextType::*;
 bl_enum! {
@@ -374,7 +372,7 @@ impl Context {
     /// The currently active composition operator([`CompOp`]).
     #[inline]
     pub fn comp_op(&self) -> CompOp {
-        (self.state().compOp as u32).into()
+        u32::from(self.state().compOp).into()
     }
 
     /// Sets the current composition operator([`CompOp`]) for this context.
@@ -406,7 +404,7 @@ impl Context {
 impl Context {
     #[inline]
     pub fn fill_rule(&self) -> FillRule {
-        (self.state().fillRule as u32).into()
+        u32::from(self.state().fillRule).into()
     }
 
     #[inline]
@@ -416,7 +414,7 @@ impl Context {
 
     #[inline]
     pub fn fill_style_type(&self) -> StyleType {
-        (self.state().styleType[ContextOpType::Fill as usize] as u32).into()
+        u32::from(self.state().styleType[ContextOpType::Fill as usize]).into()
     }
 
     #[inline]
@@ -490,7 +488,7 @@ impl Context {
 
     #[inline]
     pub fn stroke_style_type(&self) -> StyleType {
-        (self.state().styleType[ContextOpType::Stroke as usize] as u32).into()
+        u32::from(self.state().styleType[ContextOpType::Stroke as usize]).into()
     }
 
     #[inline]

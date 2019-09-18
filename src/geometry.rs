@@ -1,7 +1,7 @@
 //! Various geometry structures and objects.
 //!
-//! A module for various geometry structures and objects that can be used with either [`Path`] for
-//! path building or [`Context`] for rendering.
+//! A module for various geometry structures and objects that can be used with
+//! either [`Path`] for path building or [`Context`] for rendering.
 //!
 //! [`Path`]: ../path/struct.Path.html
 //! [`Context`]: ../context/struct.Context.html
@@ -75,7 +75,8 @@ where
     const GEO_TYPE: u32 = <[T]>::GEO_TYPE;
 }
 
-/// A template trait to allow being generic over geometry types regarding slices.
+/// A template trait to allow being generic over geometry types regarding
+/// slices.
 pub trait GeoViewArray: private::Sealed {}
 impl GeoViewArray for BoxD {}
 impl GeoViewArray for BoxI {}
@@ -129,7 +130,7 @@ impl Point for PointI {
     const POLYLINE_TYPE: u32 = GeometryType::PolyLineI as u32;
     #[doc(hidden)]
     fn into_f64(self) -> [f64; 2] {
-        [self.x as f64, self.y as f64]
+        [f64::from(self.x), f64::from(self.y)]
     }
     #[doc(hidden)]
     const BLIT_IMAGE: BlitImageFn<Self::FfiType> = ffi::blContextBlitImageI;

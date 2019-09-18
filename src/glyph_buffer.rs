@@ -1,10 +1,8 @@
-use core::{fmt, ptr};
+use std::{fmt, ptr};
 
-use crate::{
-    error::expect_mem_err,
-    font_defs::{GlyphRun, GlyphRunFlags},
-    variant::WrappedBlCore,
-};
+use crate::error::expect_mem_err;
+use crate::font_defs::{GlyphRun, GlyphRunFlags};
+use crate::variant::WrappedBlCore;
 
 pub type GlyphId = u16;
 
@@ -68,13 +66,6 @@ impl GlyphBuffer {
             GlyphRun {
                 raw: &*ffi::blGlyphBufferGetGlyphRun(self.core()),
             }
-        }
-    }
-
-    #[inline]
-    pub fn glyph_item_data(&self) -> GlyphRun<'_> {
-        GlyphRun {
-            raw: unsafe { &(*self.core.impl_).__bindgen_anon_1.glyphRun },
         }
     }
 

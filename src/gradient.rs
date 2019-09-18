@@ -1,23 +1,17 @@
 //! Linear, Radial and Conical Gradients.
 
-use core::{
-    borrow::Borrow,
-    fmt,
-    marker::PhantomData,
-    mem,
-    ops::{self, RangeBounds},
-    ptr, slice,
-};
+use std::borrow::Borrow;
+use std::marker::PhantomData;
+use std::ops::{self, RangeBounds};
+use std::{fmt, mem, ptr, slice};
 
 use ffi::BLGradientValue::*;
 
-use crate::{
-    error::{expect_mem_err, OutOfMemory},
-    matrix::{Matrix2D, Matrix2DOp, MatrixTransform},
-    util::range_to_tuple,
-    variant::WrappedBlCore,
-    ExtendMode,
-};
+use crate::error::{expect_mem_err, OutOfMemory};
+use crate::matrix::{Matrix2D, Matrix2DOp, MatrixTransform};
+use crate::util::range_to_tuple;
+use crate::variant::WrappedBlCore;
+use crate::ExtendMode;
 
 mod private {
     pub trait Sealed {}
@@ -198,7 +192,7 @@ impl<T: GradientType> Gradient<T> {
     /// The [`ExtendMode`] of this gradient.
     #[inline]
     pub fn extend_mode(&self) -> ExtendMode {
-        (self.impl_().extendMode as u32).into()
+        u32::from(self.impl_().extendMode).into()
     }
 
     /// Sets the gradient's [`ExtendMode`].
@@ -626,7 +620,7 @@ impl<T: GradientType> Extend<GradientStop> for Gradient<T> {
         I: IntoIterator<Item = GradientStop>,
     {
         for stop in iter {
-            let _ = self.add_stop(stop);
+            self.add_stop(stop)
         }
     }
 }
@@ -692,7 +686,7 @@ mod test_gradient {
         };
         let stops = [GradientStop {
             offset: 0.5,
-            rgba: 0xFF123456,
+            rgba: 0xFF_12_34_56,
         }];
         let mat = Matrix2D::scaling(1.0, 2.0);
 
@@ -713,7 +707,7 @@ mod test_gradient {
         };
         let stops = [GradientStop {
             offset: 0.5,
-            rgba: 0xFF123456,
+            rgba: 0xFF_12_34_56,
         }];
         let mat = Matrix2D::scaling(1.0, 2.0);
 
