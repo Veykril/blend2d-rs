@@ -64,22 +64,19 @@ impl Region {
     /// The region's boxes.
     #[inline]
     pub fn data(&self) -> &[BoxI] {
-        unsafe {
-            let t = self.impl_().__bindgen_anon_1.__bindgen_anon_1;
-            slice::from_raw_parts(t.data as *const _, t.size)
-        }
+        unsafe { slice::from_raw_parts(ffi::blRegionGetData(self.core()) as *const _, self.len()) }
     }
 
     /// The number of [`BoxI`] this region contains.
     #[inline]
     pub fn len(&self) -> usize {
-        self.data().len()
+        unsafe { ffi::blRegionGetSize(self.core()) }
     }
 
     /// Returns the currently allocated capacity of the region.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.impl_().capacity
+        unsafe { ffi::blRegionGetCapacity(self.core()) }
     }
 
     /// A bounding box representing this region.

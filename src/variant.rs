@@ -126,6 +126,9 @@ unsafe impl BlVariantImpl for ffi::BLFontFaceImpl {
 unsafe impl BlVariantImpl for ffi::BLFontLoaderImpl {
     type VTable = ffi::BLFontLoaderVirt;
 }
+unsafe impl BlVariantImpl for ffi::BLGlyphBufferImpl {
+    type VTable = ();
+}
 unsafe impl BlVariantImpl for ffi::BLImageImpl {
     type VTable = ();
 }
@@ -198,6 +201,9 @@ unsafe impl BlVariantCore for ffi::BLFontFaceCore {
 }
 unsafe impl BlVariantCore for ffi::BLFontLoaderCore {
     type Impl = ffi::BLFontLoaderImpl;
+}
+unsafe impl BlVariantCore for ffi::BLGlyphBufferCore {
+    type Impl = ffi::BLGlyphBufferImpl;
 }
 unsafe impl BlVariantCore for ffi::BLImageCore {
     type Impl = ffi::BLImageImpl;

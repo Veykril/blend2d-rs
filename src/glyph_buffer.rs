@@ -3,6 +3,7 @@ use core::{fmt, ptr};
 use crate::{
     error::expect_mem_err,
     font_defs::{GlyphRun, GlyphRunFlags},
+    variant::WrappedBlCore,
 };
 
 pub type GlyphId = u16;
@@ -19,8 +20,25 @@ pub type GlyphId = u16;
 /// buffer is either used as a scratch buffer during glyph substitution or hold
 /// glyph positions after the processing is complete and glyph positions were
 /// calculated.
+#[repr(transparent)]
 pub struct GlyphBuffer {
     pub(in crate) core: ffi::BLGlyphBufferCore,
+}
+
+unsafe impl WrappedBlCore for GlyphBuffer {
+    type Core = ffi::BLGlyphBufferCore;
+    const IMPL_TYPE_INDEX: usize = crate::variant::ImplType::Null as usize;
+
+    #[inline]
+    fn from_core(core: Self::Core) -> GlyphBuffer {
+        GlyphBuffer { core }
+    }
+
+    /// Retrieves the none version of Self::Core
+    #[inline]
+    fn none() -> &'static Self::Core {
+        unimplemented!()
+    }
 }
 
 impl GlyphBuffer {
@@ -46,8 +64,10 @@ impl GlyphBuffer {
 
     #[inline]
     pub fn glyph_run(&self) -> GlyphRun<'_> {
-        GlyphRun {
-            raw: unsafe { &(*self.core.impl_).__bindgen_anon_1.glyphRun },
+        unsafe {
+            GlyphRun {
+                raw: &*ffi::blGlyphBufferGetGlyphRun(self.core()),
+            }
         }
     }
 
@@ -60,13 +80,13 @@ impl GlyphBuffer {
 
     #[inline]
     pub fn size(&self) -> usize {
-        self.glyph_run().raw.size
+        unsafe { ffi::blGlyphBufferGetSize(self.core()) }
     }
 
     /// Returns the [`GlyphBuffer`]'s [`GlyphRunFlags`].
     #[inline]
     pub fn flags(&self) -> GlyphRunFlags {
-        GlyphRunFlags::from_bits_truncate(self.glyph_run().raw.flags)
+        unsafe { GlyphRunFlags::from_bits_truncate(ffi::blGlyphBufferGetFlags(self.core())) }
     }
 
     /// Returns true if this [`GlyphBuffer`] contains unicode data.
@@ -106,7 +126,7 @@ impl GlyphBuffer {
     /// buffers.
     #[inline]
     pub fn clear(&mut self) {
-        unsafe { ffi::blGlyphBufferClear(&mut self.core) };
+        unsafe { ffi::blGlyphBufferClear(self.core_mut()) };
     }
 
     /// Sets text content of this [`GlyphBuffer`].
@@ -114,7 +134,7 @@ impl GlyphBuffer {
     pub fn set_utf8_text(&mut self, text: &str) {
         unsafe {
             expect_mem_err(ffi::blGlyphBufferSetText(
-                &mut self.core,
+                self.core_mut(),
                 text.as_bytes().as_ptr() as *const _,
                 text.len(),
                 ffi::BLTextEncoding::BL_TEXT_ENCODING_UTF8 as u32,
