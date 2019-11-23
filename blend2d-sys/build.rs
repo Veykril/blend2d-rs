@@ -144,18 +144,18 @@ fn main() -> io::Result<()> {
             println!("cargo:rustc-link-lib=user32");
             println!("cargo:rustc-link-lib=uuid");
             println!("cargo:rustc-link-lib=shell32");
-        }
+        },
         "linux" => {
             println!("cargo:rustc-link-lib=c");
             println!("cargo:rustc-link-lib=m");
             println!("cargo:rustc-link-lib=pthread");
             println!("cargo:rustc-link-lib=rt");
-        }
+        },
         "darwin" => {
             println!("cargo:rustc-link-lib=c");
             println!("cargo:rustc-link-lib=m");
             println!("cargo:rustc-link-lib=pthread");
-        }
+        },
         _ => (),
     }
 
