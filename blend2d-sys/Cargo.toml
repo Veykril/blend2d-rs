@@ -23,5 +23,5 @@ avx = []
 avx2 = []
 
 [build-dependencies]
-bindgen = "0.49"
+bindgen = "0.52"
 cc = "1.0"

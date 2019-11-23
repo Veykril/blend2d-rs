@@ -13,4 +13,4 @@ exclude = ["assets/*", "examples/*"]
 
 [dependencies]
 ffi = { package = "blend2d-sys", version = "0.3.0", path = "blend2d-sys" }
-bitflags = "1.0.4"
+bitflags = "1"
