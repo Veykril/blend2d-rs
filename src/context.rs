@@ -300,7 +300,6 @@ impl Context {
     /// Runs a given closure while preserving the current context-state.
     /// This function basically saves the current context-state, executes the
     /// given closure and then restores it again.
-    #[inline]
     pub fn with_pushed_context<F>(&mut self, f: F) -> Result<()>
     where
         F: FnOnce(&mut Self) -> Result<()>,
@@ -680,7 +679,6 @@ impl Context {
         self.clear_rect(&RectD { x, y, w, h })
     }
 
-    #[inline]
     pub fn blit_image<'r, P, RI>(&mut self, dst: &P, src: &Image, src_area: RI) -> Result<()>
     where
         P: Point,
@@ -698,7 +696,6 @@ impl Context {
         }
     }
 
-    #[inline]
     pub fn blit_scaled_image<'r, R, RI>(&mut self, dst: &R, src: &Image, src_area: RI) -> Result<()>
     where
         R: Rect,
@@ -719,7 +716,6 @@ impl Context {
 
 /// Fill Operations
 impl Context {
-    #[inline]
     pub fn fill_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextFillGeometry(
@@ -844,7 +840,6 @@ impl Context {
 
 /// Stroke Operations
 impl Context {
-    #[inline]
     pub fn stroke_geometry<T: Geometry + ?Sized>(&mut self, geo: &T) -> Result<()> {
         unsafe {
             errcode_to_result(ffi::blContextStrokeGeometry(

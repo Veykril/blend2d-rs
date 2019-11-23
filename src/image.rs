@@ -170,7 +170,6 @@ impl Image {
     /// Creates a new empty image with the specified dimensions and image
     /// format. Note: The pixel data of the newly created image is
     /// uninitialized.
-    #[inline]
     pub fn new(width: i32, height: i32, format: ImageFormat) -> Result<Image> {
         unsafe {
             let mut this = Image::from_core(*Self::none());
@@ -288,7 +287,6 @@ impl Image {
         }
     }
 
-    #[inline]
     pub fn scale(&mut self, size: SizeI, filter: ImageScaleFilter) -> Result<()> {
         unsafe {
             let opts = filter.into_options();

@@ -41,7 +41,6 @@ unsafe impl WrappedBlCore for GlyphBuffer {
 
 impl GlyphBuffer {
     /// Creates a new empty [`GlyphBuffer`].
-    #[inline]
     pub fn new() -> Self {
         let mut this = GlyphBuffer {
             core: ffi::BLGlyphBufferCore {
@@ -53,7 +52,6 @@ impl GlyphBuffer {
     }
 
     /// Creates a new [`GlyphBuffer`] initialized with the given text.
-    #[inline]
     pub fn from_utf8_text(text: &str) -> Self {
         let mut this = Self::new();
         this.set_utf8_text(text);

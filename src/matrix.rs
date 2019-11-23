@@ -80,7 +80,6 @@ impl Matrix2D {
     }
 
     /// Creates a rotation matrix.
-    #[inline]
     pub fn rotation_point<P: Point>(angle: f64, p: &P) -> Matrix2D {
         let p = p.into_f64();
         let mut this = Matrix2D::identity();
@@ -97,7 +96,6 @@ impl Matrix2D {
     }
 
     /// Creates a skewing matrix.
-    #[inline]
     pub fn skewing_point<P: Point>(p: &P) -> Matrix2D {
         let p = p.into_f64();
         let mut this = Matrix2D::identity();

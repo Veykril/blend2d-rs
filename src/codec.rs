@@ -51,7 +51,6 @@ unsafe impl WrappedBlCore for ImageCodec {
 
 impl ImageCodec {
     /// Creates an [`ImageDecoder`] for this codec.
-    #[inline]
     pub fn create_decoder(&self) -> Option<ImageDecoder> {
         unsafe {
             let mut decoder = ImageDecoder::from_core(*ImageDecoder::none());
@@ -65,7 +64,6 @@ impl ImageCodec {
     }
 
     /// Creates an [`ImageEncoder`] for this codec.
-    #[inline]
     pub fn create_encoder(&self) -> Option<ImageEncoder> {
         unsafe {
             let mut encoder = ImageEncoder::from_core(*ImageEncoder::none());
@@ -313,7 +311,6 @@ impl ImageDecoder {
         self.impl_().bufferIndex
     }
 
-    #[inline]
     pub fn read_info<R: AsRef<[u8]>>(&mut self, buf: R) -> Result<ImageInfo> {
         unsafe {
             let mut dst = mem::zeroed();
@@ -327,7 +324,6 @@ impl ImageDecoder {
         }
     }
 
-    #[inline]
     pub fn read_frame<R: AsRef<[u8]>>(&mut self, buf: R) -> Result<Image> {
         unsafe {
             let mut dst = Image::from_core(*Image::none());

@@ -89,7 +89,6 @@ impl<T: ArrayType> Array<T> {
 
     /// Resizes the array so that its len is equal to `n`, filling any new items
     /// with `fill`.
-    #[inline]
     pub fn resize(&mut self, n: usize, fill: T)
     where
         T: Clone,
@@ -112,7 +111,6 @@ impl<T: ArrayType> Array<T> {
     }
 
     /// Removes the elements whose indices reside inside of the range
-    #[inline]
     pub fn remove_range<R: ops::RangeBounds<usize>>(&mut self, range: R) -> Result<()> {
         let (start, end) = range_to_tuple(range, || self.len());
         unsafe { errcode_to_result(ffi::blArrayRemoveRange(self.core_mut(), start, end)) }
@@ -153,46 +151,46 @@ where
     T: ArrayType + Clone,
 {
     /// Appends all items in the slice to the array.
-    #[inline]
     pub fn extend_from_slice<S: AsRef<[T]>>(&mut self, data: S) {
         unsafe {
+            let data = data.as_ref();
             expect_mem_err(ffi::blArrayAppendView(
                 self.core_mut(),
-                data.as_ref().as_ptr() as *const _,
-                data.as_ref().len(),
+                data.as_ptr() as *const _,
+                data.len(),
             ))
         };
     }
 
     /// Inserts all items in the slice into the array at the given index.
-    #[inline]
     pub fn insert_from_slice<S: AsRef<[T]>>(&mut self, index: usize, data: S) {
         unsafe {
+            let data = data.as_ref();
             expect_mem_err(ffi::blArrayInsertView(
                 self.core_mut(),
                 index,
-                data.as_ref().as_ptr() as *const _,
-                data.as_ref().len(),
+                data.as_ptr() as *const _,
+                data.len(),
             ))
         };
     }
 
     /// Replaces the elements specified by the range of indices with the given
     /// slice.
-    #[inline]
     pub fn replace_from_slice<R, S>(&mut self, range: R, data: S)
     where
         R: ops::RangeBounds<usize>,
         S: AsRef<[T]>,
     {
         let (start, end) = range_to_tuple(range, || self.len());
+        let data = data.as_ref();
         unsafe {
             expect_mem_err(ffi::blArrayReplaceView(
                 self.core_mut(),
                 start,
                 end,
-                data.as_ref().as_ptr() as *const _,
-                data.as_ref().len(),
+                data.as_ptr() as *const _,
+                data.len(),
             ))
         };
     }
@@ -247,6 +245,7 @@ impl io::Write for Array<u8> {
         Ok(buf.len())
     }
 
+    #[inline]
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
@@ -283,7 +282,6 @@ impl<T: ArrayType> ops::Deref for Array<T> {
 }
 
 impl<T: ArrayType> ops::DerefMut for Array<T> {
-    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             let mut data_ptr = ptr::null_mut();
@@ -309,6 +307,7 @@ where
 impl<'a, T: ArrayType> IntoIterator for &'a Array<T> {
     type Item = &'a T;
     type IntoIter = slice::Iter<'a, T>;
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -344,6 +343,7 @@ where
 }
 
 impl<T: ArrayType> Drop for Array<T> {
+    #[inline]
     fn drop(&mut self) {
         unsafe { ffi::blArrayReset(&mut self.core) };
     }
@@ -369,13 +369,11 @@ where
 
 impl Array<ImageCodec> {
     /// Searches for an image codec in the array by the given name.
-    #[inline]
     pub fn find_codec_by_name(&self, name: &str) -> Option<&ImageCodec> {
         self.iter().find(|c| c.name() == name)
     }
 
     /// Searches for an image codec in the array by the given data.
-    #[inline]
     pub fn find_codec_by_data<R: AsRef<[u8]>>(&self, data: R) -> Option<&ImageCodec> {
         self.into_iter()
             .max_by_key(|codec| codec.inspect_data(data.as_ref()))

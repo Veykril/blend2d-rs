@@ -159,7 +159,6 @@ pub struct StrokeOptions {
 }
 
 impl StrokeOptions {
-    #[inline]
     pub fn new() -> Self {
         unsafe {
             let mut core = mem::zeroed();
@@ -333,7 +332,6 @@ impl Path {
     }
 
     /// Returns this path's flags, or `None` if its geometry is invalid.
-    #[inline]
     pub fn info_flags(&self) -> Option<PathFlags> {
         unsafe {
             let mut flags = 0;
@@ -372,7 +370,6 @@ impl Path {
     }
 
     /// Returns the range describing a figure at the given index.
-    #[inline]
     pub fn figure_range(&self, index: usize) -> Option<Range<usize>> {
         unsafe {
             let mut range = ffi::BLRange { start: 0, end: 0 };
@@ -655,7 +652,6 @@ impl Path {
 
 impl Path {
     /// Adds a [`Geometry`] to the path.
-    #[inline]
     pub fn add_geometry<'m, T, M>(&mut self, g: &T, matrix: M, dir: GeometryDirection)
     where
         T: Geometry + ?Sized,
@@ -675,7 +671,6 @@ impl Path {
     }
 
     /// Adds a polygon.
-    #[inline]
     pub fn add_polygon<'m, R, P, M>(&mut self, p: R, matrix: M, dir: GeometryDirection)
     where
         R: AsRef<[P]>,
@@ -696,7 +691,6 @@ impl Path {
     }
 
     /// Adds a polyline.
-    #[inline]
     pub fn add_polyline<'m, R, P, M>(&mut self, p: R, matrix: M, dir: GeometryDirection)
     where
         R: AsRef<[P]>,

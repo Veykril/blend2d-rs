@@ -135,7 +135,6 @@ impl FontLoader {
         FontFace::from_loader(self, index)
     }
 
-    #[inline]
     pub fn data_by_face_index(&mut self, idx: u32) -> FontData {
         FontData::from_core(ffi::BLFontDataCore {
             impl_: unsafe { (self.impl_().virt().dataByFaceIndex.unwrap())(self.impl_mut(), idx) },
@@ -515,7 +514,6 @@ impl Font {
     ///
     /// The returned metrics is compatible with the metrics of [FontFace]
     /// associated with this font.
-    #[inline]
     pub fn design_metrics(&self) -> &FontDesignMetrics {
         self.face().design_metrics()
     }

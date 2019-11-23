@@ -25,7 +25,6 @@ unsafe impl WrappedBlCore for Pattern {
 impl Pattern {
     /// Creates a new pattern that borrows the given [`Image`] immutably for its
     /// lifetime.
-    #[inline]
     pub fn new<'r, 'm, R, M>(image: &Image, area: R, extend_mode: ExtendMode, matrix: M) -> Pattern
     where
         R: Into<Option<&'r RectI>>,

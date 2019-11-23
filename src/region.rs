@@ -217,7 +217,6 @@ impl Region {
 }
 
 impl From<BoxI> for Region {
-    #[inline]
     fn from(b: BoxI) -> Self {
         let mut this = Self::new();
         unsafe {
@@ -232,7 +231,6 @@ impl From<BoxI> for Region {
 }
 
 impl<'a> From<&'a [BoxI]> for Region {
-    #[inline]
     fn from(b: &'a [BoxI]) -> Self {
         let mut this = Self::new();
         unsafe {
@@ -248,7 +246,6 @@ impl<'a> From<&'a [BoxI]> for Region {
 }
 
 impl From<RectI> for Region {
-    #[inline]
     fn from(r: RectI) -> Self {
         let mut this = Self::new();
         unsafe {
@@ -263,7 +260,6 @@ impl From<RectI> for Region {
 }
 
 impl<'a> From<&'a [RectI]> for Region {
-    #[inline]
     fn from(r: &'a [RectI]) -> Self {
         let mut this = Self::new();
         unsafe {
