@@ -28,12 +28,6 @@ matrix:
       rust: stable
       os: windows
       env: BUILD_MATRIX="BUILD_TYPE=Debug" BUILD_TOOLCHAIN="Visual Studio 15 2017 Win64"
-    - name: "rustfmt"
-      rust: stable
-      before_script:
-        - rustup component add rustfmt
-      script:
-        - cargo fmt --all -- --check
   fast_finish: true
 cache: cargo
 branches:
