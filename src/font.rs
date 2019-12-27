@@ -13,6 +13,7 @@ use crate::array::Array;
 use crate::error::{errcode_to_result, Result};
 use crate::font_defs::*;
 use crate::glyph_buffer::GlyphBuffer;
+use crate::util::cast_ref;
 use crate::variant::WrappedBlCore;
 
 /// Font
@@ -50,7 +51,7 @@ impl Font {
     /// Returns the same font-face, which was passed to
     /// [`from_face`](struct.Font.html#method.from_face).
     pub fn face(&self) -> &FontFace {
-        unsafe { &*(&self.impl_().face as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().face) }
     }
 
     /// Returns the [`FontFaceType`] of the font.
@@ -75,12 +76,12 @@ impl Font {
 
     /// Returns the font-features used by this font.
     pub fn features(&self) -> &Array<FontFeature> {
-        unsafe { &*(&self.impl_().features as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().features) }
     }
 
     /// Returns the font-variations used by this font.
     pub fn variations(&self) -> &Array<FontVariation> {
-        unsafe { &*(&self.impl_().variations as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().variations) }
     }
 
     /// Returns the weight of the font.
@@ -109,7 +110,7 @@ impl Font {
     /// system than Blend2D.
     #[inline]
     pub fn font_matrix(&self) -> &FontMatrix {
-        unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().matrix) }
     }
 
     /// Returns a scaled metrics of this font.
@@ -118,7 +119,7 @@ impl Font {
     /// size and its options.
     #[inline]
     pub fn font_metrics(&self) -> &FontMetrics {
-        unsafe { &*(&self.impl_().metrics as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().metrics) }
     }
 
     /// Returns a design metrics of this font.

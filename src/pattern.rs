@@ -4,6 +4,7 @@ use crate::error::{errcode_to_result, expect_mem_err, Result};
 use crate::geometry::RectI;
 use crate::image::Image;
 use crate::matrix::{Matrix2D, Matrix2DOp, MatrixTransform};
+use crate::util::cast_ref;
 use crate::variant::WrappedBlCore;
 use crate::ExtendMode;
 
@@ -51,7 +52,7 @@ impl Pattern {
     pub fn image(&self) -> &Image {
         // returning a reference here is safe, since this call borrows from this pattern
         // therefor keeping the image alive
-        unsafe { &*(&self.impl_().image as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().image) }
     }
 
     /// Replaces this pattern's image.
@@ -82,7 +83,7 @@ impl Pattern {
     /// The clipping area.
     #[inline]
     pub fn area(&self) -> &RectI {
-        unsafe { &*(&self.impl_().area as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().area) }
     }
 
     /// Sets the clipping area.
@@ -123,7 +124,7 @@ impl Pattern {
     /// The pattern's [`Matrix2D`].
     #[inline]
     pub fn matrix(&self) -> &Matrix2D {
-        unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().matrix) }
     }
 }
 

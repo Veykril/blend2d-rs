@@ -258,7 +258,7 @@ impl<T: GradientType> Gradient<T> {
     /// Returns the transformation matrix.
     #[inline]
     pub fn matrix(&self) -> &Matrix2D {
-        unsafe { &*(&self.impl_().matrix as *const _ as *const _) }
+        unsafe { crate::util::cast_ref(&self.impl_().matrix) }
     }
 }
 

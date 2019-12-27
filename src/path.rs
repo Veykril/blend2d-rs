@@ -199,7 +199,7 @@ impl StrokeOptions {
 
     #[inline]
     pub fn dash_array(&self) -> &Array<f64> {
-        unsafe { &*(&self.core.dashArray as *const _ as *const _) }
+        unsafe { crate::util::cast_ref(&self.core.dashArray) }
     }
 
     #[inline]

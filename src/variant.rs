@@ -7,6 +7,7 @@ use crate::image::Image;
 use crate::path::Path;
 use crate::pattern::Pattern;
 use crate::region::Region;
+use crate::util::cast_ref;
 
 use ffi::BLImplType::*;
 bl_enum! {
@@ -106,7 +107,7 @@ pub unsafe trait BlVariantImpl: Sized {
 
     #[inline]
     fn as_variant_impl(&self) -> &ffi::BLVariantImpl {
-        unsafe { &*(self as *const _ as *const _) }
+        unsafe { cast_ref(self) }
     }
 }
 
@@ -167,7 +168,7 @@ pub unsafe trait BlVariantCore: Sized {
 
     #[inline]
     fn as_variant_core(&self) -> &ffi::BLVariantCore {
-        unsafe { &*(self as *const _ as *const _) }
+        unsafe { cast_ref(self) }
     }
 
     #[inline]
@@ -253,7 +254,7 @@ pub unsafe trait WrappedBlCore: Sized {
     /// The default implementation reinterprets &self as &Self::Core.
     #[inline]
     fn core(&self) -> &Self::Core {
-        unsafe { &*(self as *const _ as *const _) }
+        unsafe { cast_ref(self) }
     }
 
     /// The default implementation reinterprets &mut self as &mut Self::Core.
@@ -281,7 +282,7 @@ pub unsafe trait WrappedBlCore: Sized {
     /// Retrieves the none version of Self::Core
     #[inline]
     fn none() -> &'static Self::Core {
-        unsafe { &*(&ffi::blNone[Self::IMPL_TYPE_INDEX] as *const _ as *const _) }
+        unsafe { cast_ref(&ffi::blNone[Self::IMPL_TYPE_INDEX]) }
     }
 
     /// Checks equality of the objects implementations by comparing the pointer.

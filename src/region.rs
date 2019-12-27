@@ -81,7 +81,7 @@ impl Region {
     /// A bounding box representing this region.
     #[inline]
     pub fn bounding_box(&self) -> &BoxI {
-        unsafe { &*(&self.impl_().boundingBox as *const _ as *const _) }
+        unsafe { crate::util::cast_ref(&self.impl_().boundingBox) }
     }
 
     /// Clears the region.

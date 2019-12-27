@@ -20,6 +20,7 @@ use crate::path::{
 use crate::pattern::Pattern;
 use crate::variant::{BlVariantCore, BlVariantImpl, WrappedBlCore};
 use crate::StyleType;
+use crate::util::cast_ref;
 
 use ffi::BLContextType::*;
 bl_enum! {
@@ -311,12 +312,12 @@ impl Context {
 
     #[inline]
     pub fn meta_matrix(&self) -> &Matrix2D {
-        unsafe { &*(&self.state().metaMatrix as *const _ as *const _) }
+        unsafe { cast_ref(&self.state().metaMatrix) }
     }
 
     #[inline]
     pub fn user_matrix(&self) -> &Matrix2D {
-        unsafe { &*(&self.state().userMatrix as *const _ as *const _) }
+        unsafe { cast_ref(&self.state().userMatrix) }
     }
 
     #[inline]
@@ -327,7 +328,7 @@ impl Context {
     /// The rendering hints of this context.
     #[inline]
     pub fn hints(&self) -> &ContextHints {
-        unsafe { &*(&self.state().hints as *const _ as *const _) }
+        unsafe { cast_ref(&self.state().hints) }
     }
 
     /// Sets the specified hint to the given value.
@@ -339,7 +340,7 @@ impl Context {
     /// The approximation options of this context.
     #[inline]
     pub fn approximation_options(&self) -> &ApproximationOptions {
-        unsafe { &*(&self.state().approximationOptions as *const _ as *const _) }
+        unsafe { cast_ref(&self.state().approximationOptions) }
     }
 
     /// The [`FlattenMode`] of this context, which describes how curves are
@@ -540,7 +541,7 @@ impl Context {
 
     #[inline]
     pub fn stroke_options(&self) -> &StrokeOptions {
-        unsafe { &*(&self.state().strokeOptions as *const _ as *const _) }
+        unsafe { cast_ref(&self.state().strokeOptions) }
     }
 
     #[inline]

@@ -7,6 +7,7 @@ use ffi::BLImageCodecFeatures::*;
 use crate::array::Array;
 use crate::error::{errcode_to_result, expect_mem_err, Result};
 use crate::image::{Image, ImageInfo};
+use crate::util::cast_ref;
 use crate::variant::WrappedBlCore;
 
 bl_enum! {
@@ -198,7 +199,7 @@ impl ImageEncoder {
     /// The codec this encoder belongs to.
     #[inline]
     pub fn codec(&self) -> &ImageCodec {
-        unsafe { &*(&self.impl_().codec as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().codec) }
     }
 
     #[inline]
@@ -285,7 +286,7 @@ impl ImageDecoder {
     /// The codec this decoder belongs to.
     #[inline]
     pub fn codec(&self) -> &ImageCodec {
-        unsafe { &*(&self.impl_().codec as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().codec) }
     }
 
     #[inline]

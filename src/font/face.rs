@@ -62,7 +62,7 @@ impl FontFace {
     /// Returns the [`FontFaceInfo`].
     #[inline]
     pub fn face_info(&self) -> &FontFaceInfo {
-        unsafe { &*(&self.impl_().faceInfo as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().faceInfo) }
     }
 
     /// Returns the [`FontFaceType`].
@@ -254,7 +254,7 @@ impl FontFace {
 
     #[inline]
     pub fn unicode_coverage(&self) -> &FontUnicodeCoverage {
-        unsafe { &*(&self.impl_().unicodeCoverage as *const _ as *const _) }
+        unsafe { cast_ref(&self.impl_().unicodeCoverage) }
     }
 
     /// Returns the full name.
