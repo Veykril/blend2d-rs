@@ -49,6 +49,8 @@ impl Pattern {
     /// The pattern's [`Image`].
     #[inline]
     pub fn image(&self) -> &Image {
+        // returning a reference here is safe, since this call borrows from this pattern
+        // therefor keeping the image alive
         unsafe { &*(&self.impl_().image as *const _ as *const _) }
     }
 

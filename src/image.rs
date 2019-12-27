@@ -58,6 +58,29 @@ bitflags! {
         const BYTE_SWAP     = BLFormatFlags::BL_FORMAT_FLAG_BYTE_SWAP as u32;
         /// Pixel components are byte aligned (all 8bpp).
         const BYTE_ALIGNED  = BLFormatFlags::BL_FORMAT_FLAG_BYTE_ALIGNED as u32;
+
+        /// Pixel has some undefined bits that represent no information.
+        ///
+        /// For example a 32-bit XRGB pixel has 8 undefined bits that are usually set
+        /// to all ones so the format can be interpreted as premultiplied RGB as well.
+        /// There are other formats like 16_0555 where the bit has no information and
+        /// is usually set to zero. Blend2D doesn't rely on the content of such bits.
+        const UNDEFINED_BITS = BLFormatFlags::BL_FORMAT_FLAG_UNDEFINED_BITS as u32;
+        /// Convenience flag that contains either zero or `BYTE_SWAP`
+        /// depending on host byte order. Little endian hosts have this flag set to
+        /// zero and big endian hosts to `BYTE_SWAP`.
+        ///
+        /// This is not a real flag that you can test, it's only provided for
+        /// convenience to define little endian pixel formats.
+        const FLAG_LE = BLFormatFlags::BL_FORMAT_FLAG_LE as u32;
+
+        /// Convenience flag that contains either zero or `BYTE_SWAP`
+        /// depending on host byte order. Big endian hosts have this flag set to
+        /// zero and little endian hosts to `BYTE_SWAP`.
+        ///
+        /// This is not a real flag that you can test, it's only provided for
+        /// convenience to define big endian pixel formats.
+        const FLAG_BE = BLFormatFlags::BL_FORMAT_FLAG_BE as u32;
     }
 }
 
@@ -285,6 +308,10 @@ impl Image {
                 flags: ImageInfoFlags::from_bits_truncate(data.flags),
             }
         }
+    }
+
+    pub fn convert(&mut self, format: ImageFormat) -> Result<()> {
+        unsafe { errcode_to_result(ffi::blImageConvert(self.core_mut(), format.into())) }
     }
 
     pub fn scale(&mut self, size: SizeI, filter: ImageScaleFilter) -> Result<()> {

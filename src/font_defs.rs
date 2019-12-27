@@ -3,7 +3,7 @@ use bitflags::bitflags;
 use std::fmt;
 
 use crate::{
-    geometry::{BoxD, PointD, PointI},
+    geometry::{BoxD, BoxI, PointD, PointI},
     Tag,
 };
 
@@ -57,10 +57,12 @@ bitflags! {
         const HORIZONTAL_KERNING    = BL_FONT_FACE_FLAG_HORIZONTAL_KERNING    as u32;
         const VERTICAL_KERNING      = BL_FONT_FACE_FLAG_VERTICAL_KERNING      as u32;
         const OPENTYPE_FEATURES     = BL_FONT_FACE_FLAG_OPENTYPE_FEATURES     as u32;
-        const OPENTYPE_VARIATIONS   = BL_FONT_FACE_FLAG_OPENTYPE_VARIATIONS   as u32;
         const PANOSE_DATA           = BL_FONT_FACE_FLAG_PANOSE_DATA           as u32;
         const UNICODE_COVERAGE      = BL_FONT_FACE_FLAG_UNICODE_COVERAGE      as u32;
+        const BASELINE_Y_EQUALS_0   = BL_FONT_FACE_FLAG_BASELINE_Y_EQUALS_0   as u32;
+        const LSB_POINT_X_EQUALS_0  = BL_FONT_FACE_FLAG_LSB_POINT_X_EQUALS_0  as u32;
         const VARIATION_SEQUENCES   = BL_FONT_FACE_FLAG_VARIATION_SEQUENCES   as u32;
+        const OPENTYPE_VARIATIONS   = BL_FONT_FACE_FLAG_OPENTYPE_VARIATIONS   as u32;
         const SYMBOL_FONT           = BL_FONT_FACE_FLAG_SYMBOL_FONT           as u32;
         const LAST_RESORT_FONT      = BL_FONT_FACE_FLAG_LAST_RESORT_FONT      as u32;
     }
@@ -81,10 +83,10 @@ bitflags! {
     }
 }
 
-use ffi::BLFontLoaderFlags::*;
+use ffi::BLFontDataFlags::*;
 bitflags! {
-    pub struct FontLoaderFlags: u32 {
-        const COLLECTION = BL_FONT_LOADER_FLAG_COLLECTION as u32;
+    pub struct FontDataFlags: u32 {
+        const COLLECTION = BL_FONT_DATA_FLAG_COLLECTION as u32;
     }
 }
 
@@ -272,19 +274,17 @@ pub struct FontFaceInfo {
     pub face_type: FontFaceType,
     pub outline_type: FontOutlineType,
     pub glyph_count: u32,
+    pub revision: u32,
     pub face_index: u32,
     pub face_flags: FontFaceFlags,
     pub diag_flags: FontFaceDiagFlags,
+    reserved: [u32; 3],
 }
 
-#[allow(dead_code)]
-#[repr(C)]
 #[derive(Debug)]
-pub(in crate) struct FontTable {
-    pub data: *const u8,
-    pub size: usize,
+pub struct FontTable<'a> {
+    pub data: &'a [u8],
 }
-//pub type FontTable<'a> = &'a [u8];
 
 #[repr(C)]
 #[derive(Debug)]
@@ -321,6 +321,10 @@ pub struct FontMetrics {
     pub line_gap: f32,
     pub x_height: f32,
     pub cap_height: f32,
+    pub x_min: f32,
+    pub y_min: f32,
+    pub x_max: f32,
+    pub y_max: f32,
     pub underline_position: f32,
     pub underline_thickness: f32,
     pub strikethrough_position: f32,
@@ -331,6 +335,7 @@ pub struct FontMetrics {
 #[derive(Debug, Default)]
 pub struct FontDesignMetrics {
     pub units_per_em: i32,
+    pub lowest_ppem: i32,
     pub line_gap: i32,
     pub x_height: i32,
     pub cap_height: i32,
@@ -344,6 +349,7 @@ pub struct FontDesignMetrics {
     pub vertical_min_tsb: i32,
     pub horizontal_max_advance: i32,
     pub vertical_max_advance: i32,
+    pub glyph_bounding_box: BoxI,
     pub underline_position: i32,
     pub underline_thickness: i32,
     pub strikethrough_position: i32,
@@ -354,5 +360,7 @@ pub struct FontDesignMetrics {
 #[derive(Debug, Default)]
 pub struct TextMetrics {
     pub advance: PointD,
+    pub leading_bearing: PointD,
+    pub trailing_bearing: PointD,
     pub bounding_box: BoxD,
 }

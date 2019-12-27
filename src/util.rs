@@ -1,5 +1,9 @@
 use std::ops;
 
+pub(in crate) unsafe fn cast_ref<T, U>(t: &T) -> &U {
+    &*(t as *const _ as *const U)
+}
+
 #[inline]
 pub(in crate) fn bl_range<R: ops::RangeBounds<usize>>(range: R) -> ffi::BLRange {
     ffi::BLRange {

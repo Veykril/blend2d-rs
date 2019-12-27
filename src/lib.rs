@@ -35,10 +35,15 @@ pub struct Tag(u32);
 use ffi::BLBooleanOp::*;
 bl_enum! {
     pub enum BooleanOp {
+        /// Result = B
         Copy = BL_BOOLEAN_OP_COPY,
+        /// Result = A & B
         And  = BL_BOOLEAN_OP_AND,
+        /// Result = A | B
         Or   = BL_BOOLEAN_OP_OR,
+        /// Result = A ^ B
         Xor  = BL_BOOLEAN_OP_XOR,
+        /// Result = A & ~B
         Sub  = BL_BOOLEAN_OP_SUB,
     }
     Default => Copy

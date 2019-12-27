@@ -12,8 +12,6 @@ use ffi::BLImplType::*;
 bl_enum! {
     pub enum ImplType {
         Null                 = BL_IMPL_TYPE_NULL,
-        BitArray             = BL_IMPL_TYPE_BIT_ARRAY,
-        String               = BL_IMPL_TYPE_STRING,
         ArrayVar             = BL_IMPL_TYPE_ARRAY_VAR,
         ArrayI8              = BL_IMPL_TYPE_ARRAY_I8,
         ArrayU8              = BL_IMPL_TYPE_ARRAY_U8,
@@ -37,6 +35,9 @@ bl_enum! {
         ArrayStruct20        = BL_IMPL_TYPE_ARRAY_STRUCT_20,
         ArrayStruct24        = BL_IMPL_TYPE_ARRAY_STRUCT_24,
         ArrayStruct32        = BL_IMPL_TYPE_ARRAY_STRUCT_32,
+        BitArray             = BL_IMPL_TYPE_BIT_ARRAY,
+        BitSet               = BL_IMPL_TYPE_BIT_SET,
+        String               = BL_IMPL_TYPE_STRING,
         Path                 = BL_IMPL_TYPE_PATH,
         Region               = BL_IMPL_TYPE_REGION,
         Image                = BL_IMPL_TYPE_IMAGE,
@@ -49,7 +50,7 @@ bl_enum! {
         Font                 = BL_IMPL_TYPE_FONT,
         FontFace             = BL_IMPL_TYPE_FONT_FACE,
         FontData             = BL_IMPL_TYPE_FONT_DATA,
-        FontLoader           = BL_IMPL_TYPE_FONT_LOADER,
+        FontManager          = BL_IMPL_TYPE_FONT_MANAGER,
         FontFeatureOptions   = BL_IMPL_TYPE_FONT_FEATURE_OPTIONS,
         FontVariationOptions = BL_IMPL_TYPE_FONT_VARIATION_OPTIONS,
     }
@@ -58,12 +59,12 @@ bl_enum! {
 
 bitflags! {
     pub struct ImplTraits: u8 {
-        const NULL =      ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
-        const VIRTUAL =   ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
-        const MUTABLE =   ffi::BLImplTraits::BL_IMPL_TRAIT_MUTABLE as u8;
+        const NULL      = ffi::BLImplTraits::BL_IMPL_TRAIT_NULL as u8;
+        const VIRTUAL   = ffi::BLImplTraits::BL_IMPL_TRAIT_VIRT as u8;
+        const MUTABLE   = ffi::BLImplTraits::BL_IMPL_TRAIT_MUTABLE as u8;
         const IMMUTABLE = ffi::BLImplTraits::BL_IMPL_TRAIT_IMMUTABLE as u8;
-        const EXTERNAL =  ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
-        const FOREIGN =   ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
+        const EXTERNAL  = ffi::BLImplTraits::BL_IMPL_TRAIT_EXTERNAL as u8;
+        const FOREIGN   = ffi::BLImplTraits::BL_IMPL_TRAIT_FOREIGN as u8;
     }
 }
 
@@ -72,7 +73,7 @@ pub trait VTable {}
 
 impl VTable for ffi::BLContextVirt {}
 impl VTable for ffi::BLFontDataVirt {}
-impl VTable for ffi::BLFontLoaderVirt {}
+impl VTable for ffi::BLFontManagerVirt {}
 impl VTable for ffi::BLImageCodecVirt {}
 impl VTable for ffi::BLImageDecoderVirt {}
 impl VTable for ffi::BLImageEncoderVirt {}
@@ -127,8 +128,8 @@ unsafe impl BlVariantImpl for ffi::BLFontDataImpl {
 unsafe impl BlVariantImpl for ffi::BLFontFaceImpl {
     type VTable = ffi::BLFontFaceVirt;
 }
-unsafe impl BlVariantImpl for ffi::BLFontLoaderImpl {
-    type VTable = ffi::BLFontLoaderVirt;
+unsafe impl BlVariantImpl for ffi::BLFontManagerImpl {
+    type VTable = ffi::BLFontManagerVirt;
 }
 unsafe impl BlVariantImpl for ffi::BLGlyphBufferImpl {
     type VTable = ();
@@ -203,8 +204,8 @@ unsafe impl BlVariantCore for ffi::BLFontDataCore {
 unsafe impl BlVariantCore for ffi::BLFontFaceCore {
     type Impl = ffi::BLFontFaceImpl;
 }
-unsafe impl BlVariantCore for ffi::BLFontLoaderCore {
-    type Impl = ffi::BLFontLoaderImpl;
+unsafe impl BlVariantCore for ffi::BLFontManagerCore {
+    type Impl = ffi::BLFontManagerImpl;
 }
 unsafe impl BlVariantCore for ffi::BLGlyphBufferCore {
     type Impl = ffi::BLGlyphBufferImpl;
