@@ -38,6 +38,26 @@ fn main() -> io::Result<()> {
     };
     let x64 = arch == "x86_64";
 
+    // bindings
+    let whitelist_regex = "[Bb][Ll].*";
+    let bindings = bindgen::builder()
+        .header("blend2d/src/blend2d.h")
+        .layout_tests(false)
+        .generate_comments(false)
+        .default_enum_style(bindgen::EnumVariation::ModuleConsts)
+        .whitelist_function(whitelist_regex)
+        .whitelist_type(whitelist_regex)
+        .whitelist_var(whitelist_regex)
+        .derive_debug(false)
+        .clang_arg("-DASMJIT_STATIC")
+        .generate()
+        .expect("Unable to generate bindings");
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+
+    // lib
     let mut cfg = cc::Build::new();
     add_source(&mut cfg, BLEND2D_SOURCE_PATH)?;
     add_source(&mut cfg, ASMJIT_SOURCE_PATH)?;
@@ -158,22 +178,5 @@ fn main() -> io::Result<()> {
         },
         _ => (),
     }
-
-    let whitelist_regex = "[Bb][Ll].*";
-    let bindings = bindgen::Builder::default()
-        .header("blend2d/src/blend2d.h")
-        .layout_tests(false)
-        .generate_comments(false)
-        .default_enum_style(bindgen::EnumVariation::ModuleConsts)
-        .whitelist_function(whitelist_regex)
-        .whitelist_type(whitelist_regex)
-        .whitelist_var(whitelist_regex)
-        .derive_debug(false)
-        .generate()
-        .expect("Unable to generate bindings");
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
     Ok(())
 }
