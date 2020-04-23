@@ -4,7 +4,7 @@ use crate::geometry::Point;
 
 pub(in crate) use self::private::Matrix2DOp;
 mod private {
-    use ffi::BLMatrix2DOp::*;    
+    use ffi::BLMatrix2DOp::*;
     bl_enum! {
         #[doc(hidden)]
         pub enum Matrix2DOp {
