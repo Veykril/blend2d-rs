@@ -2,9 +2,10 @@
 use crate::error::expect_mem_err;
 use crate::geometry::Point;
 
-pub(in crate) use self::private::Matrix2DOp;
+pub(in crate) use self::private::{Matrix2DOp};
 mod private {
     use ffi::BLMatrix2DOp::*;
+    
     bl_enum! {
         #[doc(hidden)]
         pub enum Matrix2DOp {
@@ -182,6 +183,13 @@ impl Matrix2D {
         let p = p.into_f64();
         self.reset_to_rotation(angle, p[0], p[1]);
     }
+    #[inline]
+    // Inverted src is writtinen into dst
+    pub fn invert(dst: &mut Matrix2D, src: &Matrix2D) {               
+        let src_p = src.0.as_ptr() as *const ffi::BLMatrix2D;
+        let dst_p = dst.0.as_ptr() as *mut ffi::BLMatrix2D;
+        unsafe{ ffi::blMatrix2DInvert(dst_p, src_p)};
+    }
 }
 
 impl MatrixTransform for Matrix2D {
@@ -196,6 +204,9 @@ impl MatrixTransform for Matrix2D {
             ))
         };
     }
+
+    
+
 }
 
 /// A trait for doing matrix transformations on the type.
@@ -335,5 +346,22 @@ pub trait MatrixTransform {
     #[inline]
     fn post_transform(&mut self, mat: &Matrix2D) {
         self.apply_matrix_op(Matrix2DOp::PostTransform, &mat.0);
+    }
+
+
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_add() {
+        let mut m = Matrix2D::scaling(3., 1.);
+        let mut m2 = Matrix2D::identity();
+        Matrix2D::invert(&mut m2, &m);
+        m.transform(&m2);
+        assert_eq!(m, Matrix2D::identity());
     }
 }
