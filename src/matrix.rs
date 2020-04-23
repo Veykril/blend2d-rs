@@ -2,10 +2,9 @@
 use crate::error::expect_mem_err;
 use crate::geometry::Point;
 
-pub(in crate) use self::private::{Matrix2DOp};
+pub(in crate) use self::private::Matrix2DOp;
 mod private {
-    use ffi::BLMatrix2DOp::*;
-    
+    use ffi::BLMatrix2DOp::*;    
     bl_enum! {
         #[doc(hidden)]
         pub enum Matrix2DOp {
@@ -204,9 +203,6 @@ impl MatrixTransform for Matrix2D {
             ))
         };
     }
-
-    
-
 }
 
 /// A trait for doing matrix transformations on the type.
@@ -347,8 +343,6 @@ pub trait MatrixTransform {
     fn post_transform(&mut self, mat: &Matrix2D) {
         self.apply_matrix_op(Matrix2DOp::PostTransform, &mat.0);
     }
-
-
 }
 
 #[cfg(test)]
